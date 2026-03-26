@@ -411,16 +411,19 @@ export default function HomePage() {
         position: relative; overflow: hidden; isolation: isolate;
         }
         .hm-hero-tag::before {
-        content: '';
-        position: absolute; inset: -2px; border-radius: 100px;
-        background: conic-gradient(
+          content: '';
+          position: absolute; inset: -45px; border-radius: 80px;
+          background: conic-gradient(
             from 0deg,
-            transparent 0%, transparent 30%,
-            #c0c0c0 45%, #f0f0f0 50%, #e8e8e8 55%,
-            transparent 70%, transparent 100%
-        );
-        animation: border-rotate 2.4s linear infinite;
-        z-index: -2;
+            transparent 0%,
+            transparent 80%,
+            #c0c0c0 88%,
+            #f0f0f0 92%,
+            #c0c0c0 96%,
+            transparent 100%
+          );
+          animation: border-rotate 2.4s linear infinite;
+          z-index: -2;
         }
         .hm-hero-tag::after {
         content: '';
@@ -711,7 +714,7 @@ export default function HomePage() {
           <div className="hm-hero-left">
             <div className="hm-hero-tag">
               <div className="hm-hero-tag-dot" />
-              <span>Sistem Manajemen Inventori #1</span>
+              <span>Sistem Manajemen Inventori</span>
             </div>
             <h1 className="hm-hero-h1">
               Kelola Stok Lebih
