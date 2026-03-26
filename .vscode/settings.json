@@ -1,0 +1,13 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": ["javascript"],
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "bounded",
+  "editor.defaultFormatter": "esbenp.prettier-vscode", //new
+  "prettier.trailingComma": "none",
+  "prettier.semi": false, //tidak menggunakan semicolon
+  "liveServer.settings.port": 5501,
+  "prettier.endOfLine": "auto"
+}
