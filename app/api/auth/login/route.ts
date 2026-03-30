@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
       return NextResponse.json(
-        { error: "Email atau password salah" },
+        { error: "Email belum terdaftar, silahkan daftar terlebih dahulu" },
         { status: 401 }
       )
     }
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
       return NextResponse.json(
-        { error: "Email atau password salah" },
+        { error: "Password yang kamu masukkan salah" },
         { status: 401 }
       )
     }

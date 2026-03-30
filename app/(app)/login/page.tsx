@@ -2,16 +2,20 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.MouseEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError("")
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -22,13 +26,13 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || "Login gagal")
+        setError(data.error || "Login gagal")
         return
       }
 
-      window.location.href = "/"
+      router.push("/main")
     } catch (err) {
-      alert("Terjadi kesalahan, coba lagi")
+      setError("Terjadi kesalahan, coba lagi")
     } finally {
       setLoading(false)
     }
@@ -93,7 +97,17 @@ export default function LoginPage() {
           0%, 100% { transform: translateY(0) rotate(0deg); }
           50% { transform: translateY(12px) rotate(-2deg); }
         }
-
+        .lg-error { 
+          background:#fef2f2;
+          border:1px solid #fecaca;
+          color:#dc2626;
+          padding:10px 14px;
+          border-radius:8px;
+          font-size:13px;
+          font-weight:500;
+          margin-bottom:16px;
+          text-align:center;
+        }
         .lg-root { display: flex; min-height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
 
         /* ─── LEFT ─── */
@@ -322,7 +336,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-
+            {error && <div className="lg-error">⚠️ {error}</div>}
             <button
               className="lg-btn"
               onClick={handleSubmit}

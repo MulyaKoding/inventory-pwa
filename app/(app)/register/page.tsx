@@ -13,6 +13,8 @@ export default function RegisterPage() {
     confirm: ""
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   const handleChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -20,11 +22,17 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.MouseEvent) => {
     e.preventDefault()
-
-    // Validasi password cocok
-    if (form.password !== form.confirm) return
+    if (form.password !== form.confirm) {
+      setError("Password tidak cocok")
+      return
+    }
+    if (form.password.length < 8) {
+      setError("Password minimal 8 karakter")
+      return
+    }
 
     setLoading(true)
+    setError("")
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -39,14 +47,16 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || "Registrasi gagal")
+        setError(data.error || "Registrasi gagal")
         return
       }
 
-      // Berhasil → redirect ke login
-      window.location.href = "/login"
+      setSuccess("Registrasi berhasil! Mengarahkan ke halaman login...")
+      setTimeout(() => {
+        window.location.href = "/login"
+      }, 1500)
     } catch (err) {
-      alert("Terjadi kesalahan, coba lagi")
+      setError("Terjadi kesalahan, coba lagi")
     } finally {
       setLoading(false)
     }
@@ -112,7 +122,28 @@ export default function RegisterPage() {
         }
 
         .rg-root { display: flex; min-height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-
+        .rg-error { 
+          background:#fef2f2;
+          border:1px solid #fecaca;
+          color:#dc2626;
+          padding:10px 14px;
+          border-radius:8px;
+          font-size:13px;
+          font-weight:500;
+          margin-bottom:16px;
+          text-align:center;
+        }
+        .rg-success { 
+          background:#f0fdf4;
+          border:1px solid #bbf7d0;
+          color:#16a34a;
+          padding:10px 14px;
+          border-radius:8px;
+          font-size:13px;
+          font-weight:500;
+          margin-bottom:16px;
+          text-align:center;
+        }
         /* ─── LEFT ─── */
         .rg-left {
           position: relative; width: 48%; min-height: 100vh;
@@ -492,7 +523,8 @@ export default function RegisterPage() {
                 <p className="rg-err">Password tidak cocok</p>
               )}
             </div>
-
+            {error && <div className="rg-error">⚠️ {error}</div>}
+            {success && <div className="rg-success">✅ {success}</div>}
             <button
               className="rg-btn"
               onClick={handleSubmit}
