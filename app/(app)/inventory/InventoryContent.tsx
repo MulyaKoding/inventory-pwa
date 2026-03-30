@@ -7,6 +7,9 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Divider,
   Drawer,
   IconButton,
@@ -15,8 +18,11 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  MenuItem,
   Paper,
+  Select,
   Snackbar,
+  TextField,
   Tooltip,
   Typography
 } from "@mui/material"
@@ -35,9 +41,9 @@ import {
   GridToolbarFilterButton,
   useGridApiContext
 } from "@mui/x-data-grid"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
-// ── ICONS ────────────────────────────────────────────────────────────────────
+// ── ICONS ─────────────────────────────────────────────────────────────────────
 const Icon = ({
   d,
   size = 20,
@@ -60,7 +66,6 @@ const Icon = ({
     <path d={d} />
   </svg>
 )
-
 const MoonIcon = ({
   size = 18,
   color = "currentColor"
@@ -78,7 +83,6 @@ const MoonIcon = ({
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </svg>
 )
-
 const SunIcon = ({
   size = 18,
   color = "currentColor"
@@ -108,93 +112,8 @@ const SunIcon = ({
   </svg>
 )
 
-// ── INITIAL DATA ──────────────────────────────────────────────────────────────
-const INITIAL_ROWS: GridRowsProp = [
-  {
-    id: "PRD-001",
-    name: "Wireless Headphones Pro",
-    category: "Electronics",
-    sku: "WHP-9X",
-    stock: 124,
-    price: 299000,
-    status: "In Stock",
-    sold: 87
-  },
-  {
-    id: "PRD-002",
-    name: "Cotton Oversized Tee",
-    category: "Apparel",
-    sku: "COT-OS-BLK",
-    stock: 8,
-    price: 189000,
-    status: "Low Stock",
-    sold: 312
-  },
-  {
-    id: "PRD-003",
-    name: "Smart Desk Lamp",
-    category: "Home",
-    sku: "SDL-USB-W",
-    stock: 0,
-    price: 450000,
-    status: "Out of Stock",
-    sold: 54
-  },
-  {
-    id: "PRD-004",
-    name: "Precision Screwdriver Set",
-    category: "Tools",
-    sku: "PSS-32PC",
-    stock: 67,
-    price: 125000,
-    status: "In Stock",
-    sold: 201
-  },
-  {
-    id: "PRD-005",
-    name: "Vitamin C Serum 30ml",
-    category: "Beauty",
-    sku: "VCS-30-P",
-    stock: 15,
-    price: 220000,
-    status: "Low Stock",
-    sold: 445
-  },
-  {
-    id: "PRD-006",
-    name: "Mechanical Keyboard TKL",
-    category: "Electronics",
-    sku: "MKB-TKL-R",
-    stock: 39,
-    price: 875000,
-    status: "In Stock",
-    sold: 129
-  },
-  {
-    id: "PRD-007",
-    name: "Linen Throw Blanket",
-    category: "Home",
-    sku: "LTB-NAT-L",
-    stock: 93,
-    price: 340000,
-    status: "In Stock",
-    sold: 76
-  },
-  {
-    id: "PRD-008",
-    name: "Retinol Night Cream",
-    category: "Beauty",
-    sku: "RNC-50G",
-    stock: 4,
-    price: 195000,
-    status: "Low Stock",
-    sold: 388
-  }
-]
-
 const CATEGORIES = ["Electronics", "Apparel", "Home", "Tools", "Beauty"]
 const STATUSES = ["In Stock", "Low Stock", "Out of Stock"]
-
 const NAV_ITEMS = [
   {
     label: "Dashboard",
@@ -214,13 +133,6 @@ const NAV_ITEMS = [
     label: "Settings",
     icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a7.1 7.1 0 0 0 .1-1v-2a7.1 7.1 0 0 0-.1-1l2.2-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.6 1a6.8 6.8 0 0 0-1.7-1l-.4-2.7A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.5.4l-.4 2.8a6.8 6.8 0 0 0-1.7 1l-2.6-1a.5.5 0 0 0-.6.2L2.2 8.9a.5.5 0 0 0 .1.6L4.5 11a7.1 7.1 0 0 0-.1 1v2a7.1 7.1 0 0 0 .1 1L2.3 16.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.6-1a6.8 6.8 0 0 0 1.7 1l.4 2.7a.5.5 0 0 0 .5.4h4a.5.5 0 0 0 .5-.4l.4-2.7a6.8 6.8 0 0 0 1.7-1l2.6 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6z"
   }
-]
-
-const STAT_CARDS = [
-  { label: "Total Products", value: "248", delta: "+12", trend: "up" },
-  { label: "Low Stock Alerts", value: "18", delta: "+3", trend: "down" },
-  { label: "Gross Revenue", value: "Rp 48.2M", delta: "+8.4%", trend: "up" },
-  { label: "Orders Today", value: "63", delta: "+21%", trend: "up" }
 ]
 
 function statusColor(status: string, isDark: boolean) {
@@ -243,7 +155,6 @@ function statusColor(status: string, isDark: boolean) {
   }
 }
 
-// ── THEME TOGGLE ──────────────────────────────────────────────────────────────
 function ThemeToggle({
   isDark,
   onToggle
@@ -256,7 +167,6 @@ function ThemeToggle({
       <Box
         onClick={onToggle}
         role="button"
-        aria-label="Toggle theme"
         sx={{
           width: 56,
           height: 28,
@@ -268,7 +178,7 @@ function ThemeToggle({
           px: "3px",
           cursor: "pointer",
           position: "relative",
-          transition: "background-color 0.3s ease, border-color 0.3s ease",
+          transition: "background-color 0.3s ease",
           userSelect: "none",
           "&:hover": { opacity: 0.85 }
         }}
@@ -306,8 +216,7 @@ function ThemeToggle({
             borderRadius: "50%",
             bgcolor: isDark ? "#087463" : "#1e293b",
             transform: isDark ? "translateX(28px)" : "translateX(0px)",
-            transition:
-              "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease",
+            transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -329,7 +238,6 @@ function ThemeToggle({
   )
 }
 
-// ── SELECT EDIT CELL (for category & status columns) ─────────────────────────
 function SelectEditCell(
   props: GridRenderEditCellParams & { options: string[] }
 ) {
@@ -364,7 +272,6 @@ function SelectEditCell(
   )
 }
 
-// ── CUSTOM TOOLBAR ─────────────────────────────────────────────────────────────
 function CustomToolbar({
   isDark,
   p
@@ -402,25 +309,288 @@ function CustomToolbar({
   )
 }
 
-// ── MAIN PAGE ──────────────────────────────────────────────────────────────────
+// ── ADD PRODUCT MODAL ─────────────────────────────────────────────────────────
+function AddProductModal({
+  open,
+  onClose,
+  onSuccess,
+  isDark,
+  p
+}: {
+  open: boolean
+  onClose: () => void
+  onSuccess: (product: any) => void
+  isDark: boolean
+  p: Record<string, string>
+}) {
+  const [form, setForm] = useState({
+    name: "",
+    category: "Electronics",
+    sku: "",
+    stock: "",
+    price: ""
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const inputSx = {
+    "& .MuiOutlinedInput-root": {
+      bgcolor: isDark ? "#111" : "#f8fafc",
+      fontFamily: "'DM Mono', monospace",
+      fontSize: 13,
+      "& fieldset": { borderColor: p.border },
+      "&:hover fieldset": { borderColor: "#087463" },
+      "&.Mui-focused fieldset": { borderColor: "#087463" }
+    },
+    "& .MuiInputLabel-root": {
+      color: p.textSecondary,
+      fontFamily: "'DM Mono', monospace",
+      fontSize: 13
+    },
+    "& .MuiInputLabel-root.Mui-focused": { color: "#087463" },
+    "& .MuiInputBase-input": { color: p.textPrimary }
+  }
+
+  const handleSubmit = async () => {
+    setError("")
+    if (!form.name || !form.sku || !form.stock || !form.price) {
+      setError("Semua field wajib diisi")
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          stock: Number(form.stock),
+          price: Number(form.price)
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Gagal menambah produk")
+        return
+      }
+      onSuccess(data)
+      setForm({
+        name: "",
+        category: "Electronics",
+        sku: "",
+        stock: "",
+        price: ""
+      })
+      onClose()
+    } catch {
+      setError("Terjadi kesalahan, coba lagi")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          bgcolor: isDark ? "#141414" : "#fff",
+          border: `1px solid ${p.border}`,
+          borderRadius: "8px"
+        }
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontFamily: "'DM Mono', monospace",
+          color: p.textPrimary,
+          borderBottom: `1px solid ${p.border}`,
+          pb: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}
+      >
+        <Box>
+          <Typography
+            sx={{ fontWeight: 700, fontSize: 16, fontFamily: "inherit" }}
+          >
+            Add New Product
+          </Typography>
+          <Typography sx={{ color: p.textMuted, fontSize: 11, mt: 0.3 }}>
+            Isi data produk baru
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: p.textMuted }}>
+          <Icon d="M18 6 6 18M6 6l12 12" size={16} />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          pt: "20px !important",
+          display: "flex",
+          flexDirection: "column",
+          gap: 2
+        }}
+      >
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ fontFamily: "'DM Mono', monospace", fontSize: 12 }}
+          >
+            {error}
+          </Alert>
+        )}
+        <TextField
+          label="Nama Produk"
+          value={form.name}
+          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          fullWidth
+          size="small"
+          sx={inputSx}
+        />
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            label="SKU"
+            value={form.sku}
+            onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+            fullWidth
+            size="small"
+            sx={inputSx}
+          />
+          <Select
+            value={form.category}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, category: e.target.value }))
+            }
+            size="small"
+            fullWidth
+            sx={{
+              bgcolor: isDark ? "#111" : "#f8fafc",
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 13,
+              color: p.textPrimary,
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: p.border },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#087463"
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#087463"
+              }
+            }}
+          >
+            {CATEGORIES.map((c) => (
+              <MenuItem
+                key={c}
+                value={c}
+                sx={{ fontFamily: "'DM Mono', monospace", fontSize: 13 }}
+              >
+                {c}
+              </MenuItem>
+            ))}
+          </Select>
+        </Box>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            label="Stock"
+            type="number"
+            value={form.stock}
+            onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+            fullWidth
+            size="small"
+            sx={inputSx}
+          />
+          <TextField
+            label="Harga (IDR)"
+            type="number"
+            value={form.price}
+            onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+            fullWidth
+            size="small"
+            sx={inputSx}
+          />
+        </Box>
+        <Box sx={{ display: "flex", gap: 2, pt: 1 }}>
+          <Button
+            onClick={onClose}
+            fullWidth
+            variant="outlined"
+            sx={{
+              fontFamily: "'DM Mono', monospace",
+              borderColor: p.border,
+              color: p.textSecondary,
+              "&:hover": { borderColor: p.borderHover }
+            }}
+          >
+            Batal
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            fullWidth
+            variant="contained"
+            disabled={loading}
+            sx={{
+              fontFamily: "'DM Mono', monospace",
+              bgcolor: "#087463",
+              color: "#fff",
+              fontWeight: 700,
+              "&:hover": { bgcolor: "#065a4d" },
+              "&.Mui-disabled": { opacity: 0.7 }
+            }}
+          >
+            {loading ? "Menyimpan..." : "Simpan Produk"}
+          </Button>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function MainPage() {
   const [isDark, setIsDark] = useState(true)
-  const [rows, setRows] = useState<GridRowsProp>(INITIAL_ROWS)
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [rows, setRows] = useState<GridRowsProp>([])
+  const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{
     open: boolean
     msg: string
     severity: "success" | "error"
   }>({ open: false, msg: "", severity: "success" })
 
-  // ── MUI Theme ───────────────────────────────────────────────────────────────
+  // ── Fetch products dari DB ──────────────────────────────────────────────────
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/products")
+      const data = await res.json()
+      // Map _id ke id untuk DataGrid
+      const mapped = data.map((p: any) => ({ ...p, id: p.id || p._id }))
+      setRows(mapped)
+    } catch {
+      showSnackbar("Gagal mengambil data produk", "error")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const showSnackbar = (msg: string, severity: "success" | "error") =>
+    setSnackbar({ open: true, msg, severity })
+
+  // ── Theme ───────────────────────────────────────────────────────────────────
   const theme = useMemo(
     () =>
       createTheme({
         palette: {
           mode: isDark ? "dark" : "light",
           primary: { main: "#087463" },
-          secondary: { main: "#FF6B35" },
           background: {
             default: isDark ? "#0D0D0D" : "#f8fafc",
             paper: isDark ? "#141414" : "#ffffff"
@@ -441,7 +611,6 @@ export default function MainPage() {
     [isDark]
   )
 
-  // ── Palette shortcuts ────────────────────────────────────────────────────────
   const p = useMemo(
     () => ({
       bg: isDark ? "#0D0D0D" : "#f8fafc",
@@ -465,44 +634,92 @@ export default function MainPage() {
     [isDark]
   )
 
-  const T = "0.3s ease"
-
-  // ── Inline edit save ─────────────────────────────────────────────────────────
-  const processRowUpdate = useCallback((newRow: GridRowModel) => {
-    // Auto-fix status based on stock
+  // ── Inline edit (Update) ────────────────────────────────────────────────────
+  const processRowUpdate = useCallback(async (newRow: GridRowModel) => {
     let updatedRow = { ...newRow }
     if (typeof updatedRow.stock === "number") {
       if (updatedRow.stock === 0) updatedRow.status = "Out of Stock"
       else if (updatedRow.stock < 15) updatedRow.status = "Low Stock"
       else updatedRow.status = "In Stock"
     }
-    setRows((prev) =>
-      prev.map((r) => (r.id === updatedRow.id ? updatedRow : r))
-    )
-    setSnackbar({
-      open: true,
-      msg: `"${updatedRow.name}" updated`,
-      severity: "success"
-    })
-    return updatedRow
+    try {
+      const res = await fetch(`/api/products/${updatedRow.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedRow)
+      })
+      if (!res.ok) throw new Error("Update failed")
+      const saved = await res.json()
+      setRows((prev) =>
+        prev.map((r) => (r.id === saved.id ? { ...saved, id: saved.id } : r))
+      )
+      showSnackbar(`"${updatedRow.name}" berhasil diupdate`, "success")
+      return { ...saved, id: saved.id }
+    } catch {
+      showSnackbar("Gagal menyimpan perubahan", "error")
+      throw new Error("Update failed")
+    }
   }, [])
 
-  const handleProcessRowUpdateError = useCallback(() => {
-    setSnackbar({
-      open: true,
-      msg: "Failed to save changes",
-      severity: "error"
-    })
+  // ── Delete ──────────────────────────────────────────────────────────────────
+  const handleDelete = useCallback(async (id: string, name: string) => {
+    if (!confirm(`Hapus produk "${name}"?`)) return
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      setRows((prev) => prev.filter((r) => r.id !== id))
+      showSnackbar(`"${name}" berhasil dihapus`, "success")
+    } catch {
+      showSnackbar("Gagal menghapus produk", "error")
+    }
   }, [])
 
-  // ── Column definitions ───────────────────────────────────────────────────────
+  // ── Stat cards dari data real ───────────────────────────────────────────────
+  const stats = useMemo(() => {
+    const total = rows.length
+    const lowStock = rows.filter(
+      (r) => r.status === "Low Stock" || r.status === "Out of Stock"
+    ).length
+    const revenue = rows.reduce((sum, r) => sum + r.price * r.sold, 0)
+    const revenueStr =
+      revenue >= 1_000_000
+        ? `Rp ${(revenue / 1_000_000).toFixed(1)}M`
+        : `Rp ${revenue.toLocaleString("id-ID")}`
+    return [
+      {
+        label: "Total Products",
+        value: String(total),
+        delta: `${total} items`,
+        trend: "up"
+      },
+      {
+        label: "Low Stock Alerts",
+        value: String(lowStock),
+        delta: `${lowStock} produk`,
+        trend: lowStock > 0 ? "down" : "up"
+      },
+      {
+        label: "Gross Revenue",
+        value: revenueStr,
+        delta: "all time",
+        trend: "up"
+      },
+      {
+        label: "Total Sold",
+        value: String(rows.reduce((s, r) => s + (r.sold || 0), 0)),
+        delta: "all products",
+        trend: "up"
+      }
+    ]
+  }, [rows])
+
+  // ── Columns ─────────────────────────────────────────────────────────────────
   const columns: GridColDef[] = useMemo(
     () => [
       {
-        field: "id",
+        field: "productId",
         headerName: "ID",
         width: 90,
-        sortable: true,
         editable: false,
         renderCell: (params: GridRenderCellParams) => (
           <Typography
@@ -518,7 +735,6 @@ export default function MainPage() {
         flex: 1.8,
         minWidth: 200,
         editable: true,
-        sortable: true,
         renderCell: (params: GridRenderCellParams) => (
           <Box
             sx={{
@@ -534,19 +750,16 @@ export default function MainPage() {
                 height: 28,
                 borderRadius: "2px",
                 flexShrink: 0,
-                bgcolor: isDark
-                  ? `hsl(${(params.row.id?.charCodeAt(4) ?? 0) * 47}, 20%, 15%)`
-                  : `hsl(${(params.row.id?.charCodeAt(4) ?? 0) * 47}, 30%, 93%)`,
+                bgcolor: isDark ? "#1a1a1a" : "#f1f5f9",
                 border: `1px solid ${p.border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 9,
-                color: p.textMuted,
-                fontFamily: "inherit"
+                color: p.textMuted
               }}
             >
-              {String(params.row.id).split("-")[1]}
+              {String(params.row.productId || "").split("-")[1]}
             </Box>
             <Typography
               sx={{
@@ -566,7 +779,6 @@ export default function MainPage() {
         headerName: "SKU",
         width: 120,
         editable: true,
-        sortable: true,
         renderCell: (params: GridRenderCellParams) => (
           <Typography
             sx={{ color: p.textSecondary, fontSize: 11, fontFamily: "inherit" }}
@@ -580,7 +792,6 @@ export default function MainPage() {
         headerName: "CATEGORY",
         width: 130,
         editable: true,
-        sortable: true,
         type: "singleSelect",
         valueOptions: CATEGORIES,
         renderCell: (params: GridRenderCellParams) => (
@@ -599,7 +810,6 @@ export default function MainPage() {
         headerName: "STOCK",
         width: 100,
         editable: true,
-        sortable: true,
         type: "number",
         renderCell: (params: GridRenderCellParams) => {
           const v = params.value as number
@@ -645,7 +855,6 @@ export default function MainPage() {
         headerName: "SOLD",
         width: 80,
         editable: true,
-        sortable: true,
         type: "number",
         renderCell: (params: GridRenderCellParams) => (
           <Typography
@@ -660,7 +869,6 @@ export default function MainPage() {
         headerName: "PRICE (IDR)",
         width: 130,
         editable: true,
-        sortable: true,
         type: "number",
         renderCell: (params: GridRenderCellParams) => (
           <Typography
@@ -680,7 +888,6 @@ export default function MainPage() {
         headerName: "STATUS",
         width: 130,
         editable: true,
-        sortable: true,
         type: "singleSelect",
         valueOptions: STATUSES,
         renderCell: (params: GridRenderCellParams) => {
@@ -704,10 +911,39 @@ export default function MainPage() {
         renderEditCell: (params: GridRenderEditCellParams) => (
           <SelectEditCell {...params} options={STATUSES} />
         )
+      },
+      {
+        field: "actions",
+        headerName: "",
+        width: 60,
+        sortable: false,
+        editable: false,
+        renderCell: (params: GridRenderCellParams) => (
+          <Tooltip title="Hapus produk">
+            <IconButton
+              size="small"
+              onClick={() => handleDelete(params.row.id, params.row.name)}
+              sx={{
+                color: p.textMuted,
+                "&:hover": {
+                  color: "#ef4444",
+                  bgcolor: isDark ? "#2e1010" : "#fef2f2"
+                }
+              }}
+            >
+              <Icon
+                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+                size={15}
+              />
+            </IconButton>
+          </Tooltip>
+        )
       }
     ],
-    [isDark, p]
+    [isDark, p, handleDelete]
   )
+
+  const T = "0.3s ease"
 
   return (
     <ThemeProvider theme={theme}>
@@ -720,7 +956,7 @@ export default function MainPage() {
           transition: `background-color ${T}`
         }}
       >
-        {/* ── SIDEBAR ── */}
+        {/* SIDEBAR */}
         <Drawer
           variant="permanent"
           sx={{
@@ -772,8 +1008,7 @@ export default function MainPage() {
                 color: p.textPrimary,
                 fontWeight: 700,
                 fontSize: 15,
-                letterSpacing: "0.05em",
-                transition: `color ${T}`
+                letterSpacing: "0.05em"
               }}
             >
               STOCKR
@@ -843,7 +1078,7 @@ export default function MainPage() {
           </Box>
         </Drawer>
 
-        {/* ── MAIN CONTENT ── */}
+        {/* MAIN CONTENT */}
         <Box
           sx={{
             flex: 1,
@@ -910,18 +1145,17 @@ export default function MainPage() {
               <Button
                 variant="contained"
                 size="small"
+                onClick={() => setModalOpen(true)}
                 sx={{
                   bgcolor: "#087463",
-                  color: "#0D0D0D",
+                  color: "#fff",
                   fontWeight: 700,
                   fontSize: 12,
                   px: 2,
                   py: 0.8,
-                  "&:hover": { bgcolor: "#d4eb3a" }
+                  "&:hover": { bgcolor: "#065a4d" }
                 }}
-                startIcon={
-                  <Icon d="M12 5v14M5 12h14" size={14} color="#0D0D0D" />
-                }
+                startIcon={<Icon d="M12 5v14M5 12h14" size={14} color="#fff" />}
               >
                 Add Product
               </Button>
@@ -929,7 +1163,7 @@ export default function MainPage() {
           </Box>
 
           <Box sx={{ flex: 1, overflow: "auto", p: 4 }}>
-            {/* Stat Cards */}
+            {/* Stat Cards - Data Real */}
             <Box
               sx={{
                 display: "grid",
@@ -938,7 +1172,7 @@ export default function MainPage() {
                 mb: 4
               }}
             >
-              {STAT_CARDS.map((s) => (
+              {stats.map((s) => (
                 <Paper
                   key={s.label}
                   elevation={0}
@@ -987,13 +1221,13 @@ export default function MainPage() {
                       mt: 0.8
                     }}
                   >
-                    {s.delta} vs last week
+                    {s.delta}
                   </Typography>
                 </Paper>
               ))}
             </Box>
 
-            {/* ── DATA GRID ── */}
+            {/* DATA GRID */}
             <Paper
               elevation={0}
               sx={{
@@ -1064,14 +1298,7 @@ export default function MainPage() {
                 "& .MuiDataGrid-overlay": {
                   bgcolor: p.bg,
                   color: p.textSecondary
-                },
-                // Filter panel theming
-                "& .MuiDataGrid-panel": { bgcolor: p.bgPaper },
-                "& .MuiDataGrid-filterForm": {
-                  bgcolor: p.bgPaper,
-                  color: p.textPrimary
-                },
-                "& .MuiInput-underline:before": { borderBottomColor: p.border }
+                }
               }}
             >
               <DataGrid
@@ -1079,7 +1306,10 @@ export default function MainPage() {
                 columns={columns}
                 editMode="cell"
                 processRowUpdate={processRowUpdate}
-                onProcessRowUpdateError={handleProcessRowUpdateError}
+                onProcessRowUpdateError={() =>
+                  showSnackbar("Gagal menyimpan", "error")
+                }
+                loading={loading}
                 disableRowSelectionOnClick
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{
@@ -1090,15 +1320,25 @@ export default function MainPage() {
                 }}
                 sx={{ minHeight: 400 }}
                 getRowHeight={() => 52}
-                columnVisibilityModel={{}}
-                autosizeOnMount
               />
             </Paper>
           </Box>
         </Box>
       </Box>
 
-      {/* Snackbar feedback */}
+      {/* Add Product Modal */}
+      <AddProductModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={(product) => {
+          setRows((prev) => [{ ...product, id: product.id }, ...prev])
+          showSnackbar(`"${product.name}" berhasil ditambahkan`, "success")
+        }}
+        isDark={isDark}
+        p={p}
+      />
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}

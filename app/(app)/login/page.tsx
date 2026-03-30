@@ -30,7 +30,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/main")
+      router.push("/inventory")
     } catch (err) {
       setError("Terjadi kesalahan, coba lagi")
     } finally {
