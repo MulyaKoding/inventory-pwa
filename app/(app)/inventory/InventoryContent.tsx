@@ -42,6 +42,7 @@ import {
   useGridApiContext
 } from "@mui/x-data-grid"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import Header from "../components/header/page"
 
 const DRAWER_WIDTH = 220
 
@@ -1128,120 +1129,17 @@ export default function MainPage() {
             minWidth: 0
           }}
         >
-          {/* Top Bar */}
-          <Box
-            sx={{
-              px: { xs: 2, md: 4 },
-              py: { xs: 1.5, md: 2 },
-              borderBottom: `1px solid ${p.border}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              bgcolor: p.sidebarBg,
-              transition: `background-color ${T}, border-color ${T}`,
-              gap: 1
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: { xs: 1, md: 2 },
-                minWidth: 0
-              }}
-            >
-              {/* Hamburger — mobile only */}
-              <IconButton
-                onClick={() => setMobileOpen(true)}
-                sx={{
-                  display: { xs: "flex", md: "none" },
-                  color: p.textSecondary,
-                  flexShrink: 0
-                }}
-              >
-                <Icon
-                  d="M3 12h18M3 6h18M3 18h18"
-                  size={20}
-                  color={p.textSecondary}
-                />
-              </IconButton>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  sx={{
-                    color: p.textMuted,
-                    fontSize: 11,
-                    letterSpacing: "0.1em",
-                    mb: 0.3,
-                    display: { xs: "none", sm: "block" }
-                  }}
-                >
-                  STOCKR / INVENTORY
-                </Typography>
-                <Typography
-                  sx={{
-                    color: p.textPrimary,
-                    fontSize: { xs: 15, md: 20 },
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em",
-                    whiteSpace: "nowrap"
-                  }}
-                >
-                  Product Inventory
-                </Typography>
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: { xs: 1, md: 2 },
-                flexShrink: 0
-              }}
-            >
-              <ThemeToggle
-                isDark={isDark}
-                onToggle={() => setIsDark((v) => !v)}
-              />
-              <Tooltip title="Notifications">
-                <IconButton sx={{ color: p.textSecondary }}>
-                  <Badge
-                    badgeContent={3}
-                    color="secondary"
-                    sx={{ "& .MuiBadge-badge": { fontSize: 9 } }}
-                  >
-                    <Icon
-                      d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
-                      size={18}
-                      color={p.textSecondary}
-                    />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => setModalOpen(true)}
-                sx={{
-                  bgcolor: "#087463",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  px: { xs: 1.5, md: 2 },
-                  py: 0.8,
-                  minWidth: { xs: 36, sm: "auto" },
-                  "&:hover": { bgcolor: "#065a4d" }
-                }}
-                startIcon={<Icon d="M12 5v14M5 12h14" size={14} color="#fff" />}
-              >
-                <Box
-                  component="span"
-                  sx={{ display: { xs: "none", sm: "inline" } }}
-                >
-                  Add Product
-                </Box>
-              </Button>
-            </Box>
-          </Box>
+          <Header
+            isDark={isDark}
+            onToggleTheme={() => setIsDark((v) => !v)}
+            onMenuClick={() => setMobileOpen(true)}
+            onAddProduct={() => setModalOpen(true)}
+            title="Product Inventory"
+            breadcrumb="STOCKR / INVENTORY"
+            showAddButton={true}
+            notificationCount={3}
+            p={p}
+          />
 
           {/* Content */}
           <Box sx={{ flex: 1, overflow: "auto", p: { xs: 2, md: 4 } }}>
