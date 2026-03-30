@@ -16,6 +16,7 @@
     "@mui/material-nextjs": "^7.3.9",
     "@mui/x-data-grid": "^8.27.5",
     "@prisma/client": "^5.22.0",
+    "@tailwindcss/postcss": "^4.2.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "jsonwebtoken": "^9.0.3",
@@ -24,10 +25,10 @@
     "prisma": "^5.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "swr": "^2.4.1"
+    "swr": "^2.4.1",
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
@@ -35,7 +36,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.7",
-    "tailwindcss": "^4",
     "typescript": "^5"
   }
 }
