@@ -43,6 +43,8 @@ import {
 } from "@mui/x-data-grid"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+const DRAWER_WIDTH = 220
+
 // ── ICONS ─────────────────────────────────────────────────────────────────────
 const Icon = ({
   d,
@@ -287,6 +289,7 @@ function CustomToolbar({
         borderBottom: `1px solid ${p.border}`,
         bgcolor: p.tableHeadBg,
         gap: 0.5,
+        flexWrap: "wrap",
         "& .MuiButton-root": {
           color: p.textSecondary,
           fontSize: 11,
@@ -301,7 +304,12 @@ function CustomToolbar({
       <GridToolbarExport />
       <Box sx={{ flex: 1 }} />
       <Typography
-        sx={{ color: p.textMuted, fontSize: 10, letterSpacing: "0.05em" }}
+        sx={{
+          color: p.textMuted,
+          fontSize: 10,
+          letterSpacing: "0.05em",
+          display: { xs: "none", sm: "block" }
+        }}
       >
         DOUBLE-CLICK CELL TO EDIT
       </Typography>
@@ -399,7 +407,8 @@ function AddProductModal({
         sx: {
           bgcolor: isDark ? "#141414" : "#fff",
           border: `1px solid ${p.border}`,
-          borderRadius: "8px"
+          borderRadius: "8px",
+          mx: { xs: 2, sm: "auto" }
         }
       }}
     >
@@ -452,7 +461,13 @@ function AddProductModal({
           size="small"
           sx={inputSx}
         />
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexDirection: { xs: "column", sm: "row" }
+          }}
+        >
           <TextField
             label="SKU"
             value={form.sku}
@@ -493,7 +508,13 @@ function AddProductModal({
             ))}
           </Select>
         </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexDirection: { xs: "column", sm: "row" }
+          }}
+        >
           <TextField
             label="Stock"
             type="number"
@@ -549,19 +570,127 @@ function AddProductModal({
   )
 }
 
+// ── SIDEBAR CONTENT ───────────────────────────────────────────────────────────
+function SidebarContent({
+  p,
+  isDark,
+  T
+}: {
+  p: Record<string, string>
+  isDark: boolean
+  T: string
+}) {
+  return (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <Box
+        sx={{ px: 3, py: 2.5, display: "flex", alignItems: "center", gap: 1.5 }}
+      >
+        <Box
+          sx={{
+            width: 32,
+            height: 32,
+            bgcolor: "#087463",
+            borderRadius: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <Typography
+            sx={{
+              color: "#0D0D0D",
+              fontWeight: 900,
+              fontSize: 14,
+              fontFamily: "inherit"
+            }}
+          >
+            INV
+          </Typography>
+        </Box>
+        <Typography
+          sx={{
+            color: p.textPrimary,
+            fontWeight: 700,
+            fontSize: 15,
+            letterSpacing: "0.05em",
+            transition: `color ${T}`
+          }}
+        >
+          STOCKR
+        </Typography>
+      </Box>
+      <Divider sx={{ borderColor: p.border, mb: 1 }} />
+      <List dense sx={{ px: 1 }}>
+        {NAV_ITEMS.map((item) => (
+          <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              sx={{
+                borderRadius: "4px",
+                px: 1.5,
+                py: 1,
+                bgcolor: item.active ? p.activeNavBg : "transparent",
+                border: `1px solid ${item.active ? p.activeNavBorder : "transparent"}`,
+                "&:hover": { bgcolor: item.active ? p.activeNavBg : p.hoverBg }
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <Icon
+                  d={item.icon}
+                  size={16}
+                  color={item.active ? "#087463" : p.textMuted}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{
+                  fontSize: 13,
+                  fontWeight: item.active ? 700 : 400,
+                  color: item.active ? "#087463" : p.textSecondary,
+                  fontFamily: "'DM Mono', monospace"
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+      <Box
+        sx={{ mt: "auto", px: 2, py: 3, borderTop: `1px solid ${p.border}` }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Avatar
+            sx={{ width: 32, height: 32, bgcolor: "#FF6B35", fontSize: 12 }}
+          >
+            R
+          </Avatar>
+          <Box>
+            <Typography
+              sx={{ color: p.textPrimary, fontSize: 12, fontWeight: 600 }}
+            >
+              Raaaamad
+            </Typography>
+            <Typography sx={{ color: p.textMuted, fontSize: 10 }}>
+              Admin
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function MainPage() {
   const [isDark, setIsDark] = useState(true)
   const [rows, setRows] = useState<GridRowsProp>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{
     open: boolean
     msg: string
     severity: "success" | "error"
   }>({ open: false, msg: "", severity: "success" })
 
-  // ── Fetch products dari DB ──────────────────────────────────────────────────
   useEffect(() => {
     fetchProducts()
   }, [])
@@ -571,7 +700,6 @@ export default function MainPage() {
     try {
       const res = await fetch("/api/products")
       const data = await res.json()
-      // Map _id ke id untuk DataGrid
       const mapped = data.map((p: any) => ({ ...p, id: p.id || p._id }))
       setRows(mapped)
     } catch {
@@ -584,7 +712,6 @@ export default function MainPage() {
   const showSnackbar = (msg: string, severity: "success" | "error") =>
     setSnackbar({ open: true, msg, severity })
 
-  // ── Theme ───────────────────────────────────────────────────────────────────
   const theme = useMemo(
     () =>
       createTheme({
@@ -634,7 +761,6 @@ export default function MainPage() {
     [isDark]
   )
 
-  // ── Inline edit (Update) ────────────────────────────────────────────────────
   const processRowUpdate = useCallback(async (newRow: GridRowModel) => {
     let updatedRow = { ...newRow }
     if (typeof updatedRow.stock === "number") {
@@ -661,7 +787,6 @@ export default function MainPage() {
     }
   }, [])
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id: string, name: string) => {
     if (!confirm(`Hapus produk "${name}"?`)) return
     try {
@@ -674,7 +799,6 @@ export default function MainPage() {
     }
   }, [])
 
-  // ── Stat cards dari data real ───────────────────────────────────────────────
   const stats = useMemo(() => {
     const total = rows.length
     const lowStock = rows.filter(
@@ -713,7 +837,6 @@ export default function MainPage() {
     ]
   }, [rows])
 
-  // ── Columns ─────────────────────────────────────────────────────────────────
   const columns: GridColDef[] = useMemo(
     () => [
       {
@@ -733,7 +856,7 @@ export default function MainPage() {
         field: "name",
         headerName: "PRODUCT NAME",
         flex: 1.8,
-        minWidth: 200,
+        minWidth: 160,
         editable: true,
         renderCell: (params: GridRenderCellParams) => (
           <Box
@@ -777,7 +900,7 @@ export default function MainPage() {
       {
         field: "sku",
         headerName: "SKU",
-        width: 120,
+        width: 110,
         editable: true,
         renderCell: (params: GridRenderCellParams) => (
           <Typography
@@ -790,7 +913,7 @@ export default function MainPage() {
       {
         field: "category",
         headerName: "CATEGORY",
-        width: 130,
+        width: 120,
         editable: true,
         type: "singleSelect",
         valueOptions: CATEGORIES,
@@ -808,7 +931,7 @@ export default function MainPage() {
       {
         field: "stock",
         headerName: "STOCK",
-        width: 100,
+        width: 90,
         editable: true,
         type: "number",
         renderCell: (params: GridRenderCellParams) => {
@@ -853,7 +976,7 @@ export default function MainPage() {
       {
         field: "sold",
         headerName: "SOLD",
-        width: 80,
+        width: 75,
         editable: true,
         type: "number",
         renderCell: (params: GridRenderCellParams) => (
@@ -867,7 +990,7 @@ export default function MainPage() {
       {
         field: "price",
         headerName: "PRICE (IDR)",
-        width: 130,
+        width: 120,
         editable: true,
         type: "number",
         renderCell: (params: GridRenderCellParams) => (
@@ -886,7 +1009,7 @@ export default function MainPage() {
       {
         field: "status",
         headerName: "STATUS",
-        width: 130,
+        width: 120,
         editable: true,
         type: "singleSelect",
         valueOptions: STATUSES,
@@ -915,7 +1038,7 @@ export default function MainPage() {
       {
         field: "actions",
         headerName: "",
-        width: 60,
+        width: 52,
         sortable: false,
         editable: false,
         renderCell: (params: GridRenderCellParams) => (
@@ -956,14 +1079,34 @@ export default function MainPage() {
           transition: `background-color ${T}`
         }}
       >
-        {/* SIDEBAR */}
+        {/* ── SIDEBAR MOBILE (temporary) ── */}
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            display: { xs: "block", md: "none" },
+            "& .MuiDrawer-paper": {
+              width: DRAWER_WIDTH,
+              boxSizing: "border-box",
+              bgcolor: p.sidebarBg,
+              borderRight: `1px solid ${p.border}`
+            }
+          }}
+        >
+          <SidebarContent p={p} isDark={isDark} T={T} />
+        </Drawer>
+
+        {/* ── SIDEBAR DESKTOP (permanent) ── */}
         <Drawer
           variant="permanent"
           sx={{
-            width: 220,
+            display: { xs: "none", md: "block" },
+            width: DRAWER_WIDTH,
             flexShrink: 0,
             "& .MuiDrawer-paper": {
-              width: 220,
+              width: DRAWER_WIDTH,
               boxSizing: "border-box",
               bgcolor: p.sidebarBg,
               borderRight: `1px solid ${p.border}`,
@@ -972,157 +1115,89 @@ export default function MainPage() {
             }
           }}
         >
-          <Box
-            sx={{
-              px: 3,
-              py: 2.5,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5
-            }}
-          >
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: "#087463",
-                borderRadius: "4px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-            >
-              <Typography
-                sx={{
-                  color: "#0D0D0D",
-                  fontWeight: 900,
-                  fontSize: 14,
-                  fontFamily: "inherit"
-                }}
-              >
-                INV
-              </Typography>
-            </Box>
-            <Typography
-              sx={{
-                color: p.textPrimary,
-                fontWeight: 700,
-                fontSize: 15,
-                letterSpacing: "0.05em"
-              }}
-            >
-              STOCKR
-            </Typography>
-          </Box>
-          <Divider sx={{ borderColor: p.border, mb: 1 }} />
-          <List dense sx={{ px: 1 }}>
-            {NAV_ITEMS.map((item) => (
-              <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  sx={{
-                    borderRadius: "4px",
-                    px: 1.5,
-                    py: 1,
-                    bgcolor: item.active ? p.activeNavBg : "transparent",
-                    border: `1px solid ${item.active ? p.activeNavBorder : "transparent"}`,
-                    "&:hover": {
-                      bgcolor: item.active ? p.activeNavBg : p.hoverBg
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <Icon
-                      d={item.icon}
-                      size={16}
-                      color={item.active ? "#087463" : p.textMuted}
-                    />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    primaryTypographyProps={{
-                      fontSize: 13,
-                      fontWeight: item.active ? 700 : 400,
-                      color: item.active ? "#087463" : p.textSecondary,
-                      fontFamily: "'DM Mono', monospace"
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-          <Box
-            sx={{
-              mt: "auto",
-              px: 2,
-              py: 3,
-              borderTop: `1px solid ${p.border}`
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Avatar
-                sx={{ width: 32, height: 32, bgcolor: "#FF6B35", fontSize: 12 }}
-              >
-                R
-              </Avatar>
-              <Box>
-                <Typography
-                  sx={{ color: p.textPrimary, fontSize: 12, fontWeight: 600 }}
-                >
-                  Raaaamad
-                </Typography>
-                <Typography sx={{ color: p.textMuted, fontSize: 10 }}>
-                  Admin
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+          <SidebarContent p={p} isDark={isDark} T={T} />
         </Drawer>
 
-        {/* MAIN CONTENT */}
+        {/* ── MAIN CONTENT ── */}
         <Box
           sx={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden"
+            overflow: "hidden",
+            minWidth: 0
           }}
         >
           {/* Top Bar */}
           <Box
             sx={{
-              px: 4,
-              py: 2,
+              px: { xs: 2, md: 4 },
+              py: { xs: 1.5, md: 2 },
               borderBottom: `1px solid ${p.border}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               bgcolor: p.sidebarBg,
-              transition: `background-color ${T}, border-color ${T}`
+              transition: `background-color ${T}, border-color ${T}`,
+              gap: 1
             }}
           >
-            <Box>
-              <Typography
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: { xs: 1, md: 2 },
+                minWidth: 0
+              }}
+            >
+              {/* Hamburger — mobile only */}
+              <IconButton
+                onClick={() => setMobileOpen(true)}
                 sx={{
-                  color: p.textMuted,
-                  fontSize: 11,
-                  letterSpacing: "0.1em",
-                  mb: 0.3
+                  display: { xs: "flex", md: "none" },
+                  color: p.textSecondary,
+                  flexShrink: 0
                 }}
               >
-                STOCKR / INVENTORY
-              </Typography>
-              <Typography
-                sx={{
-                  color: p.textPrimary,
-                  fontSize: 20,
-                  fontWeight: 800,
-                  letterSpacing: "-0.02em"
-                }}
-              >
-                Product Inventory
-              </Typography>
+                <Icon
+                  d="M3 12h18M3 6h18M3 18h18"
+                  size={20}
+                  color={p.textSecondary}
+                />
+              </IconButton>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    color: p.textMuted,
+                    fontSize: 11,
+                    letterSpacing: "0.1em",
+                    mb: 0.3,
+                    display: { xs: "none", sm: "block" }
+                  }}
+                >
+                  STOCKR / INVENTORY
+                </Typography>
+                <Typography
+                  sx={{
+                    color: p.textPrimary,
+                    fontSize: { xs: 15, md: 20 },
+                    fontWeight: 800,
+                    letterSpacing: "-0.02em",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  Product Inventory
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: { xs: 1, md: 2 },
+                flexShrink: 0
+              }}
+            >
               <ThemeToggle
                 isDark={isDark}
                 onToggle={() => setIsDark((v) => !v)}
@@ -1151,25 +1226,35 @@ export default function MainPage() {
                   color: "#fff",
                   fontWeight: 700,
                   fontSize: 12,
-                  px: 2,
+                  px: { xs: 1.5, md: 2 },
                   py: 0.8,
+                  minWidth: { xs: 36, sm: "auto" },
                   "&:hover": { bgcolor: "#065a4d" }
                 }}
                 startIcon={<Icon d="M12 5v14M5 12h14" size={14} color="#fff" />}
               >
-                Add Product
+                <Box
+                  component="span"
+                  sx={{ display: { xs: "none", sm: "inline" } }}
+                >
+                  Add Product
+                </Box>
               </Button>
             </Box>
           </Box>
 
-          <Box sx={{ flex: 1, overflow: "auto", p: 4 }}>
-            {/* Stat Cards - Data Real */}
+          {/* Content */}
+          <Box sx={{ flex: 1, overflow: "auto", p: { xs: 2, md: 4 } }}>
+            {/* Stat Cards */}
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 2,
-                mb: 4
+                gridTemplateColumns: {
+                  xs: "repeat(2, 1fr)",
+                  lg: "repeat(4, 1fr)"
+                },
+                gap: { xs: 1.5, md: 2 },
+                mb: { xs: 3, md: 4 }
               }}
             >
               {stats.map((s) => (
@@ -1177,7 +1262,7 @@ export default function MainPage() {
                   key={s.label}
                   elevation={0}
                   sx={{
-                    p: 2.5,
+                    p: { xs: 1.5, md: 2.5 },
                     border: `1px solid ${p.border}`,
                     bgcolor: p.bgPaper,
                     position: "relative",
@@ -1196,8 +1281,8 @@ export default function MainPage() {
                   <Typography
                     sx={{
                       color: p.textMuted,
-                      fontSize: 10,
-                      letterSpacing: "0.1em",
+                      fontSize: { xs: 9, md: 10 },
+                      letterSpacing: "0.08em",
                       mb: 1
                     }}
                   >
@@ -1206,7 +1291,7 @@ export default function MainPage() {
                   <Typography
                     sx={{
                       color: p.textPrimary,
-                      fontSize: 26,
+                      fontSize: { xs: 18, md: 26 },
                       fontWeight: 800,
                       letterSpacing: "-0.02em",
                       lineHeight: 1
@@ -1217,7 +1302,7 @@ export default function MainPage() {
                   <Typography
                     sx={{
                       color: s.trend === "up" ? "#16a34a" : "#dc2626",
-                      fontSize: 11,
+                      fontSize: { xs: 10, md: 11 },
                       mt: 0.8
                     }}
                   >
