@@ -361,7 +361,7 @@ export default function AboutPage() {
     .sec-in { max-width:1200px; margin:0 auto; }
     .sec-tag {
       display:inline-flex; align-items:center; gap:8px;
-      background:rgba(8,116,99,.1); border-radius:100px; padding:5px 14px; margin-bottom:14px;
+      background:rgba(8,116,99,.1); border-radius:100px; padding:5px 14px; margin-bottom:14px; margin-top:12px;
     }
     .sec-tag span { color:#087463; font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; text-transform:uppercase; letter-spacing:.05em; }
     .sec-h2 {
