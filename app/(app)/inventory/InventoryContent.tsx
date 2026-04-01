@@ -705,7 +705,7 @@ function SidebarContent({
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function MainPage() {
-  const [isDark, setIsDark] = useState(true)
+  const [isDark, setIsDark] = useState(false)
   const [rows, setRows] = useState<GridRowsProp>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
