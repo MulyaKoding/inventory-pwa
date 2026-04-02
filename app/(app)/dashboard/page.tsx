@@ -1,20 +1,6 @@
 "use client"
 
-import {
-  Box,
-  Chip,
-  Divider,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-  Typography,
-  Avatar
-} from "@mui/material"
+import { Box, Chip, Divider, Drawer, Paper, Typography } from "@mui/material"
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import { useEffect, useMemo, useState } from "react"
 import Header from "../components/header/page"
@@ -22,7 +8,6 @@ import Sidebar from "../components/sidebar"
 
 const DRAWER_WIDTH = 220
 
-// ── ICONS ─────────────────────────────────────────────────────────────────────
 const Icon = ({
   d,
   size = 20,
@@ -46,36 +31,7 @@ const Icon = ({
   </svg>
 )
 
-const NAV_ITEMS = [
-  {
-    label: "Dashboard",
-    icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
-    active: true,
-    href: "/dashboard"
-  },
-  {
-    label: "Inventory",
-    icon: "M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 3H8L6 7h12z",
-    href: "/inventory"
-  },
-  {
-    label: "Orders",
-    icon: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
-    href: "/orders"
-  },
-  {
-    label: "Analytics",
-    icon: "M3 3v18h18M18 9l-5 5-4-4-4 4",
-    href: "/analytics"
-  },
-  {
-    label: "Settings",
-    icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a7.1 7.1 0 0 0 .1-1v-2a7.1 7.1 0 0 0-.1-1l2.2-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.6 1a6.8 6.8 0 0 0-1.7-1l-.4-2.7A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.5.4l-.4 2.8a6.8 6.8 0 0 0-1.7 1l-2.6-1a.5.5 0 0 0-.6.2L2.2 8.9a.5.5 0 0 0 .1.6L4.5 11a7.1 7.1 0 0 0-.1 1v2a7.1 7.1 0 0 0 .1 1L2.3 16.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.6-1a6.8 6.8 0 0 0 1.7 1l.4 2.7a.5.5 0 0 0 .5.4h4a.5.5 0 0 0 .5-.4l.4-2.7a6.8 6.8 0 0 0 1.7-1l2.6 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6z",
-    href: "/settings"
-  }
-]
-
-// ── MINI BAR CHART ─────────────────────────────────────────────────────────────
+// ── WEEKLY DATA (static display data, tidak berubah) ────────────────────────
 const WEEKLY_DATA = [
   { day: "Sen", sales: 42, stock: 120 },
   { day: "Sel", sales: 78, stock: 98 },
@@ -86,80 +42,7 @@ const WEEKLY_DATA = [
   { day: "Min", sales: 87, stock: 93 }
 ]
 
-function MiniBarChart({
-  data,
-  color,
-  p
-}: {
-  data: { day: string; val: number }[]
-  color: string
-  p: Record<string, string>
-}) {
-  const max = Math.max(...data.map((d) => d.val))
-  return (
-    <Box sx={{ display: "flex", alignItems: "flex-end", gap: 0.5, height: 56 }}>
-      {data.map((d, i) => {
-        const pct = (d.val / max) * 100
-        return (
-          <Box
-            key={i}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              flex: 1
-            }}
-          >
-            <Box
-              sx={{
-                width: "100%",
-                height: `${pct}%`,
-                bgcolor: color,
-                borderRadius: "2px 2px 0 0",
-                opacity: i === data.length - 1 ? 1 : 0.45,
-                transition: "opacity 0.2s",
-                "&:hover": { opacity: 1 }
-              }}
-            />
-            <Typography sx={{ color: p.textMuted, fontSize: 8, mt: 0.3 }}>
-              {d.day}
-            </Typography>
-          </Box>
-        )
-      })}
-    </Box>
-  )
-}
-
-// ── SPARK LINE ─────────────────────────────────────────────────────────────────
-function SparkLine({ values, color }: { values: number[]; color: string }) {
-  const max = Math.max(...values)
-  const min = Math.min(...values)
-  const norm = values.map((v) => ((v - min) / (max - min || 1)) * 30)
-  const w = 80
-  const points = norm
-    .map((v, i) => `${(i / (values.length - 1)) * w},${32 - v}`)
-    .join(" ")
-  return (
-    <svg width={w} height={36} viewBox={`0 0 ${w} 36`} fill="none">
-      <polyline
-        points={points}
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <circle
-        cx={((values.length - 1) / (values.length - 1)) * w}
-        cy={32 - norm[norm.length - 1]}
-        r="2.5"
-        fill={color}
-      />
-    </svg>
-  )
-}
-
-// ── ACTIVITY TIMELINE ──────────────────────────────────────────────────────────
+// ── ACTIVITY (static display data) ─────────────────────────────────────────
 const ACTIVITIES = [
   {
     time: "08:42",
@@ -206,35 +89,35 @@ const activityColor = (type: string) => {
   return "#f59e0b"
 }
 
-// ── TOP PRODUCTS ───────────────────────────────────────────────────────────────
-const TOP_PRODUCTS = [
-  {
-    rank: 1,
-    name: "BB Ys23",
-    category: "Apparel",
-    sold: 214,
-    revenue: 19260000,
-    trend: "up"
-  },
-  {
-    rank: 2,
-    name: "XIAOMI",
-    category: "Tools",
-    sold: 187,
-    revenue: 374000000,
-    trend: "up"
-  },
-  {
-    rank: 3,
-    name: "APPLE",
-    category: "Electronics",
-    sold: 95,
-    revenue: 95000000,
-    trend: "down"
-  }
-]
+// ── SPARK LINE ──────────────────────────────────────────────────────────────
+function SparkLine({ values, color }: { values: number[]; color: string }) {
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  const norm = values.map((v) => ((v - min) / (max - min || 1)) * 30)
+  const w = 80
+  const points = norm
+    .map((v, i) => `${(i / (values.length - 1)) * w},${32 - v}`)
+    .join(" ")
+  return (
+    <svg width={w} height={36} viewBox={`0 0 ${w} 36`} fill="none">
+      <polyline
+        points={points}
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <circle
+        cx={((values.length - 1) / (values.length - 1)) * w}
+        cy={32 - norm[norm.length - 1]}
+        r="2.5"
+        fill={color}
+      />
+    </svg>
+  )
+}
 
-// ── STAT CARD ──────────────────────────────────────────────────────────────────
+// ── STAT CARD ────────────────────────────────────────────────────────────────
 function StatCard({
   label,
   value,
@@ -315,10 +198,103 @@ function StatCard({
   )
 }
 
-// ── MAIN PAGE ──────────────────────────────────────────────────────────────────
+// ── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [isDark, setIsDark] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [products, setProducts] = useState<any[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(true)
+
+  // Fetch real product data — sama seperti di Inventory
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoadingProducts(true)
+      try {
+        const res = await fetch("/api/products")
+        const data = await res.json()
+        setProducts(data.map((p: any) => ({ ...p, id: p.id || p._id })))
+      } catch (err) {
+        console.error("Gagal mengambil data produk", err)
+      } finally {
+        setLoadingProducts(false)
+      }
+    }
+    fetchProducts()
+  }, [])
+
+  // ── Derived stats dari real product data ──────────────────────────────────
+  const stats = useMemo(() => {
+    const total = products.length
+    const lowStockCount = products.filter(
+      (p) => p.status === "Low Stock" || p.status === "Out of Stock"
+    ).length
+    const totalSold = products.reduce((sum, p) => sum + (p.sold || 0), 0)
+    const revenue = products.reduce(
+      (sum, p) => sum + (p.price || 0) * (p.sold || 0),
+      0
+    )
+    const revenueStr =
+      revenue >= 1_000_000_000
+        ? `Rp ${(revenue / 1_000_000_000).toFixed(1)}B`
+        : revenue >= 1_000_000
+          ? `Rp ${(revenue / 1_000_000).toFixed(1)}M`
+          : `Rp ${revenue.toLocaleString("id-ID")}`
+
+    return [
+      {
+        label: "Total Products",
+        value: String(total),
+        delta: `${total} item`,
+        trend: "neutral" as const,
+        spark: [total, total, total, total, total, total, total],
+        sparkColor: "#087463"
+      },
+      {
+        label: "Low Stock Alerts",
+        value: String(lowStockCount),
+        delta:
+          lowStockCount > 0 ? `${lowStockCount} perlu restok` : "semua aman",
+        trend: (lowStockCount > 0 ? "down" : "up") as "up" | "down" | "neutral",
+        spark: [0, 0, 0, 0, 0, 0, lowStockCount],
+        sparkColor: "#f59e0b"
+      },
+      {
+        label: "Gross Revenue",
+        value: revenueStr,
+        delta: revenue > 0 ? "dari semua produk" : "belum ada penjualan",
+        trend: (revenue > 0 ? "up" : "neutral") as "up" | "down" | "neutral",
+        spark: [0, 0, 0, 0, 0, 0, revenue > 0 ? 1 : 0],
+        sparkColor: "#3b82f6"
+      },
+      {
+        label: "Total Sold",
+        value: String(totalSold),
+        delta: "all products",
+        trend: (totalSold > 0 ? "up" : "neutral") as "up" | "down" | "neutral",
+        spark: [0, 0, 0, 0, 0, 0, totalSold > 0 ? 1 : 0],
+        sparkColor: "#8b5cf6"
+      }
+    ]
+  }, [products])
+
+  // ── Top products sorted by sold ───────────────────────────────────────────
+  const topProducts = useMemo(() => {
+    return [...products]
+      .sort((a, b) => (b.sold || 0) - (a.sold || 0))
+      .slice(0, 5)
+      .map((p, i) => ({ ...p, rank: i + 1 }))
+  }, [products])
+
+  // ── Stock distribution ────────────────────────────────────────────────────
+  const stockDist = useMemo(() => {
+    const total = products.length || 1
+    const inStock = products.filter((p) => p.status === "In Stock").length
+    const lowStock = products.filter((p) => p.status === "Low Stock").length
+    const outOfStock = products.filter(
+      (p) => p.status === "Out of Stock"
+    ).length
+    return { total: products.length, inStock, lowStock, outOfStock }
+  }, [products])
 
   const theme = useMemo(
     () =>
@@ -369,41 +345,6 @@ export default function DashboardPage() {
   )
 
   const T = "0.3s ease"
-
-  const STATS = [
-    {
-      label: "Total Products",
-      value: "3",
-      delta: "+0 minggu ini",
-      trend: "neutral" as const,
-      spark: [2, 2, 3, 3, 3, 3, 3],
-      sparkColor: "#087463"
-    },
-    {
-      label: "Low Stock Alerts",
-      value: "1",
-      delta: "1 perlu restok",
-      trend: "down" as const,
-      spark: [0, 0, 1, 0, 1, 1, 1],
-      sparkColor: "#f59e0b"
-    },
-    {
-      label: "Gross Revenue",
-      value: "Rp 0",
-      delta: "belum ada penjualan",
-      trend: "neutral" as const,
-      spark: [0, 0, 0, 0, 0, 0, 0],
-      sparkColor: "#3b82f6"
-    },
-    {
-      label: "Total Sold",
-      value: "0",
-      delta: "all products",
-      trend: "neutral" as const,
-      spark: [0, 0, 0, 0, 0, 0, 0],
-      sparkColor: "#8b5cf6"
-    }
-  ]
 
   return (
     <ThemeProvider theme={theme}>
@@ -478,7 +419,7 @@ export default function DashboardPage() {
           />
 
           <Box sx={{ flex: 1, overflow: "auto", p: { xs: 2, md: 4 } }}>
-            {/* ── STAT CARDS ── */}
+            {/* ── STAT CARDS (dari real API) ── */}
             <Box
               sx={{
                 display: "grid",
@@ -490,7 +431,7 @@ export default function DashboardPage() {
                 mb: { xs: 3, md: 4 }
               }}
             >
-              {STATS.map((s) => (
+              {stats.map((s) => (
                 <StatCard key={s.label} {...s} p={p} />
               ))}
             </Box>
@@ -761,7 +702,6 @@ export default function DashboardPage() {
                         pb: i < ACTIVITIES.length - 1 ? 1.5 : 0
                       }}
                     >
-                      {/* Line */}
                       {i < ACTIVITIES.length - 1 && (
                         <Box
                           sx={{
@@ -774,8 +714,6 @@ export default function DashboardPage() {
                           }}
                         />
                       )}
-
-                      {/* Time */}
                       <Typography
                         sx={{
                           color: p.textMuted,
@@ -787,8 +725,6 @@ export default function DashboardPage() {
                       >
                         {act.time}
                       </Typography>
-
-                      {/* Dot */}
                       <Box
                         sx={{
                           width: 10,
@@ -800,8 +736,6 @@ export default function DashboardPage() {
                           boxShadow: `0 0 0 3px ${activityColor(act.type)}22`
                         }}
                       />
-
-                      {/* Content */}
                       <Box sx={{ flex: 1 }}>
                         <Typography
                           sx={{
@@ -825,7 +759,7 @@ export default function DashboardPage() {
               </Paper>
             </Box>
 
-            {/* ── ROW 3: TOP PRODUCTS + STOCK STATUS ── */}
+            {/* ── ROW 3: TOP PRODUCTS (dari real API) + STOCK STATUS ── */}
             <Box
               sx={{
                 display: "grid",
@@ -833,7 +767,7 @@ export default function DashboardPage() {
                 gap: 2
               }}
             >
-              {/* Top Products Table */}
+              {/* Top Products — sorted by sold dari real data */}
               <Paper
                 elevation={0}
                 sx={{
@@ -875,7 +809,7 @@ export default function DashboardPage() {
                 <Box
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: "32px 1fr 80px 90px 80px 60px",
+                    gridTemplateColumns: "32px 1fr 80px 100px 80px 60px",
                     px: 2.5,
                     py: 1,
                     bgcolor: p.tableHeadBg,
@@ -899,90 +833,126 @@ export default function DashboardPage() {
                   )}
                 </Box>
 
-                {TOP_PRODUCTS.map((prod, i) => (
-                  <Box
-                    key={prod.rank}
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "32px 1fr 80px 90px 80px 60px",
-                      px: 2.5,
-                      py: 1.5,
-                      borderBottom:
-                        i < TOP_PRODUCTS.length - 1
-                          ? `1px solid ${p.tableRowBorder}`
-                          : "none",
-                      "&:hover": { bgcolor: p.hoverBg },
-                      alignItems: "center",
-                      transition: "background 0.15s"
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        color: prod.rank === 1 ? "#087463" : p.textMuted,
-                        fontSize: 12,
-                        fontWeight: prod.rank === 1 ? 800 : 400
-                      }}
-                    >
-                      {String(prod.rank).padStart(2, "0")}
+                {loadingProducts ? (
+                  <Box sx={{ px: 2.5, py: 3 }}>
+                    <Typography sx={{ color: p.textMuted, fontSize: 12 }}>
+                      Memuat data produk...
                     </Typography>
-                    <Typography
-                      sx={{
-                        color: p.textPrimary,
-                        fontSize: 13,
-                        fontWeight: 600
-                      }}
-                    >
-                      {prod.name}
-                    </Typography>
-                    <Typography sx={{ color: p.textSecondary, fontSize: 11 }}>
-                      {prod.category}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        color: p.textPrimary,
-                        fontSize: 12,
-                        fontWeight: 600
-                      }}
-                    >
-                      {(prod.revenue / 1_000_000).toFixed(1)}M
-                    </Typography>
-                    <Typography sx={{ color: p.textSecondary, fontSize: 12 }}>
-                      {prod.sold}
-                    </Typography>
-                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                      <Chip
-                        label={prod.trend === "up" ? "↑" : "↓"}
-                        size="small"
-                        sx={{
-                          bgcolor:
-                            prod.trend === "up"
-                              ? isDark
-                                ? "#1a2e1a"
-                                : "#f0fdf4"
-                              : isDark
-                                ? "#2e1010"
-                                : "#fef2f2",
-                          color: prod.trend === "up" ? "#16a34a" : "#dc2626",
-                          fontSize: 10,
-                          height: 20,
-                          fontWeight: 700,
-                          border: `1px solid ${
-                            prod.trend === "up"
-                              ? isDark
-                                ? "#2d5a2d"
-                                : "#bbf7d0"
-                              : isDark
-                                ? "#5a1a1a"
-                                : "#fecaca"
-                          }`
-                        }}
-                      />
-                    </Box>
                   </Box>
-                ))}
+                ) : topProducts.length === 0 ? (
+                  <Box sx={{ px: 2.5, py: 3 }}>
+                    <Typography sx={{ color: p.textMuted, fontSize: 12 }}>
+                      Belum ada produk.
+                    </Typography>
+                  </Box>
+                ) : (
+                  topProducts.map((prod, i) => {
+                    const revenue = (prod.price || 0) * (prod.sold || 0)
+                    const revenueStr =
+                      revenue >= 1_000_000_000
+                        ? `${(revenue / 1_000_000_000).toFixed(1)}B`
+                        : revenue >= 1_000_000
+                          ? `${(revenue / 1_000_000).toFixed(1)}M`
+                          : revenue.toLocaleString("id-ID")
+                    // Compare sold to previous product to determine trend
+                    const prevSold =
+                      i > 0
+                        ? topProducts[i - 1].sold || 0
+                        : (prod.sold || 0) + 1
+                    const trend = (prod.sold || 0) >= prevSold ? "up" : "down"
+
+                    return (
+                      <Box
+                        key={prod.id}
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "32px 1fr 80px 100px 80px 60px",
+                          px: 2.5,
+                          py: 1.5,
+                          borderBottom:
+                            i < topProducts.length - 1
+                              ? `1px solid ${p.tableRowBorder}`
+                              : "none",
+                          "&:hover": { bgcolor: p.hoverBg },
+                          alignItems: "center",
+                          transition: "background 0.15s"
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color: prod.rank === 1 ? "#087463" : p.textMuted,
+                            fontSize: 12,
+                            fontWeight: prod.rank === 1 ? 800 : 400
+                          }}
+                        >
+                          {String(prod.rank).padStart(2, "0")}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: p.textPrimary,
+                            fontSize: 13,
+                            fontWeight: 600
+                          }}
+                        >
+                          {prod.name}
+                        </Typography>
+                        <Typography
+                          sx={{ color: p.textSecondary, fontSize: 11 }}
+                        >
+                          {prod.category}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: p.textPrimary,
+                            fontSize: 12,
+                            fontWeight: 600
+                          }}
+                        >
+                          {revenueStr}
+                        </Typography>
+                        <Typography
+                          sx={{ color: p.textSecondary, fontSize: 12 }}
+                        >
+                          {(prod.sold || 0).toLocaleString()}
+                        </Typography>
+                        <Box
+                          sx={{ display: "flex", justifyContent: "flex-end" }}
+                        >
+                          <Chip
+                            label={trend === "up" ? "↑" : "↓"}
+                            size="small"
+                            sx={{
+                              bgcolor:
+                                trend === "up"
+                                  ? isDark
+                                    ? "#1a2e1a"
+                                    : "#f0fdf4"
+                                  : isDark
+                                    ? "#2e1010"
+                                    : "#fef2f2",
+                              color: trend === "up" ? "#16a34a" : "#dc2626",
+                              fontSize: 10,
+                              height: 20,
+                              fontWeight: 700,
+                              border: `1px solid ${
+                                trend === "up"
+                                  ? isDark
+                                    ? "#2d5a2d"
+                                    : "#bbf7d0"
+                                  : isDark
+                                    ? "#5a1a1a"
+                                    : "#fecaca"
+                              }`
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    )
+                  })
+                )}
               </Paper>
 
-              {/* Stock Status Donut-like */}
+              {/* Stock Status Distribution — dari real data */}
               <Paper
                 elevation={0}
                 sx={{
@@ -1013,12 +983,22 @@ export default function DashboardPage() {
                 </Typography>
 
                 {[
-                  { label: "In Stock", count: 2, total: 3, color: "#087463" },
-                  { label: "Low Stock", count: 1, total: 3, color: "#f59e0b" },
+                  {
+                    label: "In Stock",
+                    count: stockDist.inStock,
+                    total: stockDist.total || 1,
+                    color: "#087463"
+                  },
+                  {
+                    label: "Low Stock",
+                    count: stockDist.lowStock,
+                    total: stockDist.total || 1,
+                    color: "#f59e0b"
+                  },
                   {
                     label: "Out of Stock",
-                    count: 0,
-                    total: 3,
+                    count: stockDist.outOfStock,
+                    total: stockDist.total || 1,
                     color: "#ef4444"
                   }
                 ].map((item) => (
@@ -1040,7 +1020,7 @@ export default function DashboardPage() {
                           fontWeight: 700
                         }}
                       >
-                        {item.count}/{item.total}
+                        {item.count}/{stockDist.total}
                       </Typography>
                     </Box>
                     <Box
@@ -1084,7 +1064,7 @@ export default function DashboardPage() {
                     <Typography
                       sx={{ color: "#087463", fontSize: 13, fontWeight: 800 }}
                     >
-                      3
+                      {stockDist.total}
                     </Typography>
                   </Box>
                   <Box
@@ -1103,7 +1083,7 @@ export default function DashboardPage() {
                     <Typography
                       sx={{ color: "#f59e0b", fontSize: 13, fontWeight: 800 }}
                     >
-                      1
+                      {stockDist.lowStock + stockDist.outOfStock}
                     </Typography>
                   </Box>
                 </Box>
