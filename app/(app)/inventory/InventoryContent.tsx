@@ -35,7 +35,7 @@ import {
 } from "@mui/x-data-grid"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Header from "../components/header/page"
-import Sidebar from "../components/sidebar/page" // ← shared component
+import Sidebar from "../components/sidebar" // ← shared component
 
 const DRAWER_WIDTH = 220
 
