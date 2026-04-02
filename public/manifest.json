@@ -1,6 +1,6 @@
 {
-  "name": "E-Approval System",
-  "short_name": "E-Approval",
+  "name": "Inventory System",
+  "short_name": "Inventory System",
   "description": "Sistem Persetujuan Cuti & Izin",
   "start_url": "/",
   "display": "standalone",
