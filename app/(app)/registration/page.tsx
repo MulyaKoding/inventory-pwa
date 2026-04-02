@@ -13,7 +13,6 @@ import {
 } from "@mui/material"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
-
 const DRAWER_WIDTH = 220
 
 interface OwnerData {
