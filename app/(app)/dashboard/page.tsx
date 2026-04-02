@@ -18,6 +18,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import { useEffect, useMemo, useState } from "react"
 import Header from "../components/header/page"
+import Sidebar from "../components/sidebar"
 
 const DRAWER_WIDTH = 220
 
@@ -233,139 +234,6 @@ const TOP_PRODUCTS = [
   }
 ]
 
-// ── SIDEBAR ────────────────────────────────────────────────────────────────────
-function SidebarContent({
-  p,
-  isDark,
-  T
-}: {
-  p: Record<string, string>
-  isDark: boolean
-  T: string
-}) {
-  const [userName, setUserName] = useState("User")
-  const [userRole, setUserRole] = useState("Member")
-
-  useEffect(() => {
-    const getCookie = (name: string) => {
-      if (typeof document === "undefined") return ""
-      const match = document.cookie
-        .split("; ")
-        .find((r) => r.startsWith(`${name}=`))
-      return match ? decodeURIComponent(match.split("=")[1]) : ""
-    }
-    const name = getCookie("user_name")
-    const role = getCookie("user_role")
-    if (name) setUserName(name)
-    if (role) setUserRole(role)
-  }, [])
-
-  return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box
-        sx={{ px: 3, py: 2.5, display: "flex", alignItems: "center", gap: 1.5 }}
-      >
-        <Box
-          sx={{
-            width: 32,
-            height: 32,
-            bgcolor: "#087463",
-            borderRadius: "4px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <Typography
-            sx={{
-              color: "#0D0D0D",
-              fontWeight: 900,
-              fontSize: 14,
-              fontFamily: "inherit"
-            }}
-          >
-            INV
-          </Typography>
-        </Box>
-        <Typography
-          sx={{
-            color: p.textPrimary,
-            fontWeight: 700,
-            fontSize: 15,
-            letterSpacing: "0.05em",
-            transition: `color ${T}`
-          }}
-        >
-          STOCKR
-        </Typography>
-      </Box>
-      <Divider sx={{ borderColor: p.border, mb: 1 }} />
-      <List dense sx={{ px: 1 }}>
-        {NAV_ITEMS.map((item) => (
-          <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              component="a"
-              href={item.href}
-              sx={{
-                borderRadius: "4px",
-                px: 1.5,
-                py: 1,
-                bgcolor: item.active ? p.activeNavBg : "transparent",
-                border: `1px solid ${item.active ? p.activeNavBorder : "transparent"}`,
-                "&:hover": { bgcolor: item.active ? p.activeNavBg : p.hoverBg }
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                <Icon
-                  d={item.icon}
-                  size={16}
-                  color={item.active ? "#087463" : p.textMuted}
-                />
-              </ListItemIcon>
-              <ListItemText
-                primary={item.label}
-                primaryTypographyProps={{
-                  fontSize: 13,
-                  fontWeight: item.active ? 700 : 400,
-                  color: item.active ? "#087463" : p.textSecondary,
-                  fontFamily: "'DM Mono', monospace"
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Box
-        sx={{ mt: "auto", px: 2, py: 3, borderTop: `1px solid ${p.border}` }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Avatar
-            sx={{ width: 32, height: 32, bgcolor: "#FF6B35", fontSize: 12 }}
-          >
-            {userName.charAt(0).toUpperCase()}
-          </Avatar>
-          <Box>
-            <Typography
-              sx={{ color: p.textPrimary, fontSize: 12, fontWeight: 600 }}
-            >
-              {userName.length > 14 ? userName.slice(0, 14) + "…" : userName}
-            </Typography>
-            <Typography
-              sx={{
-                color: p.textMuted,
-                fontSize: 10,
-                textTransform: "capitalize"
-              }}
-            >
-              {userRole}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  )
-}
-
 // ── STAT CARD ──────────────────────────────────────────────────────────────────
 function StatCard({
   label,
@@ -564,7 +432,7 @@ export default function DashboardPage() {
             }
           }}
         >
-          <SidebarContent p={p} isDark={isDark} T={T} />
+          <Sidebar p={p} isDark={isDark} T={T} />
         </Drawer>
 
         {/* ── SIDEBAR DESKTOP ── */}
@@ -584,7 +452,7 @@ export default function DashboardPage() {
             }
           }}
         >
-          <SidebarContent p={p} isDark={isDark} T={T} />
+          <Sidebar p={p} isDark={isDark} T={T} />
         </Drawer>
 
         {/* ── MAIN CONTENT ── */}
