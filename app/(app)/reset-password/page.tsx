@@ -541,33 +541,19 @@ export default function ResetPasswordPage() {
             {step === "otp" && (
               <>
                 <div style={{ textAlign: "center", marginBottom: 24 }}>
-                  <div
+                  <Image
+                    src={imageWa}
+                    alt="WhatsApp"
+                    width={64}
+                    height={64}
+                    priority={true}
                     style={{
-                      width: 64,
-                      height: 64,
-                      background: "linear-gradient(135deg,#25D366,#128C7E)",
                       borderRadius: 16,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
                       margin: "0 auto 16px",
-                      fontSize: 28
+                      display: "block",
+                      objectFit: "contain"
                     }}
-                  >
-                    <Image
-                      src={imageWa}
-                      alt="WhatsApp"
-                      width={64}
-                      height={64}
-                      priority={true}
-                      style={{
-                        borderRadius: 16,
-                        margin: "0 auto 16px",
-                        display: "block",
-                        objectFit: "contain"
-                      }}
-                    />
-                  </div>
+                  />
                   <h1 className="rp-form-title" style={{ fontSize: 26 }}>
                     Verifikasi WhatsApp
                   </h1>
