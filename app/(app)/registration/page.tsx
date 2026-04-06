@@ -1577,7 +1577,7 @@ export default function RegistrationPage() {
                     fontFamily: "'Nunito', sans-serif"
                   }}
                 >
-                  Memproses KTP dengan AI...
+                  Sedang membaca KTP...
                 </span>
               </Box>
             )}
