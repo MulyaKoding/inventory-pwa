@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch("https://api.fonnte.com/send", {
       method: "POST",
       headers: {
-        Authorization: process.env.FONNTE_TOKEN!
+        Authorization: process.env.FONNTE_TOKEN || "fallback-token"
         // TIDAK perlu Content-Type JSON untuk Fonnte
       },
       body: formData
