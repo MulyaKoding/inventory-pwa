@@ -1,5 +1,6 @@
 import path from "path"
 import { fileURLToPath } from "url"
+/** @type {import('next').NextConfig} */
 import withPWA from "next-pwa"
 
 const __filename = fileURLToPath(import.meta.url)
@@ -16,6 +17,14 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
     resolveExtensions: [".tsx", ".ts", ".jsx", ".js", ".json"]
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com"
+      }
+    ]
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
