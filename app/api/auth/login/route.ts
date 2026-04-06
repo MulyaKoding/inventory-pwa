@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: "Akun belum diverifikasi. Silakan daftar ulang dengan OTP." },
+        { status: 403 }
+      )
+    }
+
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
       return NextResponse.json(
