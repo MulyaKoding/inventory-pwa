@@ -1550,7 +1550,7 @@ export default function RegistrationPage() {
                         letterSpacing: "0.04em"
                       }}
                     >
-                      📷 PILIH KAMERA
+                      Pilih Kamera
                     </label>
                     <select
                       value={selectedCameraId}
