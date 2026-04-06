@@ -8,14 +8,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model OtpVerification {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("user")
+  phone     String
+  otp       String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  @@map("otp_verifications")
+}
+
+model User {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String   @unique
+  phone       String   @unique  // ← tambah ini
+  password    String
+  role        String   @default("user")
+  isVerified  Boolean  @default(false)  // ← tambah ini
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("users")
 }
