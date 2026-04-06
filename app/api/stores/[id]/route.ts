@@ -4,7 +4,7 @@ import { getUserFromRequest } from "@/app/lib/auth"
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // ← Promise
 ) {
   try {
     const user = getUserFromRequest(req)
@@ -12,8 +12,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = await params // ← await params
+
     const store = await prisma.store.findFirst({
-      where: { id: params.id, userId: user.userId }
+      where: { id, userId: user.userId }
     })
 
     if (!store) {
@@ -23,7 +25,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.store.delete({ where: { id: params.id } })
+    await prisma.store.delete({ where: { id } })
 
     return NextResponse.json({
       success: true,
