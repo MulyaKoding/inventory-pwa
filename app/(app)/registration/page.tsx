@@ -156,6 +156,10 @@ export default function RegistrationPage() {
   const [ktpPreview, setKtpPreview] = useState<string>("")
   const [webcamActive, setWebcamActive] = useState(false)
 
+  // ── Camera selection state (BARU) ──
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("")
+
   const [storeData, setStoreData] = useState<StoreData>({
     storeName: "",
     storeType: "",
@@ -280,21 +284,49 @@ export default function RegistrationPage() {
     return Object.keys(errors).length === 0
   }
 
-  // ── Webcam ──
-  const startWebcam = async () => {
+  // ── Webcam — diupdate dengan camera selection ──
+  const startWebcam = async (deviceId?: string) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: 1280, height: 720 }
-      })
+      // Stop kamera yang sedang aktif dulu
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
+      }
+
+      // Ambil semua kamera yang tersedia setelah permission granted
+      const constraints: MediaStreamConstraints = {
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
+          : { facingMode: "environment", width: 1280, height: 720 }
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
       streamRef.current = stream
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         videoRef.current.play()
       }
+
+      // Setelah permission granted, enumerate semua kamera (label sudah terisi)
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter((d) => d.kind === "videoinput")
+      setCameras(videoDevices)
+
+      // Simpan deviceId yang aktif
+      const activeTrack = stream.getVideoTracks()[0]
+      const activeDeviceId = activeTrack.getSettings().deviceId || ""
+      setSelectedCameraId(activeDeviceId)
       setWebcamActive(true)
     } catch {
       setOcrError("Tidak dapat mengakses kamera.")
     }
+  }
+
+  // ── Ganti kamera (BARU) ──
+  const handleCameraChange = async (deviceId: string) => {
+    setSelectedCameraId(deviceId)
+    await startWebcam(deviceId)
   }
 
   const stopWebcam = useCallback(() => {
@@ -312,6 +344,8 @@ export default function RegistrationPage() {
     setOcrError("")
     setKtpPreview("")
     setScanMode("upload")
+    setCameras([])
+    setSelectedCameraId("")
   }
 
   const captureWebcam = async () => {
@@ -344,8 +378,6 @@ export default function RegistrationPage() {
     setOcrStatus("scanning")
     setOcrError("")
     try {
-      // Baca arrayBuffer SEKALI di awal, simpan ke variable
-      // Ini penting karena blob/file stream hanya bisa dibaca sekali
       const arrayBuffer = await blob.arrayBuffer()
       const uint8Array = new Uint8Array(arrayBuffer)
 
@@ -358,7 +390,6 @@ export default function RegistrationPage() {
       if (!ocrRes.ok) throw new Error(ocrResult.error || "Gagal memproses KTP")
 
       // ── Step 2: Upload ke Cloudinary ──
-      // Buat blob baru dari uint8Array yang sama — tidak bergantung pada blob asli
       const blob2 = new Blob([uint8Array], { type: mimeType })
       const uploadForm = new FormData()
       uploadForm.append(
@@ -907,7 +938,6 @@ export default function RegistrationPage() {
                     {/* ── STEP 2 ── */}
                     {step === 2 && (
                       <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                        {/* OCR success badge */}
                         {ownerData.inputMethod === "ocr" && (
                           <Box
                             sx={{
@@ -950,7 +980,6 @@ export default function RegistrationPage() {
                             gap: { xs: 2, sm: 2.5 }
                           }}
                         >
-                          {/* NIK + Scan Button */}
                           <Box
                             sx={{
                               gridColumn: {
@@ -1007,7 +1036,6 @@ export default function RegistrationPage() {
                             </Field>
                           </Box>
 
-                          {/* Nama Lengkap */}
                           <Box
                             sx={{
                               gridColumn: {
@@ -1228,7 +1256,8 @@ export default function RegistrationPage() {
               bgcolor: p.bg,
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between"
+              justifyContent: "space-between",
+              flexShrink: 0
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -1287,7 +1316,8 @@ export default function RegistrationPage() {
             </button>
           </Box>
 
-          <Box sx={{ p: 3 }}>
+          {/* Scrollable content */}
+          <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
             {/* Tab: Upload / Webcam */}
             <Box
               sx={{
@@ -1429,6 +1459,7 @@ export default function RegistrationPage() {
             {/* Webcam mode */}
             {scanMode === "webcam" && (
               <Box>
+                {/* Video frame */}
                 <Box
                   sx={{
                     position: "relative",
@@ -1475,7 +1506,7 @@ export default function RegistrationPage() {
                         Kamera belum aktif
                       </p>
                       <button
-                        onClick={startWebcam}
+                        onClick={() => startWebcam()}
                         style={{
                           background: "#1e3a8a",
                           color: "#fff",
@@ -1504,6 +1535,55 @@ export default function RegistrationPage() {
                     />
                   )}
                 </Box>
+
+                {/* ── Pilih Kamera (BARU) — muncul setelah kamera aktif & ada >1 kamera ── */}
+                {webcamActive && cameras.length > 1 && (
+                  <Box sx={{ mb: 1.5 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: p.textMuted,
+                        marginBottom: 5,
+                        fontFamily: "'Nunito', sans-serif",
+                        letterSpacing: "0.04em"
+                      }}
+                    >
+                      📷 PILIH KAMERA
+                    </label>
+                    <select
+                      value={selectedCameraId}
+                      onChange={(e) => handleCameraChange(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "8px 12px",
+                        borderRadius: 6,
+                        border: `1px solid ${p.border}`,
+                        background: isDark ? "#111" : "#fff",
+                        color: p.textPrimary,
+                        fontFamily: "'Nunito', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        outline: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {cameras.map((cam, idx) => (
+                        <option key={cam.deviceId} value={cam.deviceId}>
+                          {cam.label ||
+                            (idx === 0
+                              ? "Kamera Belakang"
+                              : idx === 1
+                                ? "Kamera Depan"
+                                : `Kamera ${idx + 1}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </Box>
+                )}
+
+                {/* Tombol Ambil Foto & Batal */}
                 {webcamActive && (
                   <Box sx={{ display: "flex", gap: 1 }}>
                     <button
