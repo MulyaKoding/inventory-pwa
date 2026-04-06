@@ -35,7 +35,8 @@ import {
 } from "@mui/x-data-grid"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Header from "../components/header/page"
-import Sidebar from "../components/sidebar" // ← shared component
+import Sidebar from "../components/sidebar"
+import { useTheme } from "../hooks/useTheme"
 
 const DRAWER_WIDTH = 220
 
@@ -416,7 +417,7 @@ function AddProductModal({
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function MainPage() {
-  const [isDark, setIsDark] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
   const [rows, setRows] = useState<GridRowsProp>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -864,7 +865,7 @@ export default function MainPage() {
         >
           <Header
             isDark={isDark}
-            onToggleTheme={() => setIsDark((v) => !v)}
+            onToggleTheme={toggleTheme}
             onMenuClick={() => setMobileOpen(true)}
             onAddProduct={() => setModalOpen(true)}
             title="Product Inventory"

@@ -13,6 +13,8 @@ import {
 } from "@mui/material"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
+import { useTheme } from "../hooks/useTheme"
+
 const DRAWER_WIDTH = 220
 
 interface OwnerData {
@@ -136,7 +138,7 @@ export default function RegistrationPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
-  const [isDark, setIsDark] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [step, setStep] = useState<1 | 2>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -517,7 +519,7 @@ export default function RegistrationPage() {
         >
           <Header
             isDark={isDark}
-            onToggleTheme={() => setIsDark((v) => !v)}
+            onToggleTheme={toggleTheme}
             onMenuClick={() => setMobileOpen(true)}
             title="Registrasi Toko"
             breadcrumb="STOCKR / REGISTRASI TOKO"

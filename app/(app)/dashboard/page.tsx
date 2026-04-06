@@ -5,6 +5,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles"
 import { useEffect, useMemo, useState } from "react"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
+import { useTheme } from "../hooks/useTheme"
 
 const DRAWER_WIDTH = 220
 
@@ -200,7 +201,7 @@ function StatCard({
 
 // ── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [isDark, setIsDark] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [products, setProducts] = useState<any[]>([])
   const [loadingProducts, setLoadingProducts] = useState(true)
@@ -408,7 +409,7 @@ export default function DashboardPage() {
         >
           <Header
             isDark={isDark}
-            onToggleTheme={() => setIsDark((v) => !v)}
+            onToggleTheme={toggleTheme}
             onMenuClick={() => setMobileOpen(true)}
             onAddProduct={() => {}}
             title="Dashboard"

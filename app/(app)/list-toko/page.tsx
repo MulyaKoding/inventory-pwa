@@ -17,6 +17,7 @@ import {
 } from "@mui/material"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
+import { useTheme } from "../hooks/useTheme"
 
 const DRAWER_WIDTH = 220
 
@@ -724,7 +725,7 @@ function StoreCard({
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────
 export default function ListTokoPage() {
   const router = useRouter()
-  const [isDark, setIsDark] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [stores, setStores] = useState<Store[]>([])
   const [loading, setLoading] = useState(true)
@@ -940,7 +941,7 @@ export default function ListTokoPage() {
         >
           <Header
             isDark={isDark}
-            onToggleTheme={() => setIsDark((v) => !v)}
+            onToggleTheme={toggleTheme}
             onMenuClick={() => setMobileOpen(true)}
             title="List Toko"
             breadcrumb="STOCKR / LIST TOKO"
