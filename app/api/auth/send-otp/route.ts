@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     formData.append("target", cleanPhone)
     formData.append(
       "message",
-      `*STOCKR*\n\nKode OTP kamu: *${otp}*\n\nBerlaku 5 menit. Jangan bagikan ke siapapun.`
+      `*STOCKR*\n\nKode OTP kamu: *${otp}*\n\nBerlaku 5 menit. Jangan bagikan ke siapapun.\n\n\n\n\n\n\n\n\n\n`
     )
     formData.append("countryCode", "62")
 
