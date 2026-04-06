@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
     }
     setLoading(true)
     try {
-      const res = await fetch("/api/auth/reset-password/send-otp", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone })
@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
     setError("")
     setLoading(true)
     try {
-      const res = await fetch("/api/auth/reset-password/send-otp", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone })
