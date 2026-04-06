@@ -344,27 +344,47 @@ export default function RegistrationPage() {
     setOcrStatus("scanning")
     setOcrError("")
     try {
-      const formData = new FormData()
-      formData.append("ktp", new File([blob], "ktp.jpg", { type: mimeType }))
-      const res = await fetch("/api/ocr", { method: "POST", body: formData })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error || "Gagal memproses KTP")
-      const { data } = result
+      // ── Step 1: OCR dulu ──
+      const ocrForm = new FormData()
+      ocrForm.append("ktp", new File([blob], "ktp.jpg", { type: mimeType }))
+      const ocrRes = await fetch("/api/ocr", { method: "POST", body: ocrForm })
+      const ocrResult = await ocrRes.json()
+      if (!ocrRes.ok) throw new Error(ocrResult.error || "Gagal memproses KTP")
+
+      // ── Step 2: Upload ke Cloudinary (base64) ──
+      const uploadForm = new FormData()
+      uploadForm.append("file", new File([blob], "ktp.jpg", { type: mimeType }))
+      const uploadRes = await fetch("/api/upload/ktp", {
+        method: "POST",
+        body: uploadForm
+      })
+      const uploadResult = await uploadRes.json()
+
+      // Kalau upload gagal, tetap lanjut tapi tanpa URL gambar
+      const ktpImageUrl = uploadRes.ok ? uploadResult.url : ""
+      if (!uploadRes.ok) {
+        console.warn("Upload KTP gagal:", uploadResult.error)
+      }
+
+      // ── Step 3: Set data owner ──
+      const { data } = ocrResult
       setOwnerData({
         nik: data.nik || "",
         fullName: data.fullName || "",
         birthDate: data.birthDate || "",
         address: data.address || "",
         gender: data.gender || "",
-        ktpImageUrl: "",
+        ktpImageUrl,
         inputMethod: "ocr"
       })
       setOwnerErrors({})
       setOcrStatus("success")
       setSnackbar({
         open: true,
-        msg: "Data KTP berhasil terdeteksi!",
-        severity: "success"
+        msg: ktpImageUrl
+          ? "Data KTP berhasil terdeteksi & disimpan!"
+          : "Data KTP terdeteksi (gagal upload gambar)",
+        severity: ktpImageUrl ? "success" : "error"
       })
       setTimeout(() => closeKtpModal(), 1200)
     } catch (err: unknown) {
