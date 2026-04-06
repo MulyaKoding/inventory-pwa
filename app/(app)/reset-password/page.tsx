@@ -443,22 +443,6 @@ export default function ResetPasswordPage() {
             {step === "request" && (
               <>
                 <div style={{ marginBottom: 28 }}>
-                  <div
-                    style={{
-                      width: 52,
-                      height: 52,
-                      background: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
-                      borderRadius: 14,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: 16,
-                      fontSize: 24,
-                      boxShadow: "0 8px 20px rgba(59,130,246,.3)"
-                    }}
-                  >
-                    🔑
-                  </div>
                   <h1 className="rp-form-title">Reset Password</h1>
                   <p className="rp-form-sub">
                     Masukkan nomor WhatsApp yang terdaftar. Kami akan
