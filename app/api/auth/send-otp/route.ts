@@ -16,40 +16,43 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Format nomor: hilangkan +, pastikan pakai 62
     const cleanPhone = phone.replace(/\D/g, "").replace(/^0/, "62")
 
     const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 menit
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
 
-    // Hapus OTP lama untuk nomor ini
     await prisma.otpVerification.deleteMany({ where: { phone: cleanPhone } })
-
-    // Simpan OTP baru
     await prisma.otpVerification.create({
       data: { phone: cleanPhone, otp, expiresAt }
     })
 
-    // Kirim via Fonnte
+    // Fonnte pakai form-data, BUKAN JSON
+    const formData = new URLSearchParams()
+    formData.append("target", cleanPhone)
+    formData.append(
+      "message",
+      `*STOCKR*\n\nKode OTP kamu: *${otp}*\n\nBerlaku 5 menit. Jangan bagikan ke siapapun.`
+    )
+    formData.append("countryCode", "62")
+
     const res = await fetch("https://api.fonnte.com/send", {
       method: "POST",
       headers: {
-        Authorization: process.env.FONNTE_TOKEN!,
-        "Content-Type": "application/json"
+        Authorization: process.env.FONNTE_TOKEN!
+        // TIDAK perlu Content-Type JSON untuk Fonnte
       },
-      body: JSON.stringify({
-        target: cleanPhone,
-        message: `*STOCKR*\n\nKode OTP kamu: *${otp}*\n\nBerlaku 5 menit. Jangan bagikan ke siapapun.`,
-        countryCode: "62"
-      })
+      body: formData
     })
 
     const result = await res.json()
+    console.log("Fonnte response:", JSON.stringify(result)) // ← lihat di Vercel logs
 
     if (!result.status) {
-      console.error("Fonnte error:", result)
       return NextResponse.json(
-        { error: "Gagal mengirim OTP, cek nomor HP kamu" },
+        {
+          error: "Gagal mengirim OTP",
+          detail: result.reason || result.message || result // ← expose detail error
+        },
         { status: 500 }
       )
     }
@@ -60,6 +63,9 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error("Send OTP error:", error)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Server error", detail: String(error) },
+      { status: 500 }
+    )
   }
 }
