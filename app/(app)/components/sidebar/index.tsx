@@ -101,6 +101,7 @@ export default function Sidebar({ isDark, T = "0.3s ease" }: SidebarProps) {
         flexDirection: "column",
         background:
           "linear-gradient(160deg, #060b1a 0%, #0c1733 40%, #0f2050 70%, #1e3a8a 100%)",
+        borderRight: "1px solid rgba(255,255,255,.08)",
         position: "relative",
         overflow: "hidden",
         // Subtle animated grid overlay like the login left panel

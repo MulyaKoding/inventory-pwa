@@ -228,13 +228,12 @@ export default function RegistrationPage() {
 
   const T = "0.3s ease"
 
-  const drawerPaperSx = (pt: boolean) => ({
+  const drawerPaperSx = () => ({
     width: DRAWER_WIDTH,
     boxSizing: "border-box" as const,
     bgcolor: "transparent",
-    borderRight: `1px solid ${p.border}`,
-    pt: pt ? 1 : 0,
-    transition: `background-color ${T}, border-color ${T}`
+    border: "none",
+    overflow: "hidden"
   })
 
   const inputStyle = (hasError: boolean): React.CSSProperties => ({
@@ -488,7 +487,7 @@ export default function RegistrationPage() {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": drawerPaperSx(false)
+            "& .MuiDrawer-paper": drawerPaperSx()
           }}
         >
           <Sidebar isDark={isDark} T={T} />
@@ -501,7 +500,7 @@ export default function RegistrationPage() {
             display: { xs: "none", md: "block" },
             width: DRAWER_WIDTH,
             flexShrink: 0,
-            "& .MuiDrawer-paper": drawerPaperSx(true)
+            "& .MuiDrawer-paper": drawerPaperSx()
           }}
         >
           <Sidebar isDark={isDark} T={T} />
