@@ -369,8 +369,9 @@ export default function DashboardPage() {
             "& .MuiDrawer-paper": {
               width: DRAWER_WIDTH,
               boxSizing: "border-box",
-              bgcolor: p.sidebarBg,
-              borderRight: `1px solid ${p.border}`
+              bgcolor: "transparent",
+              border: "none",
+              overflow: "hidden"
             }
           }}
         >
@@ -387,10 +388,9 @@ export default function DashboardPage() {
             "& .MuiDrawer-paper": {
               width: DRAWER_WIDTH,
               boxSizing: "border-box",
-              bgcolor: p.sidebarBg,
-              borderRight: `1px solid ${p.border}`,
-              pt: 1,
-              transition: `background-color ${T}, border-color ${T}`
+              bgcolor: "transparent",
+              border: "none",
+              overflow: "hidden"
             }
           }}
         >
