@@ -868,7 +868,6 @@ export default function MainPage() {
             onMenuClick={() => setMobileOpen(true)}
             onAddProduct={() => setModalOpen(true)}
             title="Product Inventory"
-            breadcrumb="STOCKR / INVENTORY"
             showAddButton={true}
             notificationCount={3}
             p={p}

@@ -68,7 +68,6 @@ export default function Header({
   onMenuClick,
   onAddProduct,
   title = "Product Inventory",
-  breadcrumb = "STOCKR / INVENTORY",
   showAddButton = true,
   notificationCount = 0,
   p = {}
@@ -158,17 +157,6 @@ export default function Header({
         </IconButton>
 
         <Box sx={{ minWidth: 0 }}>
-          <Typography
-            sx={{
-              color: p.textMuted,
-              fontSize: 11,
-              letterSpacing: "0.1em",
-              mb: 0.3,
-              display: { xs: "none", sm: "block" }
-            }}
-          >
-            {breadcrumb}
-          </Typography>
           <Typography
             sx={{
               color: p.textPrimary,

@@ -943,7 +943,6 @@ export default function ListTokoPage() {
             onToggleTheme={toggleTheme}
             onMenuClick={() => setMobileOpen(true)}
             title="List Toko"
-            breadcrumb="STOCKR / LIST TOKO"
             showAddButton={false}
             onAddProduct={() => router.push("/registration")}
             notificationCount={0}

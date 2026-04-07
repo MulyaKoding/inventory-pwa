@@ -413,7 +413,6 @@ export default function DashboardPage() {
             onMenuClick={() => setMobileOpen(true)}
             onAddProduct={() => {}}
             title="Dashboard"
-            breadcrumb="STOCKR / DASHBOARD"
             showAddButton={false}
             notificationCount={3}
             p={p}

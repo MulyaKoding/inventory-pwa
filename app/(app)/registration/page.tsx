@@ -521,7 +521,6 @@ export default function RegistrationPage() {
             onToggleTheme={toggleTheme}
             onMenuClick={() => setMobileOpen(true)}
             title="Registrasi Toko"
-            breadcrumb="STOCKR / REGISTRASI TOKO"
             showAddButton={false}
             notificationCount={0}
             p={p}
