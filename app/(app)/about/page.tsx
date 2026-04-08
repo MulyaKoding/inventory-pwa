@@ -12,7 +12,7 @@ const NAV_LINKS = [
 
 const TEAM = [
   {
-    name: "Arif Nugroho",
+    name: "Rahmat Mulya Simanjuntak",
     role: "Founder & CEO",
     initials: "AN",
     color: "#1e3a8a",
@@ -36,6 +36,34 @@ const TEAM = [
     name: "Dewi Lestari",
     role: "Customer Success",
     initials: "DL",
+    color: "#0c1a3a",
+    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
+  },
+  {
+    name: "Sinta Dwi",
+    role: "UI UX Designer",
+    initials: "SD",
+    color: "#0c1a3a",
+    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
+  },
+  {
+    name: "Budi Setiawan",
+    role: "Frontend Engineer",
+    initials: "BS",
+    color: "#0c1a3a",
+    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
+  },
+  {
+    name: "Setiawan Bimo",
+    role: "Backend Engineer",
+    initials: "SB",
+    color: "#0c1a3a",
+    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
+  },
+  {
+    name: "Nanda Pratiwi",
+    role: "Business Analyst",
+    initials: "NP",
     color: "#0c1a3a",
     desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
   }
