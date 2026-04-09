@@ -15,7 +15,6 @@ export default function LeafletMap({
   isDark,
   onMapClick
 }: LeafletMapProps) {
-  const wrapperRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const markerRef = useRef<any>(null)
@@ -30,8 +29,8 @@ export default function LeafletMap({
     if (typeof window === "undefined" || !containerRef.current) return
     if (mapRef.current) return
 
-    const c = containerRef.current as any
-    if (c._leaflet_id) c._leaflet_id = null
+    const el = containerRef.current as any
+    if (el._leaflet_id) el._leaflet_id = null
 
     let destroyed = false
 
@@ -39,8 +38,8 @@ export default function LeafletMap({
       if (destroyed || !containerRef.current) return
       if (mapRef.current) return
 
-      const el = containerRef.current as any
-      if (el._leaflet_id) el._leaflet_id = null
+      const el2 = containerRef.current as any
+      if (el2._leaflet_id) el2._leaflet_id = null
 
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
@@ -83,10 +82,24 @@ export default function LeafletMap({
       mapRef.current = map
       ;(mapRef.current as any)._blueIcon = blueIcon
 
-      // Paksa recalculate setelah MUI Modal selesai animasi
-      setTimeout(() => {
-        if (mapRef.current) mapRef.current.invalidateSize()
-      }, 350)
+      // ── invalidateSize berkali-kali untuk memastikan ukuran benar ──
+      // Panggil di beberapa titik karena MUI Modal punya animasi
+      const invalidate = () => {
+        if (mapRef.current) mapRef.current.invalidateSize(true)
+      }
+      setTimeout(invalidate, 50)
+      setTimeout(invalidate, 150)
+      setTimeout(invalidate, 350)
+      setTimeout(invalidate, 600)
+
+      // ── ResizeObserver: pantau perubahan ukuran container secara real-time ──
+      if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+        const ro = new ResizeObserver(() => {
+          if (mapRef.current) mapRef.current.invalidateSize(true)
+        })
+        ro.observe(containerRef.current)
+        ;(mapRef.current as any)._resizeObserver = ro
+      }
 
       setReady(true)
     })
@@ -94,6 +107,8 @@ export default function LeafletMap({
     return () => {
       destroyed = true
       if (mapRef.current) {
+        const ro = (mapRef.current as any)._resizeObserver
+        if (ro) ro.disconnect()
         mapRef.current.remove()
         mapRef.current = null
         markerRef.current = null
@@ -103,6 +118,7 @@ export default function LeafletMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── Sync center ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return
     mapRef.current.flyTo(center, Math.max(mapRef.current.getZoom(), 15), {
@@ -110,6 +126,7 @@ export default function LeafletMap({
     })
   }, [center])
 
+  // ── Sync marker ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !ready) return
     import("leaflet").then((L) => {
@@ -138,33 +155,14 @@ export default function LeafletMap({
           border-color: ${isDark ? "#1f1f1f" : "#e2e8f0"} !important;
         }
       `}</style>
-
-      {/*
-        Pola: wrapper relative dengan height eksplisit,
-        container absolute fill di dalamnya.
-        Ini memastikan Leaflet selalu dapat ukuran yang benar.
-      */}
       <div
-        ref={wrapperRef}
+        ref={containerRef}
         style={{
-          position: "relative",
           width: "100%",
           height: "320px",
-          borderRadius: "8px",
-          overflow: "hidden"
+          display: "block"
         }}
-      >
-        <div
-          ref={containerRef}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0
-          }}
-        />
-      </div>
+      />
     </>
   )
 }

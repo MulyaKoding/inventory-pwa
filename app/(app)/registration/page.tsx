@@ -1829,7 +1829,8 @@ export default function RegistrationPage() {
                 border: `1px solid ${p.border}`,
                 borderRadius: "8px",
                 overflow: "hidden",
-                flexShrink: 0
+                flexShrink: 0,
+                lineHeight: 0
               }}
             >
               <LeafletMap
