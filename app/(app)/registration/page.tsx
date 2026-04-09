@@ -1557,9 +1557,6 @@ export default function RegistrationPage() {
                   gap: 1.5
                 }}
               >
-                <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>
-                  📍
-                </span>
                 <Box>
                   <p
                     style={{
@@ -1604,7 +1601,7 @@ export default function RegistrationPage() {
                         cursor: "pointer"
                       }}
                     >
-                      🎯 Deteksi Lokasi Saya
+                      Deteksi Lokasi Saya
                     </button>
                   )}
                   {geoStatus === "requesting" && (
