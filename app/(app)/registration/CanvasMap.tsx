@@ -796,6 +796,7 @@ export default function CanvasMap({
       <button
         onClick={() => {
           if (markerR.current) {
+            // Langsung set fly ke posisi marker
             flyR.current = {
               fLat: cR.current[0],
               fLon: cR.current[1],

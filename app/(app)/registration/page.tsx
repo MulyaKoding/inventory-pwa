@@ -622,6 +622,14 @@ export default function RegistrationPage() {
     }
   }
 
+  const handleGeoButton = useCallback(() => {
+    if (mapMarker) {
+      setMapCenter([...mapMarker] as [number, number])
+    } else {
+      requestGeolocation()
+    }
+  }, [mapMarker])
+
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -1840,7 +1848,7 @@ export default function RegistrationPage() {
                 markerLabel={mapLabel}
                 isDark={isDark}
                 onMapClick={handleMapClick}
-                onRequestGeo={requestGeolocation}
+                onRequestGeo={handleGeoButton}
                 isGeoLoading={geoLoading}
                 markerSource={markerSource}
               />
