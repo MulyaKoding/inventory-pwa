@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 const BASE = "https://api.klinikme.com/api/v1"
+const TOKEN = "Bearer token"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -33,9 +34,9 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0",
+        Authorization: TOKEN // ← fix utama: tambah Authorization header
       },
-      // Cache 1 jam untuk provinsi & kota (data jarang berubah), 5 menit untuk kecamatan/kelurahan
       next: {
         revalidate: type === "provinsi" || type === "kota" ? 3600 : 300
       }
@@ -50,11 +51,16 @@ export async function GET(req: NextRequest) {
 
     const data = await res.json()
 
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
+    // Normalisasi response — pastikan selalu return { data: [] }
+    // API klinikme return { status, message, data: [...] }
+    return NextResponse.json(
+      { data: data.data ?? data ?? [] },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
+        }
       }
-    })
+    )
   } catch (err) {
     return NextResponse.json(
       { error: "Gagal menghubungi server wilayah" },
