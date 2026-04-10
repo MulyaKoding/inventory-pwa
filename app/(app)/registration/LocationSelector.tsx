@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Box } from "@mui/material"
 
 interface Provinsi {
@@ -38,14 +38,12 @@ interface LocationSelectorProps {
   onChange: (val: LocationValue) => void
   errors?: Partial<Record<keyof LocationValue, string>>
   isDark: boolean
-  p: {
-    border: string
-    textPrimary: string
-    textMuted: string
-  }
+  p: { border: string; textPrimary: string; textMuted: string }
 }
 
-const BASE = "https://api.klinikme.com/api/v1"
+// Semua fetch via proxy internal /api/wilayah (server-side) → bypass CORS
+const api = (params: Record<string, string>) =>
+  `/api/wilayah?${new URLSearchParams(params).toString()}`
 
 function toTitle(s: string) {
   return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
@@ -62,23 +60,28 @@ export default function LocationSelector({
   const [kotaList, setKotaList] = useState<Kota[]>([])
   const [kecamatanList, setKecamatanList] = useState<Kecamatan[]>([])
   const [kelurahanList, setKelurahanList] = useState<Kelurahan[]>([])
-
   const [loadingProv, setLoadingProv] = useState(false)
   const [loadingKota, setLoadingKota] = useState(false)
   const [loadingKec, setLoadingKec] = useState(false)
   const [loadingKel, setLoadingKel] = useState(false)
+  const [errProv, setErrProv] = useState("")
 
-  // ── Fetch Provinsi on mount ─────────────────────────────────────────────────
-  useEffect(() => {
+  const fetchProvinsi = () => {
     setLoadingProv(true)
-    fetch(`${BASE}/data_provinsi`)
+    setErrProv("")
+    fetch(api({ type: "provinsi" }))
       .then((r) => r.json())
-      .then((d) => setProvinsiList(d.data ?? []))
-      .catch(() => {})
+      .then((d) => {
+        if (d.error) throw new Error(d.error)
+        setProvinsiList(d.data ?? [])
+      })
+      .catch((e) => setErrProv(e.message || "Gagal memuat"))
       .finally(() => setLoadingProv(false))
+  }
+  useEffect(() => {
+    fetchProvinsi()
   }, [])
 
-  // ── Fetch Kota when provinsi changes ───────────────────────────────────────
   useEffect(() => {
     if (!value.provinsiKd) {
       setKotaList([])
@@ -90,14 +93,13 @@ export default function LocationSelector({
     setKotaList([])
     setKecamatanList([])
     setKelurahanList([])
-    fetch(`${BASE}/data_kota?provinsi=${value.provinsiKd}`)
+    fetch(api({ type: "kota", provinsi: value.provinsiKd }))
       .then((r) => r.json())
       .then((d) => setKotaList(d.data ?? []))
       .catch(() => {})
       .finally(() => setLoadingKota(false))
   }, [value.provinsiKd])
 
-  // ── Fetch Kecamatan when kota changes ──────────────────────────────────────
   useEffect(() => {
     if (!value.kotaKd) {
       setKecamatanList([])
@@ -107,14 +109,13 @@ export default function LocationSelector({
     setLoadingKec(true)
     setKecamatanList([])
     setKelurahanList([])
-    fetch(`${BASE}/data_kecamatan?kota=${value.kotaKd}`)
+    fetch(api({ type: "kecamatan", kota: value.kotaKd }))
       .then((r) => r.json())
       .then((d) => setKecamatanList(d.data ?? []))
       .catch(() => {})
       .finally(() => setLoadingKec(false))
   }, [value.kotaKd])
 
-  // ── Fetch Kelurahan when kecamatan changes ─────────────────────────────────
   useEffect(() => {
     if (!value.kecamatanKd) {
       setKelurahanList([])
@@ -122,14 +123,13 @@ export default function LocationSelector({
     }
     setLoadingKel(true)
     setKelurahanList([])
-    fetch(`${BASE}/data_kelurahan?kecamatan=${value.kecamatanKd}`)
+    fetch(api({ type: "kelurahan", kecamatan: value.kecamatanKd }))
       .then((r) => r.json())
       .then((d) => setKelurahanList(d.data ?? []))
       .catch(() => {})
       .finally(() => setLoadingKel(false))
   }, [value.kecamatanKd])
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleProvinsi = (kd: string) => {
     const nama =
       provinsiList.find((x) => x.Kd_Provinsi === kd)?.NamaProvinsi ?? ""
@@ -146,7 +146,6 @@ export default function LocationSelector({
       kodePos: ""
     })
   }
-
   const handleKota = (kd: string) => {
     const nama = kotaList.find((x) => x.Kd_Kota === kd)?.NamaKota ?? ""
     onChange({
@@ -160,7 +159,6 @@ export default function LocationSelector({
       kodePos: ""
     })
   }
-
   const handleKecamatan = (kd: string) => {
     const nama =
       kecamatanList.find((x) => x.Kd_Kecamatan === kd)?.NamaKecamatan ?? ""
@@ -173,20 +171,16 @@ export default function LocationSelector({
       kodePos: ""
     })
   }
-
   const handleKelurahan = (kd: string) => {
     const item = kelurahanList.find((x) => x.Kd_Kelurahan === kd)
-    const nama = item?.NamaKelurahan ?? ""
-    const pos = item?.KodePos ?? value.kodePos
     onChange({
       ...value,
       kelurahanKd: kd,
-      kelurahanNama: toTitle(nama),
-      kodePos: pos
+      kelurahanNama: toTitle(item?.NamaKelurahan ?? ""),
+      kodePos: item?.KodePos ?? value.kodePos
     })
   }
 
-  // ── Shared select style ────────────────────────────────────────────────────
   const sel = (hasError: boolean, disabled: boolean): React.CSSProperties => ({
     width: "100%",
     padding: "10px 12px",
@@ -206,11 +200,25 @@ export default function LocationSelector({
     boxSizing: "border-box" as const,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.6 : 1,
-    transition: "border-color 0.2s, opacity 0.2s",
-    appearance: "auto" as any
+    transition: "border-color 0.2s, opacity 0.2s"
   })
 
-  const label = (text: string, loading: boolean) => (
+  const Spinner = () => (
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        border: "1.5px solid #1e3a8a",
+        borderTopColor: "transparent",
+        borderRadius: "50%",
+        display: "inline-block",
+        animation: "lspin 0.7s linear infinite",
+        flexShrink: 0
+      }}
+    />
+  )
+
+  const Lbl = ({ text, loading }: { text: string; loading: boolean }) => (
     <label
       style={{
         display: "flex",
@@ -224,29 +232,18 @@ export default function LocationSelector({
       }}
     >
       {text}
-      {loading && (
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            border: "1.5px solid #1e3a8a",
-            borderTopColor: "transparent",
-            borderRadius: "50%",
-            display: "inline-block",
-            animation: "lspin 0.7s linear infinite"
-          }}
-        />
-      )}
+      {loading && <Spinner />}
     </label>
   )
 
-  const errText = (msg?: string) =>
+  const Err = ({ msg }: { msg?: string }) =>
     msg ? (
       <p
         style={{
           fontSize: 11,
           color: "#ef4444",
           marginTop: 4,
+          marginBottom: 0,
           fontFamily: "'Nunito', sans-serif"
         }}
       >
@@ -258,7 +255,49 @@ export default function LocationSelector({
     <>
       <style>{`@keyframes lspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
 
-      {/* Row 1: Provinsi + Kota */}
+      {errProv && (
+        <Box
+          sx={{
+            mb: 2,
+            px: 2,
+            py: 1.25,
+            bgcolor: isDark ? "#2e1010" : "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: "6px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12,
+              color: "#ef4444",
+              fontFamily: "'Nunito', sans-serif"
+            }}
+          >
+            ⚠ Gagal memuat data wilayah
+          </span>
+          <button
+            onClick={fetchProvinsi}
+            style={{
+              fontSize: 11,
+              color: "#ef4444",
+              background: "none",
+              border: "1px solid #ef4444",
+              borderRadius: 4,
+              padding: "2px 8px",
+              cursor: "pointer",
+              fontFamily: "'Nunito', sans-serif",
+              fontWeight: 700
+            }}
+          >
+            Coba Lagi
+          </button>
+        </Box>
+      )}
+
       <Box
         sx={{
           display: "grid",
@@ -266,30 +305,27 @@ export default function LocationSelector({
           gap: { xs: 2, sm: 2.5 }
         }}
       >
-        {/* Provinsi */}
         <div>
-          {label("PROVINSI *", loadingProv)}
+          <Lbl text="PROVINSI *" loading={loadingProv} />
           <select
             value={value.provinsiKd}
             onChange={(e) => handleProvinsi(e.target.value)}
-            disabled={loadingProv}
-            style={sel(!!errors.provinsiKd, loadingProv)}
+            disabled={loadingProv || !!errProv}
+            style={sel(!!errors.provinsiKd, loadingProv || !!errProv)}
           >
             <option value="">
               {loadingProv ? "Memuat..." : "Pilih provinsi"}
             </option>
-            {provinsiList.map((p) => (
-              <option key={p.Kd_Provinsi} value={p.Kd_Provinsi}>
-                {toTitle(p.NamaProvinsi)}
+            {provinsiList.map((x) => (
+              <option key={x.Kd_Provinsi} value={x.Kd_Provinsi}>
+                {toTitle(x.NamaProvinsi)}
               </option>
             ))}
           </select>
-          {errText(errors.provinsiKd)}
+          <Err msg={errors.provinsiKd} />
         </div>
-
-        {/* Kota / Kabupaten */}
         <div>
-          {label("KOTA / KABUPATEN *", loadingKota)}
+          <Lbl text="KOTA / KABUPATEN *" loading={loadingKota} />
           <select
             value={value.kotaKd}
             onChange={(e) => handleKota(e.target.value)}
@@ -303,17 +339,16 @@ export default function LocationSelector({
                   ? "Memuat..."
                   : "Pilih kota / kabupaten"}
             </option>
-            {kotaList.map((k) => (
-              <option key={k.Kd_Kota} value={k.Kd_Kota}>
-                {toTitle(k.NamaKota)}
+            {kotaList.map((x) => (
+              <option key={x.Kd_Kota} value={x.Kd_Kota}>
+                {toTitle(x.NamaKota)}
               </option>
             ))}
           </select>
-          {errText(errors.kotaKd)}
+          <Err msg={errors.kotaKd} />
         </div>
       </Box>
 
-      {/* Row 2: Kecamatan + Kelurahan */}
       <Box
         sx={{
           display: "grid",
@@ -322,9 +357,8 @@ export default function LocationSelector({
           mt: { xs: 2, sm: 2.5 }
         }}
       >
-        {/* Kecamatan */}
         <div>
-          {label("KECAMATAN *", loadingKec)}
+          <Lbl text="KECAMATAN *" loading={loadingKec} />
           <select
             value={value.kecamatanKd}
             onChange={(e) => handleKecamatan(e.target.value)}
@@ -338,18 +372,16 @@ export default function LocationSelector({
                   ? "Memuat..."
                   : "Pilih kecamatan"}
             </option>
-            {kecamatanList.map((k) => (
-              <option key={k.Kd_Kecamatan} value={k.Kd_Kecamatan}>
-                {toTitle(k.NamaKecamatan)}
+            {kecamatanList.map((x) => (
+              <option key={x.Kd_Kecamatan} value={x.Kd_Kecamatan}>
+                {toTitle(x.NamaKecamatan)}
               </option>
             ))}
           </select>
-          {errText(errors.kecamatanKd)}
+          <Err msg={errors.kecamatanKd} />
         </div>
-
-        {/* Kelurahan / Desa */}
         <div>
-          {label("KELURAHAN / DESA *", loadingKel)}
+          <Lbl text="KELURAHAN / DESA *" loading={loadingKel} />
           <select
             value={value.kelurahanKd}
             onChange={(e) => handleKelurahan(e.target.value)}
@@ -363,17 +395,16 @@ export default function LocationSelector({
                   ? "Memuat..."
                   : "Pilih kelurahan / desa"}
             </option>
-            {kelurahanList.map((k) => (
-              <option key={k.Kd_Kelurahan} value={k.Kd_Kelurahan}>
-                {toTitle(k.NamaKelurahan)}
+            {kelurahanList.map((x) => (
+              <option key={x.Kd_Kelurahan} value={x.Kd_Kelurahan}>
+                {toTitle(x.NamaKelurahan)}
               </option>
             ))}
           </select>
-          {errText(errors.kelurahanKd)}
+          <Err msg={errors.kelurahanKd} />
         </div>
       </Box>
 
-      {/* Kode Pos — user input manual */}
       <Box sx={{ mt: { xs: 2, sm: 2.5 }, maxWidth: { xs: "100%", sm: 200 } }}>
         <label
           style={{
@@ -405,7 +436,7 @@ export default function LocationSelector({
             fontFamily: "'Nunito', sans-serif",
             fontSize: 14,
             outline: "none",
-            boxSizing: "border-box"
+            boxSizing: "border-box" as const
           }}
         />
       </Box>
