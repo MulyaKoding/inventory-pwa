@@ -1467,6 +1467,7 @@ export default function RegistrationPage() {
             left: "50%",
             transform: "translate(-50%,-50%)",
             width: { xs: "96vw", sm: 580 },
+            height: { xs: "92vh", sm: "88vh" },
             maxHeight: { xs: "92vh", sm: "88vh" },
             bgcolor: p.bgPaper,
             border: `1px solid ${p.border}`,
@@ -1535,7 +1536,9 @@ export default function RegistrationPage() {
           {/* Scrollable body */}
           <Box
             sx={{
-              flex: 1,
+              flex: "1 1 0",
+              height: 0,
+              minHeight: 0,
               overflowY: "auto",
               display: "flex",
               flexDirection: "column"
@@ -1825,9 +1828,8 @@ export default function RegistrationPage() {
               sx={{
                 mx: 3,
                 mb: 0,
-                flex: "1 1 0",
-                minHeight: 280,
-                maxHeight: 380,
+                height: { xs: 300, sm: 360 },
+                flexShrink: 0,
                 border: `1px solid ${p.border}`,
                 borderRadius: "8px",
                 overflow: "hidden",
