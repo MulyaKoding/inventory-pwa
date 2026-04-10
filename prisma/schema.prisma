@@ -50,21 +50,29 @@ model Product {
 }
 
 model Store {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  storeId         String   @unique
-  userId          String   @db.ObjectId
-  storeName       String
-  storeType       String
-  storePhone      String
-  storeEmail      String?
-  storeAddress    String
-  storeCity       String
-  storeProvince   String
-  storePostalCode String?
-  status          String   @default("active")
-  owner           Owner?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  storeId          String   @unique
+  userId           String   @db.ObjectId
+  storeName        String
+  storeType        String
+  storePhone       String
+  storeEmail       String?
+  storeAddress     String
+  storeCity        String
+  storeDistrict    String?          
+  storeVillage     String?          
+  storeProvince    String
+  storePostalCode  String?
+  storeProvinsiKd  String?          
+  storeKotaKd      String?          
+  storeKecamatanKd String?          
+  storeKelurahanKd String?        
+  storeLat         String?        
+  storeLng         String?          
+  status           String   @default("active")
+  owner            Owner?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("stores")
 }

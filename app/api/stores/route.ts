@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
       storeCity,
       storeProvince,
       storePostalCode,
+      storeDistrict,
+      storeVillage,
+      storeProvinsiKd,
+      storeKotaKd,
+      storeKecamatanKd,
+      storeKelurahanKd,
+      storeLat,
+      storeLng,
       owner
     } = body
 
@@ -79,8 +87,16 @@ export async function POST(req: NextRequest) {
         storeEmail: storeEmail || null,
         storeAddress,
         storeCity,
+        storeDistrict: storeDistrict || null,
+        storeVillage: storeVillage || null,
         storeProvince,
         storePostalCode: storePostalCode || null,
+        storeProvinsiKd: storeProvinsiKd || null,
+        storeKotaKd: storeKotaKd || null,
+        storeKecamatanKd: storeKecamatanKd || null,
+        storeKelurahanKd: storeKelurahanKd || null,
+        storeLat: storeLat || null,
+        storeLng: storeLng || null,
         status: "active",
         owner: {
           nik: owner.nik,
