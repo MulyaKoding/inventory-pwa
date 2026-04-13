@@ -124,3 +124,51 @@ model MsKelurahan {
 
   @@map("ms_kelurahan")
 }
+
+model Mitra {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  mitraId          String    @unique
+  picName          String
+  picEmail         String    @unique
+  picPhone         String
+  picPosition      String
+  picKtp           String?
+  companyName      String
+  companyType      String
+  companyNpwp      String?
+  companyAddress   String
+  companyCity      String
+  companyProvince  String?
+  companyPostal    String?
+  companyWebsite   String?
+  employeeCount    String?
+  plan             String    @default("growth")
+  planPrice        Int       @default(0)
+  paymentId        String?
+  status           String    @default("pending")
+  activatedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("mitras")
+}
+
+model MitraPayment {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceNumber String    @unique
+  mitraId       String?
+  picName       String
+  picEmail      String
+  companyName   String
+  plan          String
+  amount        Int
+  status        String    @default("pending")
+  dokuRequestId String?
+  dokuSessionId String?
+  rawResponse   String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("mitra_payments")
+}
