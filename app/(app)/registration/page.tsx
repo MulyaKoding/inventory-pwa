@@ -1023,177 +1023,192 @@ export default function RegistrationPage() {
                           sx={{
                             mb: 3,
                             pb: 3,
-                            borderBottom: `1px solid ${p.border}`
+                            borderBottom: `1px solid ${p.border}`,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 3
                           }}
                         >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              mb: 2
-                            }}
-                          >
+                          {/* Avatar Lingkaran */}
+                          <Box sx={{ position: "relative", flexShrink: 0 }}>
                             <Box
+                              onClick={() => setStoreImgModalOpen(true)}
                               sx={{
-                                width: 4,
-                                height: 16,
-                                bgcolor: "#1e3a8a",
-                                borderRadius: 2
-                              }}
-                            />
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: p.textSecondary,
-                                fontFamily: "'Nunito', sans-serif",
-                                letterSpacing: "0.04em"
+                                width: 90,
+                                height: 90,
+                                borderRadius: "50%",
+                                border: storeData.storeImageUrl
+                                  ? `3px solid #16a34a`
+                                  : `2.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                                overflow: "hidden",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                bgcolor: isDark ? "#0d1f3c" : "#eff6ff",
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                  borderColor: "#1e3a8a",
+                                  bgcolor: isDark ? "#0d1f3c" : "#dbeafe",
+                                  transform: "scale(1.04)"
+                                }
                               }}
                             >
-                              FOTO TOKO{" "}
+                              {storeData.storeImageUrl ? (
+                                <img
+                                  src={storeData.storeImageUrl}
+                                  alt="Foto Toko"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover"
+                                  }}
+                                />
+                              ) : (
+                                <Box sx={{ textAlign: "center" }}>
+                                  <p
+                                    style={{
+                                      margin: 0,
+                                      fontSize: 9,
+                                      color: isDark ? "#93c5fd" : "#1e3a8a",
+                                      fontFamily: "'Nunito', sans-serif",
+                                      fontWeight: 700
+                                    }}
+                                  >
+                                    FOTO
+                                  </p>
+                                </Box>
+                              )}
+                            </Box>
+                            {/* Tombol kamera kecil di pojok */}
+                            <Box
+                              onClick={() => setStoreImgModalOpen(true)}
+                              sx={{
+                                position: "absolute",
+                                bottom: 2,
+                                right: 2,
+                                width: 26,
+                                height: 26,
+                                borderRadius: "50%",
+                                bgcolor: "#1e3a8a",
+                                border: `2px solid ${p.bgPaper}`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                                fontSize: 12,
+                                "&:hover": { bgcolor: "#2563eb" },
+                                transition: "all 0.2s"
+                              }}
+                            >
+                              📷
+                            </Box>
+                          </Box>
+
+                          {/* Teks di sebelah kanan avatar */}
+                          <Box sx={{ flex: 1 }}>
+                            <p
+                              style={{
+                                margin: "0 0 2px",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: p.textPrimary,
+                                fontFamily: "'Nunito', sans-serif"
+                              }}
+                            >
+                              Foto Toko
                               <span
-                                style={{ color: p.textMuted, fontWeight: 400 }}
+                                style={{
+                                  marginLeft: 6,
+                                  fontSize: 11,
+                                  fontWeight: 400,
+                                  color: p.textMuted
+                                }}
                               >
                                 (opsional)
                               </span>
                             </p>
-                          </Box>
 
-                          {storeData.storeImageUrl ? (
-                            // Preview gambar yang sudah diupload
-                            <Box
-                              sx={{
-                                position: "relative",
-                                display: "inline-block",
-                                width: "100%"
-                              }}
-                            >
-                              <img
-                                src={storeData.storeImageUrl}
-                                alt="Foto Toko"
-                                style={{
-                                  width: "100%",
-                                  maxHeight: 220,
-                                  objectFit: "cover",
-                                  borderRadius: 8,
-                                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`
-                                }}
-                              />
+                            {storeData.storeImageUrl ? (
                               <Box
                                 sx={{
-                                  position: "absolute",
-                                  top: 8,
-                                  right: 8,
-                                  display: "flex",
-                                  gap: 1
-                                }}
-                              >
-                                <button
-                                  onClick={() => setStoreImgModalOpen(true)}
-                                  style={{
-                                    background: "rgba(30,58,138,0.85)",
-                                    border: "none",
-                                    borderRadius: 6,
-                                    color: "#fff",
-                                    fontSize: 11,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    fontWeight: 700,
-                                    padding: "5px 10px",
-                                    cursor: "pointer"
-                                  }}
-                                >
-                                  Ganti
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    updateStore("storeImageUrl", "")
-                                  }
-                                  style={{
-                                    background: "rgba(239,68,68,0.85)",
-                                    border: "none",
-                                    borderRadius: 6,
-                                    color: "#fff",
-                                    fontSize: 11,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    fontWeight: 700,
-                                    padding: "5px 10px",
-                                    cursor: "pointer"
-                                  }}
-                                >
-                                  Hapus
-                                </button>
-                              </Box>
-                              <Box
-                                sx={{
-                                  mt: 1,
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: 0.75,
-                                  px: 1.5,
-                                  py: 0.75,
-                                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                                  borderRadius: "4px"
+                                  gap: 1,
+                                  mt: 0.5
                                 }}
                               >
-                                <span style={{ fontSize: 11 }}>✓</span>
+                                <span
+                                  style={{ fontSize: 11, color: "#16a34a" }}
+                                >
+                                  ✓
+                                </span>
                                 <span
                                   style={{
                                     fontSize: 11,
-                                    color: isDark ? "#4ade80" : "#16a34a",
+                                    color: "#16a34a",
                                     fontFamily: "'Nunito', sans-serif",
                                     fontWeight: 600
                                   }}
                                 >
-                                  Foto toko berhasil diupload
+                                  Foto berhasil diupload
                                 </span>
                               </Box>
-                            </Box>
-                          ) : (
-                            // Tombol upload
-                            <Box
-                              onClick={() => setStoreImgModalOpen(true)}
-                              sx={{
-                                border: `1.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                borderRadius: "8px",
-                                py: 4,
-                                textAlign: "center",
-                                cursor: "pointer",
-                                "&:hover": {
-                                  borderColor: "#1e3a8a",
-                                  bgcolor: isDark ? "#0d1f3c" : "#eff6ff"
-                                },
-                                transition: "all 0.2s"
-                              }}
-                            >
+                            ) : (
                               <p
                                 style={{
-                                  margin: 0,
-                                  fontSize: 14,
-                                  color: "#1e3a8a",
-                                  fontFamily: "'Nunito', sans-serif",
-                                  fontWeight: 700
-                                }}
-                              >
-                                Upload Foto Toko
-                              </p>
-                              <p
-                                style={{
-                                  margin: "4px 0 0",
+                                  margin: "2px 0 0",
                                   fontSize: 11,
                                   color: p.textMuted,
                                   fontFamily: "'Nunito', sans-serif"
                                 }}
                               >
-                                Klik untuk upload atau gunakan kamera · JPG,
-                                PNG, WEBP · Maks 5MB
+                                JPG, PNG, WEBP · Maks 5MB
                               </p>
-                            </Box>
-                          )}
-                        </Box>
+                            )}
 
+                            <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
+                              <button
+                                onClick={() => setStoreImgModalOpen(true)}
+                                style={{
+                                  padding: "5px 14px",
+                                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                                  borderRadius: 6,
+                                  background: isDark ? "#0d1f3c" : "#eff6ff",
+                                  color: "#1e3a8a",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  fontFamily: "'Nunito', sans-serif",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                {storeData.storeImageUrl
+                                  ? "Ganti Foto"
+                                  : "Upload Foto"}
+                              </button>
+                              {storeData.storeImageUrl && (
+                                <button
+                                  onClick={() =>
+                                    updateStore("storeImageUrl", "")
+                                  }
+                                  style={{
+                                    padding: "5px 12px",
+                                    border: "1px solid #fecaca",
+                                    borderRadius: 6,
+                                    background: "transparent",
+                                    color: "#ef4444",
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    fontFamily: "'Nunito', sans-serif",
+                                    cursor: "pointer"
+                                  }}
+                                >
+                                  Hapus
+                                </button>
+                              )}
+                            </Box>
+                          </Box>
+                        </Box>
                         <Box
                           sx={{
                             display: "grid",
