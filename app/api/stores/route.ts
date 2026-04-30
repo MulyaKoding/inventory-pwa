@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
         storeKelurahanKd: storeKelurahanKd || null,
         storeLat: storeLat || null,
         storeLng: storeLng || null,
+        storeImageUrl: body.storeImageUrl ?? null,
         status: "active",
         owner: {
           nik: owner.nik,
