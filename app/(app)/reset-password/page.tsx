@@ -862,7 +862,7 @@ export default function ResetPasswordPage() {
                     background: "#f0fdf4",
                     border: "1px solid #bbf7d0",
                     borderRadius: 10,
-                    padding: "14px 16px",
+                    padding: "12px 14px",
                     marginBottom: 24,
                     fontSize: 13,
                     color: "#15803d",
@@ -870,7 +870,7 @@ export default function ResetPasswordPage() {
                     fontFamily: "'Nunito', sans-serif"
                   }}
                 >
-                  ✓ Semua sesi lama telah dihapus demi keamanan akun kamu
+                  Semua sesi lama telah dihapus demi keamanan akun kamu
                 </div>
                 <button
                   className="rp-btn"
