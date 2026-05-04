@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -19,7 +19,8 @@ export default function RegisterPage() {
     password: "",
     confirm: ""
   })
-  const [otp, setOtp] = useState("")
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""))
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -30,16 +31,47 @@ export default function RegisterPage() {
       if (e.key !== "Enter" || loading) return
       if (step === "form") {
         handleSendOTP(e as any)
-      } else if (step === "otp" && otp.length === 6) {
+      } else if (step === "otp" && otpDigits.join("").length === 6) {
         handleVerifyAndRegister(e as any)
       }
     }
     document.addEventListener("keydown", handler)
     return () => document.removeEventListener("keydown", handler)
-  }, [step, otp, loading, form])
+  }, [step, loading, form, otpDigits])
 
   const imageWa =
     "https://res.cloudinary.com/dp0dtct3v/image/upload/v1775458567/whatsapp_objiub.png"
+
+  const handleOtpChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1)
+    const newDigits = [...otpDigits]
+    newDigits[index] = digit
+    setOtpDigits(newDigits)
+    if (digit && index < 5) {
+      otpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6)
+    const newDigits = Array(6).fill("")
+    pasted.split("").forEach((char, i) => {
+      newDigits[i] = char
+    })
+    setOtpDigits(newDigits)
+    const nextEmpty = Math.min(pasted.length, 5)
+    otpRefs.current[nextEmpty]?.focus()
+  }
 
   const handleChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -98,6 +130,7 @@ export default function RegisterPage() {
   const handleVerifyAndRegister = async (e: React.MouseEvent) => {
     e.preventDefault()
     setError("")
+    const otp = otpDigits.join("")
     if (otp.length !== 6) {
       setError("Masukkan 6 digit OTP")
       return
@@ -189,18 +222,15 @@ export default function RegisterPage() {
         }
         .rg-left-glow { position: absolute; top: -120px; right: -120px; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,.22) 0%, transparent 70%); pointer-events: none; }
         .rg-left-glow2 { position: absolute; bottom: -80px; left: -80px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(30,58,138,.18) 0%, transparent 70%); pointer-events: none; }
-
         .rg-ticker-wrap { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,.25); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,.08); height: 36px; overflow: hidden; display: flex; align-items: center; }
         .rg-ticker-track { display: flex; animation: ticker 28s linear infinite; white-space: nowrap; }
         .rg-ticker-item { display: inline-flex; align-items: center; gap: 14px; padding: 0 36px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .06em; }
         .rg-ticker-dot { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; }
-
         .rg-brand-area { position: relative; z-index: 2; padding: 52px 52px 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .rg-brand-mark { width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59,130,246,.35); }
         .rg-brand-mark span { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 11px; color: #fff; }
         .rg-brand-name { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 18px; color: #fff; letter-spacing: .06em; }
         .rg-brand-sub { font-size: 11px; color: rgba(255,255,255,.4); font-family: 'Nunito', sans-serif; font-weight: 600; margin-top: 2px; }
-
         .rg-hero { position: relative; z-index: 2; padding: 40px 52px 0; flex: 1; }
         .rg-hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.15); border-radius: 100px; padding: 6px 14px; margin-bottom: 24px; }
         .rg-hero-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; position: relative; }
@@ -209,7 +239,6 @@ export default function RegisterPage() {
         .rg-hero-title { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: clamp(28px, 3vw, 40px); line-height: 1.1; letter-spacing: -.02em; color: #fff; margin-bottom: 14px; }
         .rg-hero-title em { font-style: normal; color: #60a5fa; }
         .rg-hero-desc { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.7; max-width: 360px; font-family: 'Nunito', sans-serif; font-weight: 500; margin-bottom: 28px; }
-
         /* Visual mock */
         .rg-visual { border: 1px solid rgba(255,255,255,.1); border-radius: 14px; overflow: hidden; background: rgba(0,0,0,.2); margin-bottom: 24px; }
         .rg-visual-header { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.15); }
@@ -225,23 +254,19 @@ export default function RegisterPage() {
         .rg-visual-badge.ok { background: rgba(29,78,216,.15); color: #93c5fd; }
         .rg-visual-badge.warn { background: rgba(245,158,11,.12); color: #fde68a; }
         .rg-visual-badge.low { background: rgba(239,68,68,.12); color: #fca5a5; }
-
         /* Steps */
         .rg-steps { display: flex; flex-direction: column; gap: 10px; }
         .rg-step { display: flex; align-items: flex-start; gap: 14px; }
         .rg-step-num { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-family: 'Nunito', sans-serif; font-weight: 900; color: #93c5fd; margin-top: 2px; }
         .rg-step-text { font-size: 13px; color: rgba(255,255,255,.5); font-family: 'Nunito', sans-serif; font-weight: 600; line-height: 1.5; }
         .rg-step-text strong { color: rgba(255,255,255,.8); font-weight: 800; }
-
         .rg-bottom-bar { position: relative; z-index: 2; padding: 22px 52px; border-top: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: space-between; }
         .rg-bottom-trust { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,.35); font-family: 'Nunito', sans-serif; font-weight: 700; }
         .rg-bottom-trust-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
         .rg-bottom-version { font-size: 11px; color: rgba(255,255,255,.2); font-family: 'Nunito', sans-serif; font-weight: 700; }
-
         /* ── RIGHT ── */
         .rg-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 40px; background: #fff; overflow-y: auto; }
         .rg-card { width: 100%; max-width: 400px; animation: fadeUp .5s ease forwards; }
-
         .rg-form-title { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 30px; color: #0f172a; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 6px; }
         .rg-form-sub { font-size: 14px; color: #64748b; font-family: 'Nunito', sans-serif; font-weight: 500; line-height: 1.5; margin-bottom: 24px; }
         .rg-lbl { display: block; font-size: 13px; font-weight: 700; color: #374151; font-family: 'Nunito', sans-serif; margin-bottom: 7px; }
@@ -263,7 +288,6 @@ export default function RegisterPage() {
         .rg-foot a { color: #1e3a8a; text-decoration: none; font-weight: 800; }
         .rg-strength { display: flex; gap: 4px; margin-top: 7px; }
         .rg-strength-bar { flex: 1; height: 3px; border-radius: 2px; background: #e2e8f0; transition: background .3s; }
-
         /* Mobile */
         .rg-topbar { display: none; background: linear-gradient(135deg, #060b1a, #1e3a8a); padding: 14px 20px; align-items: center; gap: 12px; cursor: pointer; }
         .rg-topbar-mark { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -284,8 +308,26 @@ export default function RegisterPage() {
           .rg-inp { height: 44px; }
           .rg-btn { height: 46px; }
         }
+        .otp-box-wrap { display: flex; gap: 10px; justify-content: center; }
+        .otp-box {
+          width: 52px; height: 60px;
+          background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px;
+          font-size: 26px; font-weight: 900; text-align: center;
+          font-family: 'Nunito', sans-serif; color: #0f172a;
+          outline: none; transition: border-color .2s, box-shadow .2s, transform .15s;
+          caret-color: transparent;
+        }
+        .otp-box:focus {
+          border-color: #3b82f6; background: #fff;
+          box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+          transform: translateY(-2px);
+        }
+        .otp-box.filled { border-color: #1e3a8a; background: #eff6ff; }
+        @media (max-width: 480px) {
+          .otp-box { width: 44px; height: 54px; font-size: 22px; border-radius: 10px; }
+          .otp-box-wrap { gap: 7px; }
+        }
       `}</style>
-
       <div className="rg-root">
         {/* Mobile topbar */}
         <div className="rg-topbar" onClick={() => router.push("/")}>
@@ -765,36 +807,31 @@ export default function RegisterPage() {
                   >
                     Masukkan 6 Digit OTP
                   </label>
-                  <input
-                    style={{
-                      width: "100%",
-                      height: 56,
-                      padding: "0 16px",
-                      background: "#f8fafc",
-                      border: "1.5px solid #e2e8f0",
-                      borderRadius: 10,
-                      fontSize: 28,
-                      fontWeight: 800,
-                      textAlign: "center",
-                      letterSpacing: "0.5em",
-                      fontFamily: "'Nunito', sans-serif",
-                      color: "#0f172a",
-                      outline: "none"
-                    }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="······"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    autoFocus
-                  />
+                  <div className="otp-box-wrap">
+                    {otpDigits.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => {
+                          otpRefs.current[i] = el
+                        }}
+                        className={`otp-box${digit ? " filled" : ""}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(i, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                        onPaste={handleOtpPaste}
+                        autoFocus={i === 0}
+                      />
+                    ))}
+                  </div>
                   <p
                     style={{
                       textAlign: "center",
                       fontSize: 12,
                       color: "#94a3b8",
-                      marginTop: 8,
+                      marginTop: 10,
                       fontFamily: "'Nunito', sans-serif",
                       fontWeight: 600
                     }}
@@ -806,7 +843,7 @@ export default function RegisterPage() {
                 <button
                   className="rg-btn"
                   onClick={handleVerifyAndRegister}
-                  disabled={loading || otp.length !== 6}
+                  disabled={loading || otpDigits.join("").length !== 6}
                 >
                   {loading ? (
                     <span className="rg-dots">
@@ -839,7 +876,7 @@ export default function RegisterPage() {
                     onClick={() => {
                       setStep("form")
                       setError("")
-                      setOtp("")
+                      setOtpDigits(Array(6).fill(""))
                     }}
                     style={{
                       background: "none",
