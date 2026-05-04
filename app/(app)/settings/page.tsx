@@ -2030,9 +2030,10 @@ export default function SettingsPage() {
                               opacity: isSaving ? 0.8 : 1,
                               width: "100%"
                             }}
+                            className="text-center"
                           >
                             {isSaving && <Box sx={spinnerSx} />}
-                            {isSaving ? "Menyimpan..." : "💾 Simpan Perubahan"}
+                            {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
                           </button>
                         </Box>
                       </Box>
@@ -2411,11 +2412,10 @@ export default function SettingsPage() {
                               opacity: isSaving ? 0.8 : 1,
                               width: "100%"
                             }}
+                            className="text-center"
                           >
                             {isSaving && <Box sx={spinnerSx} />}
-                            {isSaving
-                              ? "Menyimpan..."
-                              : "💾 Simpan Data Pemilik"}
+                            {isSaving ? "Menyimpan..." : "Simpan Data Pemilik"}
                           </button>
                         </Box>
                       </Box>
