@@ -1726,7 +1726,7 @@ export default function SettingsPage() {
                                       cursor: "pointer"
                                     }}
                                   >
-                                    🗑️ Hapus
+                                    Hapus
                                   </button>
                                 )}
                               </Box>
@@ -2197,9 +2197,7 @@ export default function SettingsPage() {
                                     cursor: "pointer"
                                   }}
                                 >
-                                  {ownerKtpUrl
-                                    ? "🔄 Ganti KTP"
-                                    : "📎 Upload KTP"}
+                                  {ownerKtpUrl ? "Ganti KTP" : "Upload KTP"}
                                 </button>
                                 {ownerKtpUrl && (
                                   <>
@@ -2237,7 +2235,7 @@ export default function SettingsPage() {
                                         fontWeight: 600
                                       }}
                                     >
-                                      🔗 Lihat ↗
+                                      Lihat Detail
                                     </a>
                                   </>
                                 )}
