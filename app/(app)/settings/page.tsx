@@ -46,7 +46,6 @@ const EMPTY_LOCATION: LocationValue = {
   kodePos: ""
 }
 
-// ─── NAV TABS ───────────────────────────────────────────────
 type SettingsTab = "store" | "owner"
 
 const TABS: { id: SettingsTab; label: string; icon: string }[] = [
@@ -54,7 +53,6 @@ const TABS: { id: SettingsTab; label: string; icon: string }[] = [
   { id: "owner", label: "Data Pemilik", icon: "👤" }
 ]
 
-// ─── FIELD COMPONENT ────────────────────────────────────────
 function Field({
   label,
   error,
@@ -110,7 +108,6 @@ function Field({
   )
 }
 
-// ─── DELETE CONFIRM MODAL ────────────────────────────────────
 function DeleteConfirmModal({
   open,
   onClose,
@@ -255,7 +252,6 @@ function DeleteConfirmModal({
   )
 }
 
-// ─── IMAGE MODAL ─────────────────────────────────────────────
 function ImageModal({
   open,
   onClose,
@@ -380,17 +376,6 @@ function ImageModal({
     setSelectedCam("")
   }
 
-  const spinnerStyle: React.CSSProperties = {
-    width: 14,
-    height: 14,
-    border: "2px solid #1e3a8a",
-    borderTopColor: "transparent",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-    display: "inline-block",
-    flexShrink: 0
-  }
-
   return (
     <Modal open={open} onClose={handleClose}>
       <Box
@@ -412,7 +397,6 @@ function ImageModal({
         }}
       >
         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-        {/* Header */}
         <Box
           sx={{
             px: 3,
@@ -482,7 +466,6 @@ function ImageModal({
         </Box>
 
         <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-          {/* Tabs */}
           <Box
             sx={{
               display: "flex",
@@ -525,7 +508,6 @@ function ImageModal({
             ))}
           </Box>
 
-          {/* Upload Mode */}
           {mode === "upload" && (
             <>
               <input
@@ -619,7 +601,6 @@ function ImageModal({
             </>
           )}
 
-          {/* Camera Mode */}
           {mode === "camera" && (
             <Box>
               <Box
@@ -772,7 +753,6 @@ function ImageModal({
             </Box>
           )}
 
-          {/* Status banners */}
           {status === "uploading" && (
             <Box
               sx={{
@@ -786,7 +766,17 @@ function ImageModal({
                 borderRadius: "6px"
               }}
             >
-              <span style={spinnerStyle} />
+              <Box
+                sx={{
+                  width: 14,
+                  height: 14,
+                  border: "2px solid #1e3a8a",
+                  borderTopColor: "transparent",
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                  flexShrink: 0
+                }}
+              />
               <span
                 style={{
                   fontSize: 13,
@@ -887,7 +877,6 @@ export default function SettingsPage() {
     severity: "success" | "error"
   }>({ open: false, msg: "", severity: "success" })
 
-  // Store data
   const [storeId, setStoreId] = useState("")
   const [storeName, setStoreName] = useState("")
   const [storeType, setStoreType] = useState("")
@@ -903,7 +892,6 @@ export default function SettingsPage() {
   >({})
   const [storeErrors, setStoreErrors] = useState<Record<string, string>>({})
 
-  // Owner data
   const [ownerNik, setOwnerNik] = useState("")
   const [ownerFullName, setOwnerFullName] = useState("")
   const [ownerBirthDate, setOwnerBirthDate] = useState("")
@@ -912,11 +900,8 @@ export default function SettingsPage() {
   const [ownerKtpUrl, setOwnerKtpUrl] = useState("")
   const [ownerErrors, setOwnerErrors] = useState<Record<string, string>>({})
 
-  // Image modals
   const [storeImgModalOpen, setStoreImgModalOpen] = useState(false)
   const [ktpModalOpen, setKtpModalOpen] = useState(false)
-
-  // Delete confirms
   const [deleteStoreImgOpen, setDeleteStoreImgOpen] = useState(false)
   const [deleteKtpOpen, setDeleteKtpOpen] = useState(false)
   const [isDeletingStoreImg, setIsDeletingStoreImg] = useState(false)
@@ -959,6 +944,8 @@ export default function SettingsPage() {
   )
 
   const T = "0.3s ease"
+
+  // ── Same drawerPaperSx as registration page ──────────────
   const drawerPaperSx = () => ({
     width: DRAWER_WIDTH,
     boxSizing: "border-box" as const,
@@ -966,6 +953,7 @@ export default function SettingsPage() {
     border: "none",
     overflow: "hidden"
   })
+
   const inputStyle = (hasError: boolean): React.CSSProperties => ({
     width: "100%",
     padding: "10px 12px",
@@ -980,12 +968,24 @@ export default function SettingsPage() {
     transition: "border-color 0.2s"
   })
 
-  // ── LOAD STORE DATA ──────────────────────────────────────
+  const spinnerSx = {
+    width: 14,
+    height: 14,
+    border: "2px solid rgba(255,255,255,0.4)",
+    borderTopColor: "#fff",
+    borderRadius: "50%",
+    animation: "spin 0.8s linear infinite",
+    "@keyframes spin": {
+      from: { transform: "rotate(0deg)" },
+      to: { transform: "rotate(360deg)" }
+    }
+  }
+
+  // ── LOAD ─────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       setIsLoading(true)
       try {
-        // Fetch store for the logged-in user. Adjust endpoint as needed.
         const res = await fetch("/api/stores/my")
         if (!res.ok) throw new Error("Gagal mengambil data toko")
         const data = await res.json()
@@ -1022,7 +1022,7 @@ export default function SettingsPage() {
       } catch {
         setSnackbar({
           open: true,
-          msg: "Gagal memuat data toko. Pastikan Anda sudah memiliki toko.",
+          msg: "Gagal memuat data toko.",
           severity: "error"
         })
       } finally {
@@ -1147,24 +1147,20 @@ export default function SettingsPage() {
     }
   }
 
-  // ── DELETE CLOUDINARY IMAGE ──────────────────────────────
+  // ── DELETE IMAGE ─────────────────────────────────────────
   const extractPublicId = (url: string) => {
-    // e.g. https://res.cloudinary.com/xxx/image/upload/v12345/folder/filename.jpg
     const parts = url.split("/upload/")
     if (parts.length < 2) return null
-    // remove version prefix (v12345/)
-    const withoutVersion = parts[1].replace(/^v\d+\//, "")
-    // remove extension
-    return withoutVersion.replace(/\.[^/.]+$/, "")
+    return parts[1].replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "")
   }
 
-  const deleteCloudinaryImage = async (url: string, folder: string) => {
+  const deleteCloudinaryImage = async (url: string) => {
     const publicId = extractPublicId(url)
     if (!publicId) return
     const res = await fetch("/api/upload/delete", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ publicId, folder })
+      body: JSON.stringify({ publicId })
     })
     if (!res.ok) {
       const r = await res.json()
@@ -1175,8 +1171,7 @@ export default function SettingsPage() {
   const handleDeleteStoreImg = async () => {
     setIsDeletingStoreImg(true)
     try {
-      if (storeImageUrl) await deleteCloudinaryImage(storeImageUrl, "stores")
-      // Update DB
+      if (storeImageUrl) await deleteCloudinaryImage(storeImageUrl)
       const res = await fetch(`/api/stores/${storeId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -1204,8 +1199,7 @@ export default function SettingsPage() {
   const handleDeleteKtp = async () => {
     setIsDeletingKtp(true)
     try {
-      if (ownerKtpUrl) await deleteCloudinaryImage(ownerKtpUrl, "ktp")
-      // Update DB
+      if (ownerKtpUrl) await deleteCloudinaryImage(ownerKtpUrl)
       const payload = {
         owner: {
           nik: ownerNik,
@@ -1240,7 +1234,6 @@ export default function SettingsPage() {
     }
   }
 
-  // ─── SECTION HEADER ──────────────────────────────────────
   const SectionHeader = ({ label }: { label: string }) => (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5 }}>
       <Box sx={{ width: 4, height: 16, bgcolor: "#1e3a8a", borderRadius: 2 }} />
@@ -1259,7 +1252,6 @@ export default function SettingsPage() {
     </Box>
   )
 
-  // ─── SKELETON LOADER ─────────────────────────────────────
   const renderSkeleton = () => (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box
@@ -1318,22 +1310,11 @@ export default function SettingsPage() {
     </Box>
   )
 
-  const spinnerSx = {
-    width: 14,
-    height: 14,
-    border: "2px solid rgba(255,255,255,0.4)",
-    borderTopColor: "#fff",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-    "@keyframes spin": {
-      from: { transform: "rotate(0deg)" },
-      to: { transform: "rotate(360deg)" }
-    }
-  }
-
   return (
     <ThemeProvider theme={theme}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+
+      {/* ── Root: identical pattern to registration page ── */}
       <Box
         sx={{
           display: "flex",
@@ -1356,6 +1337,7 @@ export default function SettingsPage() {
         >
           <Sidebar isDark={isDark} T={T} />
         </Drawer>
+
         {/* Drawer Desktop */}
         <Drawer
           variant="permanent"
@@ -1369,7 +1351,7 @@ export default function SettingsPage() {
           <Sidebar isDark={isDark} T={T} />
         </Drawer>
 
-        {/* Main */}
+        {/* Main — identical to registration page */}
         <Box
           sx={{
             flex: 1,
@@ -1390,7 +1372,7 @@ export default function SettingsPage() {
           />
 
           <Box sx={{ flex: 1, overflow: "auto", p: "16px" }}>
-            <Box sx={{ width: "100%", maxWidth: 860, mx: "auto" }}>
+            <Box sx={{ width: "100%" }}>
               {/* Page title */}
               <Box sx={{ mb: 3 }}>
                 <p
@@ -1434,37 +1416,34 @@ export default function SettingsPage() {
               {/* Tab Nav */}
               <Box
                 sx={{
-                  display: "flex",
-                  gap: 1,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
                   mb: 3,
-                  p: 0.5,
-                  bgcolor: p.bgPaper,
                   border: `1px solid ${p.border}`,
-                  borderRadius: "8px"
+                  borderRadius: "8px",
+                  overflow: "hidden"
                 }}
               >
-                {TABS.map((tab) => (
+                {TABS.map((tab, idx) => (
                   <Box
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     sx={{
-                      flex: 1,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      gap: 1,
-                      px: { xs: 1, sm: 2 },
-                      py: 1.25,
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      border: `1px solid ${activeTab === tab.id ? (isDark ? "#1e3a8a" : "#b5d4f4") : "transparent"}`,
+                      gap: 1.5,
+                      px: { xs: 2, sm: 3 },
+                      py: 1.5,
+                      borderRight: idx === 0 ? `1px solid ${p.border}` : "none",
                       bgcolor:
                         activeTab === tab.id
                           ? isDark
                             ? "#0d1f3c"
                             : "#e6f1fb"
-                          : "transparent",
-                      transition: "all 0.2s"
+                          : p.bgPaper,
+                      transition: `background-color ${T}`,
+                      cursor: "pointer"
                     }}
                   >
                     <span style={{ fontSize: 15 }}>{tab.icon}</span>
@@ -1562,7 +1541,7 @@ export default function SettingsPage() {
                     {/* ════ TAB: STORE ════ */}
                     {activeTab === "store" && (
                       <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                        {/* ── FOTO TOKO SECTION ── */}
+                        {/* FOTO TOKO */}
                         <Box
                           sx={{
                             mb: 3,
@@ -1578,7 +1557,6 @@ export default function SettingsPage() {
                               gap: 3
                             }}
                           >
-                            {/* Avatar */}
                             <Box sx={{ position: "relative", flexShrink: 0 }}>
                               <Box
                                 onClick={() => setStoreImgModalOpen(true)}
@@ -1598,7 +1576,6 @@ export default function SettingsPage() {
                                   transition: "all 0.2s",
                                   "&:hover": {
                                     borderColor: "#1e3a8a",
-                                    bgcolor: isDark ? "#0d1f3c" : "#dbeafe",
                                     transform: "scale(1.04)"
                                   }
                                 }}
@@ -1749,7 +1726,7 @@ export default function SettingsPage() {
                                       cursor: "pointer"
                                     }}
                                   >
-                                    🗑️ Hapus dari Cloudinary
+                                    🗑️ Hapus
                                   </button>
                                 )}
                               </Box>
@@ -1777,7 +1754,7 @@ export default function SettingsPage() {
                           </Box>
                         </Box>
 
-                        {/* ── INFORMASI UMUM ── */}
+                        {/* INFORMASI UMUM */}
                         <Box
                           sx={{
                             mb: 3,
@@ -1816,8 +1793,8 @@ export default function SettingsPage() {
                                   value={storeName}
                                   onChange={(e) => {
                                     setStoreName(e.target.value)
-                                    setStoreErrors((prev) => ({
-                                      ...prev,
+                                    setStoreErrors((p) => ({
+                                      ...p,
                                       storeName: ""
                                     }))
                                   }}
@@ -1833,8 +1810,8 @@ export default function SettingsPage() {
                                 value={storeType}
                                 onChange={(e) => {
                                   setStoreType(e.target.value)
-                                  setStoreErrors((prev) => ({
-                                    ...prev,
+                                  setStoreErrors((p) => ({
+                                    ...p,
                                     storeType: ""
                                   }))
                                 }}
@@ -1858,8 +1835,8 @@ export default function SettingsPage() {
                                 value={storePhone}
                                 onChange={(e) => {
                                   setStorePhone(e.target.value)
-                                  setStoreErrors((prev) => ({
-                                    ...prev,
+                                  setStoreErrors((p) => ({
+                                    ...p,
                                     storePhone: ""
                                   }))
                                 }}
@@ -1894,8 +1871,8 @@ export default function SettingsPage() {
                                   value={storeAddress}
                                   onChange={(e) => {
                                     setStoreAddress(e.target.value)
-                                    setStoreErrors((prev) => ({
-                                      ...prev,
+                                    setStoreErrors((p) => ({
+                                      ...p,
                                       storeAddress: ""
                                     }))
                                   }}
@@ -1909,7 +1886,7 @@ export default function SettingsPage() {
                           </Box>
                         </Box>
 
-                        {/* ── KOORDINAT ── */}
+                        {/* KOORDINAT */}
                         {(storeLat || storeLng) && (
                           <Box
                             sx={{
@@ -2000,30 +1977,16 @@ export default function SettingsPage() {
                                   color: "#1e3a8a",
                                   fontFamily: "'Nunito', sans-serif",
                                   textDecoration: "none",
-                                  fontWeight: 700,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4
+                                  fontWeight: 700
                                 }}
                               >
                                 🗺️ Buka Google Maps ↗
                               </a>
                             </Box>
-                            <p
-                              style={{
-                                margin: "8px 0 0",
-                                fontSize: 11,
-                                color: p.textMuted,
-                                fontFamily: "'Nunito', sans-serif"
-                              }}
-                            >
-                              Untuk mengubah koordinat, gunakan fitur Peta di
-                              halaman registrasi.
-                            </p>
                           </Box>
                         )}
 
-                        {/* ── WILAYAH ── */}
+                        {/* WILAYAH */}
                         <Box
                           sx={{
                             mb: 3,
@@ -2044,7 +2007,7 @@ export default function SettingsPage() {
                           />
                         </Box>
 
-                        {/* Save Button */}
+                        {/* Save */}
                         <Box
                           sx={{ display: "flex", justifyContent: "flex-end" }}
                         >
@@ -2078,7 +2041,7 @@ export default function SettingsPage() {
                     {/* ════ TAB: OWNER ════ */}
                     {activeTab === "owner" && (
                       <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                        {/* ── FOTO KTP SECTION ── */}
+                        {/* FOTO KTP */}
                         <Box
                           sx={{
                             mb: 3,
@@ -2095,7 +2058,6 @@ export default function SettingsPage() {
                               flexWrap: "wrap"
                             }}
                           >
-                            {/* KTP Preview */}
                             {ownerKtpUrl ? (
                               <Box sx={{ position: "relative", flexShrink: 0 }}>
                                 <Image
@@ -2171,10 +2133,7 @@ export default function SettingsPage() {
                                   cursor: "pointer",
                                   bgcolor: isDark ? "#0d1f3c" : "#eff6ff",
                                   flexShrink: 0,
-                                  "&:hover": {
-                                    borderColor: "#1e3a8a",
-                                    bgcolor: isDark ? "#0d1f3c" : "#dbeafe"
-                                  },
+                                  "&:hover": { borderColor: "#1e3a8a" },
                                   transition: "all 0.2s"
                                 }}
                               >
@@ -2192,7 +2151,6 @@ export default function SettingsPage() {
                                 </p>
                               </Box>
                             )}
-
                             <Box sx={{ flex: 1, minWidth: 180 }}>
                               <p
                                 style={{
@@ -2215,7 +2173,7 @@ export default function SettingsPage() {
                               >
                                 {ownerKtpUrl
                                   ? "KTP tersimpan di Cloudinary"
-                                  : "Belum ada foto KTP. Upload untuk referensi data pemilik."}
+                                  : "Belum ada foto KTP."}
                               </p>
                               <Box
                                 sx={{
@@ -2258,7 +2216,7 @@ export default function SettingsPage() {
                                         cursor: "pointer"
                                       }}
                                     >
-                                      🗑️ Hapus dari Cloudinary
+                                      🗑️ Hapus
                                     </button>
                                     <a
                                       href={ownerKtpUrl}
@@ -2287,7 +2245,7 @@ export default function SettingsPage() {
                           </Box>
                         </Box>
 
-                        {/* ── DATA DIRI ── */}
+                        {/* DATA DIRI */}
                         <Box
                           sx={{
                             mb: 3,
@@ -2325,13 +2283,10 @@ export default function SettingsPage() {
                                     setOwnerNik(
                                       e.target.value.replace(/\D/g, "")
                                     )
-                                    setOwnerErrors((prev) => ({
-                                      ...prev,
-                                      nik: ""
-                                    }))
+                                    setOwnerErrors((p) => ({ ...p, nik: "" }))
                                   }}
                                   maxLength={16}
-                                  style={{ ...inputStyle(!!ownerErrors.nik) }}
+                                  style={inputStyle(!!ownerErrors.nik)}
                                 />
                               </Field>
                             </Box>
@@ -2354,8 +2309,8 @@ export default function SettingsPage() {
                                   value={ownerFullName}
                                   onChange={(e) => {
                                     setOwnerFullName(e.target.value)
-                                    setOwnerErrors((prev) => ({
-                                      ...prev,
+                                    setOwnerErrors((p) => ({
+                                      ...p,
                                       fullName: ""
                                     }))
                                   }}
@@ -2374,8 +2329,8 @@ export default function SettingsPage() {
                                 value={ownerBirthDate}
                                 onChange={(e) => {
                                   setOwnerBirthDate(e.target.value)
-                                  setOwnerErrors((prev) => ({
-                                    ...prev,
+                                  setOwnerErrors((p) => ({
+                                    ...p,
                                     birthDate: ""
                                   }))
                                 }}
@@ -2390,10 +2345,7 @@ export default function SettingsPage() {
                                 value={ownerGender}
                                 onChange={(e) => {
                                   setOwnerGender(e.target.value)
-                                  setOwnerErrors((prev) => ({
-                                    ...prev,
-                                    gender: ""
-                                  }))
+                                  setOwnerErrors((p) => ({ ...p, gender: "" }))
                                 }}
                                 style={inputStyle(!!ownerErrors.gender)}
                               >
@@ -2421,8 +2373,8 @@ export default function SettingsPage() {
                                   value={ownerAddress}
                                   onChange={(e) => {
                                     setOwnerAddress(e.target.value)
-                                    setOwnerErrors((prev) => ({
-                                      ...prev,
+                                    setOwnerErrors((p) => ({
+                                      ...p,
                                       address: ""
                                     }))
                                   }}
@@ -2436,7 +2388,7 @@ export default function SettingsPage() {
                           </Box>
                         </Box>
 
-                        {/* Save Button */}
+                        {/* Save */}
                         <Box
                           sx={{ display: "flex", justifyContent: "flex-end" }}
                         >
@@ -2476,7 +2428,7 @@ export default function SettingsPage() {
         </Box>
       </Box>
 
-      {/* ── IMAGE MODALS ── */}
+      {/* MODALS */}
       <ImageModal
         open={storeImgModalOpen}
         onClose={() => setStoreImgModalOpen(false)}
@@ -2495,14 +2447,12 @@ export default function SettingsPage() {
         isDark={isDark}
         p={p}
       />
-
-      {/* ── DELETE CONFIRMS ── */}
       <DeleteConfirmModal
         open={deleteStoreImgOpen}
         onClose={() => setDeleteStoreImgOpen(false)}
         onConfirm={handleDeleteStoreImg}
         title="Hapus Foto Toko"
-        description="Foto toko akan dihapus permanen dari Cloudinary dan tidak dapat dikembalikan. Apakah Anda yakin?"
+        description="Foto toko akan dihapus permanen dari Cloudinary. Yakin?"
         isDeleting={isDeletingStoreImg}
         isDark={isDark}
         p={p}
@@ -2512,13 +2462,12 @@ export default function SettingsPage() {
         onClose={() => setDeleteKtpOpen(false)}
         onConfirm={handleDeleteKtp}
         title="Hapus Foto KTP"
-        description="Foto KTP akan dihapus permanen dari Cloudinary dan tidak dapat dikembalikan. Apakah Anda yakin?"
+        description="Foto KTP akan dihapus permanen dari Cloudinary. Yakin?"
         isDeleting={isDeletingKtp}
         isDark={isDark}
         p={p}
       />
 
-      {/* ── SNACKBAR ── */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}
