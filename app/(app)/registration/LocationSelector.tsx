@@ -38,7 +38,12 @@ interface LocationSelectorProps {
   onChange: (val: LocationValue) => void
   errors?: Partial<Record<keyof LocationValue, string>>
   isDark: boolean
-  p: { border: string; textPrimary: string; textMuted: string }
+  p: {
+    border: string
+    textPrimary: string
+    textMuted: string
+    [key: string]: string
+  }
 }
 
 const api = (params: Record<string, string>) =>
