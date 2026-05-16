@@ -533,10 +533,6 @@ export default function LoginPage() {
                 "Masuk ke Dashboard"
               )}
             </button>
-            <p className="lg-foot">
-              Belum punya akun?{" "}
-              <Link href="/register">Daftar gratis sekarang</Link>
-            </p>
           </div>
         </div>
       </div>

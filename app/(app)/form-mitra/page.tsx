@@ -1,18 +1,31 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-type Step = "identity" | "business" | "agreement" | "payment" | "done"
+// ── Types ──────────────────────────────────────────────────────
+type Step =
+  | "account"
+  | "otp"
+  | "business"
+  | "plan"
+  | "agreement"
+  | "payment"
+  | "done"
 
 const STEPS: { key: Step; label: string; short: string }[] = [
-  { key: "identity", label: "Data Diri", short: "01" },
-  { key: "business", label: "Bisnis", short: "02" },
-  { key: "agreement", label: "Perjanjian", short: "03" },
-  { key: "payment", label: "Pembayaran", short: "04" },
+  { key: "account", label: "Akun", short: "01" },
+  { key: "otp", label: "Verifikasi", short: "02" },
+  { key: "business", label: "Bisnis", short: "03" },
+  { key: "plan", label: "Paket", short: "04" },
+  { key: "agreement", label: "Perjanjian", short: "05" },
+  { key: "payment", label: "Pembayaran", short: "06" },
   { key: "done", label: "Selesai", short: "✓" }
 ]
+
+// Steps shown in the left panel stepper (excluding otp & done)
+const LEFT_STEPS = STEPS.filter((s) => !["otp", "done"].includes(s.key))
 
 const PLAN_OPTIONS = [
   {
@@ -68,25 +81,159 @@ function formatRp(n: number) {
   return "Rp " + n.toLocaleString("id-ID")
 }
 
+function getPasswordStrength(pw: string): number {
+  if (!pw) return -1
+  if (pw.length < 6) return 0
+  if (pw.length < 8) return 1
+  if (pw.length < 12) return 2
+  return 3
+}
+
+// ── Sub-components ─────────────────────────────────────────────
+
+function LoadingDots() {
+  return (
+    <span className="fm-dots">
+      <span className="fm-dot" style={{ animationDelay: "0s" }} />
+      <span className="fm-dot" style={{ animationDelay: "0.15s" }} />
+      <span className="fm-dot" style={{ animationDelay: "0.3s" }} />
+    </span>
+  )
+}
+
+function EyeToggle({
+  show,
+  onToggle
+}: {
+  show: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="fm-eye-btn"
+      onClick={onToggle}
+      tabIndex={-1}
+    >
+      {show ? (
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      ) : (
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
+function PasswordStrengthBar({ password }: { password: string }) {
+  const strength = getPasswordStrength(password)
+  const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"]
+  const labels = ["Lemah", "Cukup", "Kuat", "Sangat Kuat"]
+  return (
+    <div style={{ marginTop: 7 }}>
+      <div style={{ display: "flex", gap: 4 }}>
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: 3,
+              borderRadius: 2,
+              background: i <= strength ? colors[strength] : "#e2e8f0",
+              transition: "background .3s"
+            }}
+          />
+        ))}
+      </div>
+      {password && (
+        <p
+          style={{
+            fontSize: 11,
+            color: colors[strength],
+            marginTop: 4,
+            fontWeight: 700
+          }}
+        >
+          {labels[strength]}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function OtpInput({
+  digits,
+  refs,
+  onChange,
+  onKeyDown,
+  onPaste
+}: {
+  digits: string[]
+  refs: React.MutableRefObject<(HTMLInputElement | null)[]>
+  onChange: (i: number, v: string) => void
+  onKeyDown: (i: number, e: React.KeyboardEvent) => void
+  onPaste: (e: React.ClipboardEvent) => void
+}) {
+  return (
+    <div className="fm-otp-wrap">
+      {digits.map((digit, i) => (
+        <input
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el
+          }}
+          className={`fm-otp-box${digit ? " filled" : ""}`}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={digit}
+          onChange={(e) => onChange(i, e.target.value)}
+          onKeyDown={(e) => onKeyDown(i, e)}
+          onPaste={onPaste}
+          autoFocus={i === 0}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ── Main Page ──────────────────────────────────────────────────
 export default function FormMitraPage() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>("identity")
+
+  const [step, setStep] = useState<Step>("account")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [agreed, setAgreed] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState("growth")
-  const [qrisLoading, setQrisLoading] = useState(false)
-  const [qrisUrl, setQrisUrl] = useState("")
-  const [paymentId, setPaymentId] = useState("")
-  const [paymentStatus, setPaymentStatus] = useState<
-    "pending" | "paid" | "failed"
-  >("pending")
+  const [success, setSuccess] = useState("")
 
+  // Account fields
   const [form, setForm] = useState({
-    // identity
-    pic_name: "",
-    pic_email: "",
-    pic_phone: "",
+    // account
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirm: "",
     pic_position: "",
     pic_ktp: "",
     // business
@@ -97,10 +244,36 @@ export default function FormMitraPage() {
     company_city: "",
     company_province: "",
     company_postal: "",
-    employee_count: "",
-    // plan
-    plan: "growth"
+    employee_count: ""
   })
+
+  const [showPw, setShowPw] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  // OTP
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""))
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [countdown, setCountdown] = useState(0)
+  const otpValue = otpDigits.join("")
+
+  // Plan
+  const [selectedPlan, setSelectedPlan] = useState("growth")
+  const plan = PLAN_OPTIONS.find((p) => p.id === selectedPlan)!
+
+  // Agreement
+  const [agreed, setAgreed] = useState(false)
+
+  // Payment
+  const [qrisLoading, setQrisLoading] = useState(false)
+  const [qrisUrl, setQrisUrl] = useState("")
+  const [paymentId, setPaymentId] = useState("")
+  const [paymentStatus, setPaymentStatus] = useState<
+    "pending" | "paid" | "failed"
+  >("pending")
+
+  const stepIndex = STEPS.findIndex((s) => s.key === step)
+  // Map step to left-panel stepper index (account=0, business=1, plan=2, agreement=3, payment=4)
+  const leftStepIndex = LEFT_STEPS.findIndex((s) => s.key === step)
 
   const handleChange =
     (field: string) =>
@@ -111,45 +284,203 @@ export default function FormMitraPage() {
     ) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
-  const stepIndex = STEPS.findIndex((s) => s.key === step)
-  const plan = PLAN_OPTIONS.find((p) => p.id === selectedPlan)!
+  // ── Countdown ──
+  const startCountdown = () => {
+    setCountdown(60)
+    const iv = setInterval(() => {
+      setCountdown((v) => {
+        if (v <= 1) {
+          clearInterval(iv)
+          return 0
+        }
+        return v - 1
+      })
+    }, 1000)
+  }
 
-  // ── Step navigation ──
-  const goNext = () => {
+  // ── Enter key for OTP ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || loading || step !== "otp") return
+      if (otpValue.length === 6) handleVerifyOtp()
+    }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [step, loading, otpValue])
+
+  // ── Poll payment status ──
+  useEffect(() => {
+    if (step !== "payment" || !paymentId) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/mitra/payment-status?id=${paymentId}`)
+        const data = await res.json()
+        if (data.status === "paid") {
+          setPaymentStatus("paid")
+          clearInterval(interval)
+          handleSubmitMitra()
+        } else if (data.status === "failed") {
+          setPaymentStatus("failed")
+          clearInterval(interval)
+        }
+      } catch {}
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [step, paymentId])
+
+  // ── Step 1: Send OTP ──
+  const handleSendOtp = async () => {
     setError("")
-    if (step === "identity") {
-      if (
-        !form.pic_name ||
-        !form.pic_email ||
-        !form.pic_phone ||
-        !form.pic_position
-      ) {
-        setError("Semua field wajib diisi")
+    if (
+      !form.name ||
+      !form.email ||
+      !form.phone ||
+      !form.password ||
+      !form.confirm ||
+      !form.pic_position
+    ) {
+      setError("Semua field wajib diisi")
+      return
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      setError("Format email tidak valid")
+      return
+    }
+    if (!/^08[0-9]{8,12}$/.test(form.phone)) {
+      setError("Format nomor tidak valid (contoh: 081234567890)")
+      return
+    }
+    if (form.password.length < 8) {
+      setError("Password minimal 8 karakter")
+      return
+    }
+    if (form.password !== form.confirm) {
+      setError("Password tidak cocok")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: form.phone })
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || "Gagal mengirim OTP")
         return
       }
-      setStep("business")
-    } else if (step === "business") {
-      if (
-        !form.company_name ||
-        !form.company_type ||
-        !form.company_address ||
-        !form.company_city
-      ) {
-        setError("Semua field wajib diisi")
-        return
-      }
-      setStep("agreement")
-    } else if (step === "agreement") {
-      if (!agreed) {
-        setError("Kamu harus menyetujui perjanjian kerjasama")
-        return
-      }
-      setStep("payment")
-      handleCreatePayment()
+      setStep("otp")
+      startCountdown()
+      setSuccess(`Kode OTP dikirim ke WhatsApp ${form.phone}`)
+    } catch {
+      setError("Terjadi kesalahan, coba lagi")
+    } finally {
+      setLoading(false)
     }
   }
 
-  // ── DOKU QRIS Payment ──
+  // ── Step 2: Verify OTP → Create Account ──
+  const handleVerifyOtp = async () => {
+    setError("")
+    setLoading(true)
+    try {
+      // Verify OTP
+      const verifyRes = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: form.phone, otp: otpValue })
+      })
+      const verifyData = await verifyRes.json()
+      if (!verifyRes.ok) {
+        setError(verifyData.error || "OTP tidak valid")
+        return
+      }
+
+      // Register account
+      const regRes = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          password: form.password
+        })
+      })
+      const regData = await regRes.json()
+      if (!regRes.ok) {
+        setError(regData.error || "Gagal membuat akun")
+        return
+      }
+
+      setSuccess("Akun berhasil dibuat! Lanjut lengkapi data bisnis.")
+      setStep("business")
+    } catch {
+      setError("Terjadi kesalahan, coba lagi")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    if (countdown > 0) return
+    setError("")
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: form.phone })
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error)
+        return
+      }
+      startCountdown()
+      setSuccess("OTP baru telah dikirim")
+    } catch {
+      setError("Gagal kirim ulang OTP")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 3: Business → Step 4: Plan ──
+  const handleBusinessNext = () => {
+    setError("")
+    if (
+      !form.company_name ||
+      !form.company_type ||
+      !form.company_address ||
+      !form.company_city
+    ) {
+      setError("Semua field wajib diisi")
+      return
+    }
+    setStep("plan")
+  }
+
+  // ── Step 4: Plan → Step 5: Agreement ──
+  const handlePlanNext = () => {
+    setError("")
+    setStep("agreement")
+  }
+
+  // ── Step 5: Agreement → Step 6: Payment ──
+  const handleAgreementNext = () => {
+    setError("")
+    if (!agreed) {
+      setError("Kamu harus menyetujui perjanjian kerjasama")
+      return
+    }
+    setStep("payment")
+    handleCreatePayment()
+  }
+
+  // ── Payment ──
   const handleCreatePayment = async () => {
     setQrisLoading(true)
     try {
@@ -159,9 +490,9 @@ export default function FormMitraPage() {
         body: JSON.stringify({
           plan: selectedPlan,
           amount: plan.price,
-          pic_name: form.pic_name,
-          pic_email: form.pic_email,
-          pic_phone: form.pic_phone,
+          pic_name: form.name,
+          pic_email: form.email,
+          pic_phone: form.phone,
           company_name: form.company_name
         })
       })
@@ -179,27 +510,6 @@ export default function FormMitraPage() {
     }
   }
 
-  // ── Poll payment status ──
-  useEffect(() => {
-    if (step !== "payment" || !paymentId) return
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/mitra/payment-status?id=${paymentId}`)
-        const data = await res.json()
-        if (data.status === "paid") {
-          setPaymentStatus("paid")
-          clearInterval(interval)
-          // Submit form data
-          handleSubmitMitra()
-        } else if (data.status === "failed") {
-          setPaymentStatus("failed")
-          clearInterval(interval)
-        }
-      } catch {}
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [step, paymentId])
-
   const handleSubmitMitra = async () => {
     setLoading(true)
     try {
@@ -207,7 +517,19 @@ export default function FormMitraPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          pic_name: form.name,
+          pic_email: form.email,
+          pic_phone: form.phone,
+          pic_position: form.pic_position,
+          pic_ktp: form.pic_ktp,
+          company_name: form.company_name,
+          company_type: form.company_type,
+          company_npwp: form.company_npwp,
+          company_address: form.company_address,
+          company_city: form.company_city,
+          company_province: form.company_province,
+          company_postal: form.company_postal,
+          employee_count: form.employee_count,
           plan: selectedPlan,
           payment_id: paymentId
         })
@@ -227,19 +549,66 @@ export default function FormMitraPage() {
     handleCreatePayment()
   }
 
+  // ── OTP helpers ──
+  const handleOtpChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1)
+    const next = [...otpDigits]
+    next[index] = digit
+    setOtpDigits(next)
+    if (digit && index < 5) otpRefs.current[index + 1]?.focus()
+  }
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0)
+      otpRefs.current[index - 1]?.focus()
+  }
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6)
+    const next = Array(6).fill("")
+    pasted.split("").forEach((c, i) => {
+      next[i] = c
+    })
+    setOtpDigits(next)
+    otpRefs.current[Math.min(pasted.length, 5)]?.focus()
+  }
+
+  // Left panel step labels & descriptions
+  const leftStepMeta: Record<string, string> = {
+    account: "Buat akun & verifikasi WA",
+    business: "Info perusahaan & lokasi",
+    plan: "Pilih paket yang sesuai",
+    agreement: "Review & setujui MoU",
+    payment: "Bayar via DOKU"
+  }
+
+  // Progress bar: map to 6 logical steps (account+otp = 1)
+  const progressSteps = [
+    "account",
+    "business",
+    "plan",
+    "agreement",
+    "payment",
+    "done"
+  ]
+  const progressIndex = step === "otp" ? 0 : progressSteps.indexOf(step)
+
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp    { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes dotBounce { 0%,80%,100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-5px); opacity: 1; } }
-        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.7); opacity: 0; } }
-        @keyframes gridPan { from { background-position: 0 0; } to { background-position: 48px 48px; } }
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes checkPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes pulse-ring{ 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.7); opacity: 0; } }
+        @keyframes gridPan   { from { background-position: 0 0; } to { background-position: 48px 48px; } }
+        @keyframes ticker    { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes spin      { to { transform: rotate(360deg); } }
+        @keyframes checkPop  { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slideIn   { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
         .fm-root { display: flex; min-height: 100vh; font-family: 'Nunito', sans-serif; }
 
@@ -255,86 +624,94 @@ export default function FormMitraPage() {
                             linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
           background-size: 48px 48px; animation: gridPan 8s linear infinite;
         }
-        .fm-left-glow { position: absolute; top: -120px; right: -120px; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,.22) 0%, transparent 70%); pointer-events: none; }
+        .fm-left-glow  { position: absolute; top: -120px; right: -120px; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,.22) 0%, transparent 70%); pointer-events: none; }
         .fm-left-glow2 { position: absolute; bottom: -80px; left: -80px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(30,58,138,.18) 0%, transparent 70%); pointer-events: none; }
 
         /* Ticker */
-        .fm-ticker-wrap { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,.25); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,.08); height: 36px; overflow: hidden; display: flex; align-items: center; }
-        .fm-ticker-track { display: flex; animation: ticker 28s linear infinite; white-space: nowrap; }
-        .fm-ticker-item { display: inline-flex; align-items: center; gap: 14px; padding: 0 36px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .06em; }
-        .fm-ticker-dot { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; }
+        .fm-ticker-wrap  { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,.25); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,.08); height: 36px; overflow: hidden; display: flex; align-items: center; }
+        .fm-ticker-track { display: flex; animation: ticker 30s linear infinite; white-space: nowrap; }
+        .fm-ticker-item  { display: inline-flex; align-items: center; gap: 14px; padding: 0 36px; font-weight: 700; font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .06em; }
+        .fm-ticker-dot   { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; }
 
         /* Brand */
         .fm-brand-area { position: relative; z-index: 2; padding: 52px 52px 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .fm-brand-mark { width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59,130,246,.35); }
         .fm-brand-mark span { font-weight: 900; font-size: 11px; color: #fff; letter-spacing: .05em; }
         .fm-brand-name { font-weight: 900; font-size: 18px; color: #fff; letter-spacing: .06em; }
-        .fm-brand-sub { font-size: 11px; color: rgba(255,255,255,.4); font-weight: 600; margin-top: 2px; }
+        .fm-brand-sub  { font-size: 11px; color: rgba(255,255,255,.4); font-weight: 600; margin-top: 2px; }
 
-        /* Hero content */
-        .fm-hero { position: relative; z-index: 2; padding: 40px 52px 0; flex: 1; }
-        .fm-hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.15); border-radius: 100px; padding: 6px 14px; margin-bottom: 22px; }
+        /* Hero */
+        .fm-hero      { position: relative; z-index: 2; padding: 36px 52px 0; flex: 1; }
+        .fm-hero-tag  { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.15); border-radius: 100px; padding: 6px 14px; margin-bottom: 20px; }
         .fm-hero-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; position: relative; }
         .fm-hero-tag-dot::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: rgba(96,165,250,.4); animation: pulse-ring 1.8s ease-out infinite; }
         .fm-hero-tag-text { color: rgba(255,255,255,.85); font-size: 11px; font-weight: 800; letter-spacing: .05em; }
-        .fm-hero-title { font-weight: 900; font-size: clamp(26px, 2.8vw, 40px); line-height: 1.1; letter-spacing: -.02em; color: #fff; margin-bottom: 12px; }
+        .fm-hero-title { font-weight: 900; font-size: clamp(24px, 2.6vw, 36px); line-height: 1.15; letter-spacing: -.02em; color: #fff; margin-bottom: 10px; }
         .fm-hero-title em { font-style: normal; color: #60a5fa; }
-        .fm-hero-desc { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.7; max-width: 360px; font-weight: 500; margin-bottom: 28px; }
+        .fm-hero-desc  { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.7; max-width: 340px; font-weight: 500; margin-bottom: 24px; }
 
-        /* Stepper visual on left */
-        .fm-step-visual { display: flex; flex-direction: column; gap: 0; margin-bottom: 28px; }
+        /* Step visual */
+        .fm-step-visual { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
         .fm-step-v-item { display: flex; align-items: flex-start; gap: 14px; position: relative; }
-        .fm-step-v-item:not(:last-child)::after { content: ''; position: absolute; left: 13px; top: 28px; width: 2px; height: calc(100% + 6px); background: rgba(255,255,255,.1); }
-        .fm-step-v-item.active::after { background: rgba(96,165,250,.3); }
+        .fm-step-v-item:not(:last-child)::after { content: ''; position: absolute; left: 13px; top: 28px; width: 2px; height: calc(100% + 4px); background: rgba(255,255,255,.1); }
+        .fm-step-v-item.v-active::after { background: rgba(96,165,250,.3); }
         .fm-step-v-circle { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; border: 2px solid rgba(255,255,255,.15); color: rgba(255,255,255,.3); background: rgba(0,0,0,.2); margin-top: 2px; transition: all .3s; }
-        .fm-step-v-circle.active { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,.1); }
-        .fm-step-v-circle.done { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,.1); }
-        .fm-step-v-label { padding: 6px 0 12px; }
-        .fm-step-v-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,.4); transition: color .3s; }
-        .fm-step-v-title.active { color: rgba(255,255,255,.9); }
-        .fm-step-v-title.done { color: rgba(255,255,255,.5); }
-        .fm-step-v-sub { font-size: 11px; color: rgba(255,255,255,.25); font-weight: 600; margin-top: 2px; }
+        .fm-step-v-circle.v-active { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,.1); }
+        .fm-step-v-circle.v-done   { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,.1); }
+        .fm-step-v-label { padding: 5px 0 10px; }
+        .fm-step-v-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,.35); transition: color .3s; }
+        .fm-step-v-title.v-active { color: rgba(255,255,255,.92); }
+        .fm-step-v-title.v-done   { color: rgba(255,255,255,.5); }
+        .fm-step-v-sub  { font-size: 11px; color: rgba(255,255,255,.22); font-weight: 600; margin-top: 2px; }
 
         /* Benefits */
         .fm-benefits { display: flex; flex-direction: column; gap: 8px; }
-        .fm-benefit { display: flex; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,.45); font-weight: 600; }
+        .fm-benefit  { display: flex; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,.4); font-weight: 600; }
         .fm-benefit-ico { width: 20px; height: 20px; border-radius: 50%; background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        .fm-bottom-bar { position: relative; z-index: 2; padding: 22px 52px; border-top: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: space-between; }
+        .fm-bottom-bar { position: relative; z-index: 2; padding: 20px 52px; border-top: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: space-between; }
         .fm-bottom-trust { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,.35); font-weight: 700; }
         .fm-bottom-trust-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
         .fm-bottom-version { font-size: 11px; color: rgba(255,255,255,.2); font-weight: 700; }
 
         /* ── RIGHT ── */
-        .fm-right { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 48px 40px; background: #fff; overflow-y: auto; min-height: 100vh; }
-        .fm-card { width: 100%; max-width: 480px; animation: fadeUp .45s ease forwards; }
+        .fm-right { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 44px 40px 60px; background: #fff; overflow-y: auto; min-height: 100vh; }
+        .fm-card  { width: 100%; max-width: 480px; animation: fadeUp .4s ease forwards; }
 
         /* Progress bar */
-        .fm-progress { display: flex; gap: 6px; margin-bottom: 32px; }
+        .fm-progress { display: flex; gap: 5px; margin-bottom: 28px; }
         .fm-progress-step { flex: 1; height: 4px; border-radius: 2px; background: #e2e8f0; transition: background .4s; }
-        .fm-progress-step.done { background: #22c55e; }
-        .fm-progress-step.active { background: #3b82f6; }
+        .fm-progress-step.ps-done   { background: #22c55e; }
+        .fm-progress-step.ps-active { background: #3b82f6; }
 
-        /* Section title */
-        .fm-section-title { font-weight: 900; font-size: 26px; color: #0f172a; letter-spacing: -.02em; margin-bottom: 4px; }
-        .fm-section-sub { font-size: 14px; color: #64748b; font-weight: 500; margin-bottom: 24px; line-height: 1.5; }
+        /* Section header */
+        .fm-section-title { font-weight: 900; font-size: 24px; color: #0f172a; letter-spacing: -.02em; margin-bottom: 4px; }
+        .fm-section-sub   { font-size: 14px; color: #64748b; font-weight: 500; margin-bottom: 22px; line-height: 1.5; }
+
+        /* Divider */
+        .fm-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .fm-divider-line { flex: 1; height: 1px; background: #e2e8f0; }
+        .fm-divider-text { font-size: 11px; color: #94a3b8; font-weight: 700; letter-spacing: .04em; }
 
         /* Fields */
-        .fm-field { margin-bottom: 16px; }
-        .fm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .fm-field     { margin-bottom: 14px; }
+        .fm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
         .fm-lbl { display: block; font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 7px; }
         .fm-lbl span { color: #ef4444; }
         .fm-inp-wrap { position: relative; display: flex; align-items: center; }
         .fm-inp-icon { position: absolute; left: 14px; width: 16px; height: 16px; pointer-events: none; color: #94a3b8; }
         .fm-inp {
-          width: 100%; height: 48px; padding: 0 14px 0 44px;
+          width: 100%; height: 48px; padding: 0 14px 0 42px;
           background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
           font-size: 14px; font-family: 'Nunito', sans-serif; font-weight: 600;
           color: #0f172a; outline: none; transition: border-color .2s, box-shadow .2s;
         }
-        .fm-inp.no-icon { padding-left: 14px; }
-        .fm-inp:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+        .fm-inp.no-icon  { padding-left: 14px; }
+        .fm-inp.has-eye  { padding-right: 44px; }
+        .fm-inp:focus    { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+        .fm-inp.invalid  { border-color: #ef4444; }
         .fm-inp::placeholder { color: #cbd5e1; font-weight: 500; }
+        .fm-eye-btn { position: absolute; right: 12px; background: none; border: none; cursor: pointer; padding: 4px; color: #94a3b8; display: flex; align-items: center; }
         .fm-sel {
           width: 100%; height: 48px; padding: 0 14px;
           background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
@@ -346,82 +723,85 @@ export default function FormMitraPage() {
         }
         .fm-sel:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); background-color: #fff; }
         .fm-textarea {
-          width: 100%; padding: 12px 14px; min-height: 80px;
+          width: 100%; padding: 12px 14px; min-height: 76px;
           background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
           font-size: 14px; font-family: 'Nunito', sans-serif; font-weight: 600;
           color: #0f172a; outline: none; resize: vertical; transition: border-color .2s;
         }
         .fm-textarea:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
         .fm-textarea::placeholder { color: #cbd5e1; font-weight: 500; }
+        .fm-hint { font-size: 11px; color: #94a3b8; font-weight: 600; margin-top: 4px; }
+
+        /* OTP */
+        .fm-otp-wrap { display: flex; gap: 10px; justify-content: center; margin: 4px 0 8px; }
+        .fm-otp-box {
+          width: 52px; height: 60px; background: #f8fafc; border: 2px solid #e2e8f0;
+          border-radius: 12px; font-size: 26px; font-weight: 900; text-align: center;
+          font-family: 'Nunito', sans-serif; color: #0f172a; outline: none;
+          transition: border-color .2s, box-shadow .2s, transform .15s; caret-color: transparent;
+        }
+        .fm-otp-box:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,.15); transform: translateY(-2px); }
+        .fm-otp-box.filled { border-color: #1e3a8a; background: #eff6ff; }
+
+        /* WA badge */
+        .fm-wa-badge { display: flex; align-items: center; gap: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; }
+        .fm-wa-ico { width: 36px; height: 36px; border-radius: 8px; background: #25d366; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
         /* Plan cards */
         .fm-plans { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .fm-plan {
-          border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px;
-          cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
-        }
+        .fm-plan { border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; }
         .fm-plan:hover { border-color: #93c5fd; }
         .fm-plan.selected { border-color: #3b82f6; background: #eff6ff; }
         .fm-plan.highlight-card { border-color: #1e3a8a; }
-        .fm-plan.highlight-card.selected { background: #eff6ff; }
         .fm-plan-badge { position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 10px; border-radius: 100px; letter-spacing: .04em; }
-        .fm-plan-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .fm-plan-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
         .fm-plan-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .2s; }
         .fm-plan.selected .fm-plan-radio { border-color: #3b82f6; background: #3b82f6; }
         .fm-plan-radio-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity .2s; }
         .fm-plan.selected .fm-plan-radio-dot { opacity: 1; }
-        .fm-plan-name { font-weight: 900; font-size: 15px; color: #0f172a; }
-        .fm-plan-price { font-weight: 900; font-size: 15px; color: #1e3a8a; margin-left: auto; padding-right: 48px; }
-        .fm-plan-desc { font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 8px; padding-left: 30px; }
-        .fm-plan-feats { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 30px; }
-        .fm-plan-feat { font-size: 11px; background: rgba(59,130,246,.08); color: #1e40af; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
+        .fm-plan-name  { font-weight: 900; font-size: 14px; color: #0f172a; }
+        .fm-plan-price { font-weight: 900; font-size: 14px; color: #1e3a8a; margin-left: auto; padding-right: 50px; }
+        .fm-plan-desc  { font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 7px; padding-left: 28px; }
+        .fm-plan-feats { display: flex; flex-wrap: wrap; gap: 5px; padding-left: 28px; }
+        .fm-plan-feat  { font-size: 10px; background: rgba(59,130,246,.08); color: #1e40af; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
 
         /* Agreement */
-        .fm-agreement-box {
-          background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px;
-          padding: 20px; max-height: 240px; overflow-y: auto; margin-bottom: 16px;
-          font-size: 13px; color: #374151; line-height: 1.8; font-weight: 500;
-        }
-        .fm-agreement-box h4 { font-weight: 900; font-size: 14px; color: #0f172a; margin-bottom: 10px; }
-        .fm-agreement-box p { margin-bottom: 10px; }
+        .fm-agreement-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px; max-height: 220px; overflow-y: auto; margin-bottom: 14px; font-size: 13px; color: #374151; line-height: 1.8; font-weight: 500; }
+        .fm-agreement-box h4 { font-weight: 900; font-size: 13px; color: #0f172a; margin-bottom: 8px; }
         .fm-agreement-box ol { padding-left: 16px; }
-        .fm-agreement-box li { margin-bottom: 6px; }
-        .fm-checkbox-row { display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; cursor: pointer; }
+        .fm-agreement-box li { margin-bottom: 5px; }
+        .fm-checkbox-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; cursor: pointer; margin-bottom: 4px; }
         .fm-checkbox { width: 20px; height: 20px; border: 2px solid #0ea5e9; border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #fff; transition: all .2s; margin-top: 1px; }
         .fm-checkbox.checked { background: #0ea5e9; border-color: #0ea5e9; }
         .fm-checkbox-label { font-size: 13px; color: #0c4a6e; font-weight: 700; line-height: 1.5; }
 
-        /* Summary box */
-        .fm-summary { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-        .fm-summary-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #475569; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
-        .fm-summary-row:last-child { border-bottom: none; font-weight: 900; font-size: 15px; color: #0f172a; padding-top: 10px; }
+        /* Summary */
+        .fm-summary { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+        .fm-summary-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #475569; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+        .fm-summary-row:last-child { border-bottom: none; font-weight: 900; font-size: 14px; color: #0f172a; padding-top: 8px; }
 
-        /* QRIS */
-        .fm-qris-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 0; }
-        .fm-qris-img { width: 220px; height: 220px; border: 3px solid #e2e8f0; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; }
-        .fm-qris-img img { width: 100%; height: 100%; object-fit: contain; }
-        .fm-qris-label { font-size: 13px; color: #64748b; font-weight: 600; text-align: center; line-height: 1.6; }
-        .fm-qris-timer { font-size: 12px; color: #94a3b8; font-weight: 700; }
-        .fm-qris-apps { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-        .fm-qris-app { font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 100px; background: #f1f5f9; color: #475569; }
-        .fm-spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+        /* QRIS / Payment */
+        .fm-qris-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px 0; }
+        .fm-qris-apps { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .fm-qris-app  { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 100px; background: #f1f5f9; color: #475569; }
+        .fm-spinner { width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
 
         /* Done */
-        .fm-done-wrap { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 20px 0; }
-        .fm-done-check { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #16a34a); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; animation: checkPop .5s ease forwards; box-shadow: 0 12px 32px rgba(34,197,94,.3); }
+        .fm-done-wrap { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 16px 0; }
+        .fm-done-check { width: 76px; height: 76px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #16a34a); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; animation: checkPop .5s ease forwards; box-shadow: 0 12px 32px rgba(34,197,94,.3); }
 
-        /* Error */
-        .fm-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 16px; text-align: center; }
-        .fm-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+        /* Feedback */
+        .fm-error   { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 14px; text-align: center; }
+        .fm-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 14px; text-align: center; }
 
         /* Buttons */
-        .fm-btn-row { display: flex; gap: 10px; margin-top: 8px; }
+        .fm-btn-row { display: flex; gap: 10px; margin-top: 6px; }
         .fm-btn {
           flex: 1; height: 50px; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 800;
           cursor: pointer; font-family: 'Nunito', sans-serif;
           display: flex; align-items: center; justify-content: center; gap: 8px;
-          box-shadow: 0 8px 24px rgba(59,130,246,.3); transition: transform .2s, box-shadow .2s;
+          box-shadow: 0 8px 24px rgba(59,130,246,.28); transition: transform .2s, box-shadow .2s;
         }
         .fm-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(59,130,246,.4); }
         .fm-btn:disabled { opacity: .65; cursor: not-allowed; }
@@ -440,7 +820,7 @@ export default function FormMitraPage() {
         .fm-topbar-mark { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .fm-topbar-mark span { font-weight: 900; font-size: 10px; color: #fff; }
         .fm-topbar-name { font-weight: 900; font-size: 15px; color: #fff; }
-        .fm-topbar-sub { font-size: 10px; color: rgba(255,255,255,.4); font-weight: 600; }
+        .fm-topbar-sub  { font-size: 10px; color: rgba(255,255,255,.4); font-weight: 600; }
 
         @media (max-width: 900px) {
           .fm-left { display: none; }
@@ -452,7 +832,9 @@ export default function FormMitraPage() {
         }
         @media (max-width: 480px) {
           .fm-right { padding: 20px 16px 40px; }
-          .fm-section-title { font-size: 22px; }
+          .fm-section-title { font-size: 20px; }
+          .fm-otp-box { width: 44px; height: 54px; font-size: 22px; border-radius: 10px; }
+          .fm-otp-wrap { gap: 7px; }
         }
       `}</style>
 
@@ -468,7 +850,7 @@ export default function FormMitraPage() {
           </div>
         </div>
 
-        {/* ── LEFT ── */}
+        {/* ── LEFT PANEL ── */}
         <div className="fm-left">
           <div className="fm-left-grid" />
           <div className="fm-left-glow" />
@@ -476,12 +858,13 @@ export default function FormMitraPage() {
 
           <div className="fm-ticker-wrap">
             <div className="fm-ticker-track">
-              {[...Array(2)].map((_, i) => (
+              {[0, 1].map((i) => (
                 <span key={i}>
                   {[
-                    "PARTNERSHIP PROGRAM",
+                    "DAFTAR MITRA 2026",
                     "QRIS PAYMENT",
-                    "INSTANT ACTIVATION",
+                    "OTP WHATSAPP",
+                    "AKTIVASI INSTAN",
                     "DEDICATED SUPPORT",
                     "GROW YOUR BUSINESS"
                   ].map((t, j) => (
@@ -516,39 +899,51 @@ export default function FormMitraPage() {
               <em>Mitra STOCKR</em>
             </h1>
             <p className="fm-hero-desc">
-              Daftarkan bisnis kamu dan dapatkan akses penuh ke platform
-              manajemen inventori terdepan dengan dukungan mitra eksklusif.
+              Daftar akun, lengkapi data bisnis, dan dapatkan akses penuh ke
+              platform inventori terdepan.
             </p>
 
-            {/* Step visual */}
+            {/* Step visual — only main steps (no otp) */}
             <div className="fm-step-visual">
-              {STEPS.filter((s) => s.key !== "done").map((s, i) => {
-                const cur = stepIndex
-                const isActive = s.key === step
-                const isDone = i < cur
-                const subLabels: Record<string, string> = {
-                  identity: "Isi data PIC perusahaan",
-                  business: "Info bisnis & lokasi",
-                  agreement: "Review & setujui MoU",
-                  payment: "Bayar via QRIS DOKU"
-                }
+              {LEFT_STEPS.map((s, i) => {
+                const isActive =
+                  s.key === step || (s.key === "account" && step === "otp")
+                const isDone =
+                  leftStepIndex > i ||
+                  (step === "otp" && i < 0) ||
+                  ([
+                    "business",
+                    "plan",
+                    "agreement",
+                    "payment",
+                    "done"
+                  ].includes(step) &&
+                    s.key === "account") ||
+                  (["plan", "agreement", "payment", "done"].includes(step) &&
+                    s.key === "business") ||
+                  (["agreement", "payment", "done"].includes(step) &&
+                    s.key === "plan") ||
+                  (["payment", "done"].includes(step) &&
+                    s.key === "agreement") ||
+                  (step === "done" && s.key === "payment")
+
                 return (
                   <div
                     key={s.key}
-                    className={`fm-step-v-item ${isActive ? "active" : ""}`}
+                    className={`fm-step-v-item${isActive ? " v-active" : ""}`}
                   >
                     <div
-                      className={`fm-step-v-circle ${isActive ? "active" : isDone ? "done" : ""}`}
+                      className={`fm-step-v-circle${isDone ? " v-done" : isActive ? " v-active" : ""}`}
                     >
                       {isDone ? "✓" : s.short}
                     </div>
                     <div className="fm-step-v-label">
                       <div
-                        className={`fm-step-v-title ${isActive ? "active" : isDone ? "done" : ""}`}
+                        className={`fm-step-v-title${isDone ? " v-done" : isActive ? " v-active" : ""}`}
                       >
                         {s.label}
                       </div>
-                      <div className="fm-step-v-sub">{subLabels[s.key]}</div>
+                      <div className="fm-step-v-sub">{leftStepMeta[s.key]}</div>
                     </div>
                   </div>
                 )
@@ -589,29 +984,44 @@ export default function FormMitraPage() {
           </div>
         </div>
 
-        {/* ── RIGHT ── */}
+        {/* ── RIGHT PANEL ── */}
         <div className="fm-right">
           <div className="fm-card">
             {/* Progress bar */}
             {step !== "done" && (
               <div className="fm-progress">
-                {STEPS.filter((s) => s.key !== "done").map((s, i) => (
-                  <div
-                    key={s.key}
-                    className={`fm-progress-step ${i < stepIndex ? "done" : i === stepIndex ? "active" : ""}`}
-                  />
-                ))}
+                {progressSteps
+                  .filter((s) => s !== "done")
+                  .map((s, i) => (
+                    <div
+                      key={s}
+                      className={`fm-progress-step ${i < progressIndex ? "ps-done" : i === progressIndex ? "ps-active" : ""}`}
+                    />
+                  ))}
               </div>
             )}
 
             {error && <div className="fm-error">⚠ {error}</div>}
+            {success && step !== "otp" && (
+              <div className="fm-success">✓ {success}</div>
+            )}
 
-            {/* ── STEP 1: IDENTITY ── */}
-            {step === "identity" && (
+            {/* ═══════════════════════════════════════════
+                STEP 1: ACCOUNT + PIC
+            ════════════════════════════════════════════ */}
+            {step === "account" && (
               <>
-                <div className="fm-section-title">Data PIC</div>
+                <div className="fm-section-title">Buat Akun & Data PIC</div>
                 <div className="fm-section-sub">
-                  Person In Charge yang bertanggung jawab atas kemitraan ini.
+                  Isi informasi akun dan Person In Charge yang bertanggung jawab
+                  atas kemitraan.
+                </div>
+
+                {/* Account section */}
+                <div className="fm-divider">
+                  <div className="fm-divider-line" />
+                  <span className="fm-divider-text">INFORMASI AKUN</span>
+                  <div className="fm-divider-line" />
                 </div>
 
                 <div className="fm-field">
@@ -632,9 +1042,9 @@ export default function FormMitraPage() {
                     <input
                       className="fm-inp"
                       type="text"
-                      placeholder="Nama lengkap PIC"
-                      value={form.pic_name}
-                      onChange={handleChange("pic_name")}
+                      placeholder="Nama lengkap kamu"
+                      value={form.name}
+                      onChange={handleChange("name")}
                     />
                   </div>
                 </div>
@@ -659,8 +1069,8 @@ export default function FormMitraPage() {
                         className="fm-inp"
                         type="email"
                         placeholder="email@perusahaan.com"
-                        value={form.pic_email}
-                        onChange={handleChange("pic_email")}
+                        value={form.email}
+                        onChange={handleChange("email")}
                       />
                     </div>
                   </div>
@@ -682,11 +1092,78 @@ export default function FormMitraPage() {
                         className="fm-inp"
                         type="tel"
                         placeholder="08xxxxxxxxxx"
-                        value={form.pic_phone}
-                        onChange={handleChange("pic_phone")}
+                        value={form.phone}
+                        onChange={handleChange("phone")}
+                      />
+                    </div>
+                    <p className="fm-hint">OTP akan dikirim ke nomor ini</p>
+                  </div>
+                </div>
+
+                <div className="fm-field-row">
+                  <div>
+                    <label className="fm-lbl">
+                      Password <span>*</span>
+                    </label>
+                    <div className="fm-inp-wrap">
+                      <svg
+                        className="fm-inp-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <input
+                        className="fm-inp has-eye"
+                        type={showPw ? "text" : "password"}
+                        placeholder="Min. 8 karakter"
+                        value={form.password}
+                        onChange={handleChange("password")}
+                      />
+                      <EyeToggle
+                        show={showPw}
+                        onToggle={() => setShowPw((v) => !v)}
+                      />
+                    </div>
+                    <PasswordStrengthBar password={form.password} />
+                  </div>
+                  <div>
+                    <label className="fm-lbl">
+                      Konfirmasi <span>*</span>
+                    </label>
+                    <div className="fm-inp-wrap">
+                      <svg
+                        className="fm-inp-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                      <input
+                        className="fm-inp has-eye"
+                        type={showConfirm ? "text" : "password"}
+                        placeholder="Ulangi password"
+                        value={form.confirm}
+                        onChange={handleChange("confirm")}
+                      />
+                      <EyeToggle
+                        show={showConfirm}
+                        onToggle={() => setShowConfirm((v) => !v)}
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* PIC section */}
+                <div className="fm-divider" style={{ marginTop: 6 }}>
+                  <div className="fm-divider-line" />
+                  <span className="fm-divider-text">DATA PIC</span>
+                  <div className="fm-divider-line" />
                 </div>
 
                 <div className="fm-field-row">
@@ -740,14 +1217,18 @@ export default function FormMitraPage() {
                 </div>
 
                 <div className="fm-btn-row">
-                  <button className="fm-btn" onClick={goNext}>
-                    Lanjut — Data Bisnis →
+                  <button
+                    className="fm-btn"
+                    onClick={handleSendOtp}
+                    disabled={loading}
+                  >
+                    {loading ? <LoadingDots /> : "Kirim OTP WhatsApp →"}
                   </button>
                 </div>
                 <p
                   style={{
                     textAlign: "center",
-                    marginTop: 16,
+                    marginTop: 14,
                     fontSize: 13,
                     color: "#94a3b8",
                     fontWeight: 600
@@ -768,7 +1249,124 @@ export default function FormMitraPage() {
               </>
             )}
 
-            {/* ── STEP 2: BUSINESS ── */}
+            {/* ═══════════════════════════════════════════
+                STEP 2: OTP
+            ════════════════════════════════════════════ */}
+            {step === "otp" && (
+              <>
+                <div style={{ textAlign: "center", marginBottom: 20 }}>
+                  <div
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 14,
+                      background: "#25d366",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 14px"
+                    }}
+                  >
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.570-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.570-.347z" />
+                      <path d="M11.997 0C5.373 0 0 5.373 0 12c0 2.115.554 4.098 1.523 5.82L0 24l6.335-1.508A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.624 0 11.997 0zm.003 21.818a9.818 9.818 0 0 1-5.002-1.366l-.359-.213-3.72.886.92-3.636-.234-.373A9.818 9.818 0 1 1 12 21.818z" />
+                    </svg>
+                  </div>
+                  <div className="fm-section-title" style={{ fontSize: 22 }}>
+                    Verifikasi WhatsApp
+                  </div>
+                  <div className="fm-section-sub">
+                    Kode OTP dikirim ke
+                    <br />
+                    <strong style={{ color: "#0f172a" }}>
+                      WhatsApp {form.phone}
+                    </strong>
+                  </div>
+                </div>
+
+                {error && <div className="fm-error">⚠ {error}</div>}
+                {success && <div className="fm-success">✓ {success}</div>}
+
+                <div className="fm-field">
+                  <label
+                    className="fm-lbl"
+                    style={{ textAlign: "center", display: "block" }}
+                  >
+                    Masukkan 6 Digit OTP
+                  </label>
+                  <OtpInput
+                    digits={otpDigits}
+                    refs={otpRefs}
+                    onChange={handleOtpChange}
+                    onKeyDown={handleOtpKeyDown}
+                    onPaste={handleOtpPaste}
+                  />
+                  <p className="fm-hint" style={{ textAlign: "center" }}>
+                    Berlaku 5 menit
+                  </p>
+                </div>
+
+                <button
+                  className="fm-btn"
+                  style={{ width: "100%" }}
+                  onClick={handleVerifyOtp}
+                  disabled={loading || otpValue.length !== 6}
+                >
+                  {loading ? <LoadingDots /> : "Verifikasi & Lanjut →"}
+                </button>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 14,
+                    fontSize: 13,
+                    fontWeight: 700
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setStep("account")
+                      setError("")
+                      setSuccess("")
+                      setOtpDigits(Array(6).fill(""))
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#64748b",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      fontFamily: "'Nunito', sans-serif"
+                    }}
+                  >
+                    ← Ganti nomor
+                  </button>
+                  <button
+                    onClick={handleResendOtp}
+                    disabled={countdown > 0 || loading}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: countdown > 0 ? "#94a3b8" : "#1e3a8a",
+                      cursor: countdown > 0 ? "not-allowed" : "pointer",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      fontFamily: "'Nunito', sans-serif"
+                    }}
+                  >
+                    {countdown > 0
+                      ? `Kirim ulang (${countdown}s)`
+                      : "Kirim ulang OTP"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                STEP 3: BUSINESS
+            ════════════════════════════════════════════ */}
             {step === "business" && (
               <>
                 <div className="fm-section-title">Data Bisnis</div>
@@ -880,7 +1478,7 @@ export default function FormMitraPage() {
                   </div>
                 </div>
 
-                <div className="fm-field">
+                <div className="fm-field-row">
                   <div>
                     <label className="fm-lbl">Kode Pos</label>
                     <input
@@ -892,40 +1490,57 @@ export default function FormMitraPage() {
                       onChange={handleChange("company_postal")}
                     />
                   </div>
+                  <div>
+                    <label className="fm-lbl">Jumlah Karyawan</label>
+                    <select
+                      className="fm-sel"
+                      value={form.employee_count}
+                      onChange={handleChange("employee_count")}
+                    >
+                      <option value="">Pilih range</option>
+                      <option>1–10</option>
+                      <option>11–50</option>
+                      <option>51–200</option>
+                      <option>201–500</option>
+                      <option>500+</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="fm-field">
-                  <label className="fm-lbl">Jumlah Karyawan</label>
-                  <select
-                    className="fm-sel"
-                    value={form.employee_count}
-                    onChange={handleChange("employee_count")}
+                <div className="fm-btn-row">
+                  <button
+                    className="fm-btn-ghost"
+                    onClick={() => {
+                      setStep("account")
+                      setError("")
+                      setSuccess("")
+                    }}
                   >
-                    <option value="">Pilih range</option>
-                    <option>1–10</option>
-                    <option>11–50</option>
-                    <option>51–200</option>
-                    <option>201–500</option>
-                    <option>{"500+"}</option>
-                  </select>
+                    ← Kembali
+                  </button>
+                  <button className="fm-btn" onClick={handleBusinessNext}>
+                    Lanjut — Pilih Paket →
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                STEP 4: PLAN
+            ════════════════════════════════════════════ */}
+            {step === "plan" && (
+              <>
+                <div className="fm-section-title">Pilih Paket</div>
+                <div className="fm-section-sub">
+                  Pilih paket yang sesuai dengan kebutuhan bisnis kamu.
                 </div>
 
-                {/* Plan selection */}
-                <div
-                  className="fm-section-title"
-                  style={{ fontSize: 18, marginBottom: 8, marginTop: 4 }}
-                >
-                  Pilih Paket
-                </div>
                 <div className="fm-plans">
                   {PLAN_OPTIONS.map((p) => (
                     <div
                       key={p.id}
-                      className={`fm-plan ${p.highlight ? "highlight-card" : ""} ${selectedPlan === p.id ? "selected" : ""}`}
-                      onClick={() => {
-                        setSelectedPlan(p.id)
-                        setForm((f) => ({ ...f, plan: p.id }))
-                      }}
+                      className={`fm-plan${p.highlight ? " highlight-card" : ""}${selectedPlan === p.id ? " selected" : ""}`}
+                      onClick={() => setSelectedPlan(p.id)}
                     >
                       {p.highlight && (
                         <span className="fm-plan-badge">POPULER</span>
@@ -939,7 +1554,7 @@ export default function FormMitraPage() {
                           {formatRp(p.price)}
                           <span
                             style={{
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: 600,
                               color: "#94a3b8"
                             }}
@@ -964,26 +1579,28 @@ export default function FormMitraPage() {
                   <button
                     className="fm-btn-ghost"
                     onClick={() => {
-                      setStep("identity")
+                      setStep("business")
                       setError("")
                     }}
                   >
                     ← Kembali
                   </button>
-                  <button className="fm-btn" onClick={goNext}>
+                  <button className="fm-btn" onClick={handlePlanNext}>
                     Lanjut — Perjanjian →
                   </button>
                 </div>
               </>
             )}
 
-            {/* ── STEP 3: AGREEMENT ── */}
+            {/* ═══════════════════════════════════════════
+                STEP 5: AGREEMENT
+            ════════════════════════════════════════════ */}
             {step === "agreement" && (
               <>
                 <div className="fm-section-title">Perjanjian Kerjasama</div>
                 <div className="fm-section-sub">
                   Baca dan setujui syarat kemitraan STOCKR sebelum melanjutkan
-                  pembayaran.
+                  ke pembayaran.
                 </div>
 
                 <div className="fm-agreement-box">
@@ -1042,7 +1659,6 @@ export default function FormMitraPage() {
                   </ol>
                 </div>
 
-                {/* Summary */}
                 <div className="fm-summary">
                   <div className="fm-summary-row">
                     <span>Mitra</span>
@@ -1050,13 +1666,11 @@ export default function FormMitraPage() {
                   </div>
                   <div className="fm-summary-row">
                     <span>PIC</span>
-                    <span>{form.pic_name || "—"}</span>
+                    <span>{form.name || "—"}</span>
                   </div>
                   <div className="fm-summary-row">
                     <span>Paket</span>
-                    <span>
-                      {PLAN_OPTIONS.find((p) => p.id === selectedPlan)?.name}
-                    </span>
+                    <span>{plan.name}</span>
                   </div>
                   <div className="fm-summary-row">
                     <span>Total Pembayaran</span>
@@ -1068,7 +1682,7 @@ export default function FormMitraPage() {
                   className="fm-checkbox-row"
                   onClick={() => setAgreed((v) => !v)}
                 >
-                  <div className={`fm-checkbox ${agreed ? "checked" : ""}`}>
+                  <div className={`fm-checkbox${agreed ? " checked" : ""}`}>
                     {agreed && (
                       <svg
                         width="12"
@@ -1089,11 +1703,11 @@ export default function FormMitraPage() {
                   </span>
                 </div>
 
-                <div className="fm-btn-row" style={{ marginTop: 16 }}>
+                <div className="fm-btn-row" style={{ marginTop: 14 }}>
                   <button
                     className="fm-btn-ghost"
                     onClick={() => {
-                      setStep("business")
+                      setStep("plan")
                       setError("")
                     }}
                   >
@@ -1101,7 +1715,7 @@ export default function FormMitraPage() {
                   </button>
                   <button
                     className="fm-btn"
-                    onClick={goNext}
+                    onClick={handleAgreementNext}
                     disabled={!agreed}
                   >
                     Lanjut ke Pembayaran →
@@ -1110,16 +1724,17 @@ export default function FormMitraPage() {
               </>
             )}
 
-            {/* ── STEP 4: PAYMENT ── */}
+            {/* ═══════════════════════════════════════════
+                STEP 6: PAYMENT
+            ════════════════════════════════════════════ */}
             {step === "payment" && (
               <>
-                <div className="fm-section-title">Pembayaran QRIS</div>
+                <div className="fm-section-title">Pembayaran</div>
                 <div className="fm-section-sub">
-                  Scan QR Code di bawah menggunakan aplikasi e-wallet atau
-                  mobile banking kamu.
+                  Selesaikan pembayaran untuk mengaktifkan akun mitra kamu.
                 </div>
 
-                <div className="fm-summary" style={{ marginBottom: 20 }}>
+                <div className="fm-summary" style={{ marginBottom: 18 }}>
                   <div className="fm-summary-row">
                     <span>Paket</span>
                     <span>{plan.name}</span>
@@ -1142,7 +1757,7 @@ export default function FormMitraPage() {
                         fontWeight: 600
                       }}
                     >
-                      Membuat QRIS...
+                      Membuat sesi pembayaran...
                     </p>
                   </div>
                 ) : paymentStatus === "failed" ? (
@@ -1155,7 +1770,7 @@ export default function FormMitraPage() {
                       style={{ width: "100%" }}
                       onClick={handleRetryPayment}
                     >
-                      Buat QRIS Baru
+                      Buat Pembayaran Baru
                     </button>
                   </div>
                 ) : paymentStatus === "paid" ? (
@@ -1174,22 +1789,21 @@ export default function FormMitraPage() {
                   </div>
                 ) : qrisUrl ? (
                   <div className="fm-qris-wrap">
-                    {/* Payment method icon */}
                     <div
                       style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 16,
+                        width: 60,
+                        height: 60,
+                        borderRadius: 14,
                         background: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: "0 8px 24px rgba(59,130,246,.3)"
+                        boxShadow: "0 8px 24px rgba(59,130,246,.28)"
                       }}
                     >
                       <svg
-                        width="28"
-                        height="28"
+                        width="26"
+                        height="26"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="#fff"
@@ -1199,7 +1813,6 @@ export default function FormMitraPage() {
                         <line x1="1" y1="10" x2="23" y2="10" />
                       </svg>
                     </div>
-
                     <div style={{ textAlign: "center" }}>
                       <div
                         style={{
@@ -1226,8 +1839,6 @@ export default function FormMitraPage() {
                         dll.
                       </div>
                     </div>
-
-                    {/* Timer */}
                     <div
                       style={{
                         display: "flex",
@@ -1260,8 +1871,6 @@ export default function FormMitraPage() {
                         Link berlaku 15 menit · Status diperbarui otomatis
                       </span>
                     </div>
-
-                    {/* CTA Button */}
                     <a
                       href={qrisUrl}
                       target="_blank"
@@ -1280,7 +1889,7 @@ export default function FormMitraPage() {
                         justifyContent: "center",
                         gap: 8,
                         textDecoration: "none",
-                        boxShadow: "0 8px 24px rgba(59,130,246,.3)"
+                        boxShadow: "0 8px 24px rgba(59,130,246,.28)"
                       }}
                     >
                       <svg
@@ -1297,8 +1906,35 @@ export default function FormMitraPage() {
                       </svg>
                       Bayar Sekarang — {formatRp(plan.price)}
                     </a>
-
-                    {/* Supported methods */}
+                    {process.env.NODE_ENV !== "production" && (
+                      <button
+                        onClick={async () => {
+                          const res = await fetch(
+                            "/api/mitra/mock-payment-success",
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ invoiceNumber: paymentId })
+                            }
+                          )
+                          if (res.ok) setPaymentStatus("paid")
+                        }}
+                        style={{
+                          width: "100%",
+                          height: 44,
+                          background: "#f0fdf4",
+                          border: "2px dashed #22c55e",
+                          borderRadius: 10,
+                          color: "#16a34a",
+                          fontSize: 13,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          fontFamily: "'Nunito', sans-serif"
+                        }}
+                      >
+                        Pembayaran Sukses
+                      </button>
+                    )}
                     <div style={{ width: "100%" }}>
                       <div
                         style={{
@@ -1306,7 +1942,7 @@ export default function FormMitraPage() {
                           color: "#94a3b8",
                           fontWeight: 700,
                           textAlign: "center",
-                          marginBottom: 8
+                          marginBottom: 7
                         }}
                       >
                         METODE PEMBAYARAN TERSEDIA
@@ -1342,14 +1978,14 @@ export default function FormMitraPage() {
                         fontWeight: 600
                       }}
                     >
-                      Memuat QRIS...
+                      Memuat...
                     </p>
                   </div>
                 )}
 
                 <div
                   style={{
-                    marginTop: 20,
+                    marginTop: 16,
                     textAlign: "center",
                     fontSize: 12,
                     color: "#94a3b8",
@@ -1363,7 +1999,7 @@ export default function FormMitraPage() {
                   · Terenkripsi & berlisensi Bank Indonesia
                 </div>
 
-                <div className="fm-btn-row" style={{ marginTop: 16 }}>
+                <div className="fm-btn-row" style={{ marginTop: 14 }}>
                   <button
                     className="fm-btn-ghost"
                     onClick={() => {
@@ -1379,13 +2015,15 @@ export default function FormMitraPage() {
               </>
             )}
 
-            {/* ── DONE ── */}
+            {/* ═══════════════════════════════════════════
+                DONE
+            ════════════════════════════════════════════ */}
             {step === "done" && (
               <div className="fm-done-wrap">
                 <div className="fm-done-check">
                   <svg
-                    width="36"
-                    height="36"
+                    width="34"
+                    height="34"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="#fff"
@@ -1397,7 +2035,7 @@ export default function FormMitraPage() {
                 <div
                   style={{
                     fontWeight: 900,
-                    fontSize: 26,
+                    fontSize: 24,
                     color: "#0f172a",
                     marginBottom: 8
                   }}
@@ -1411,7 +2049,7 @@ export default function FormMitraPage() {
                     fontWeight: 500,
                     lineHeight: 1.7,
                     maxWidth: 320,
-                    marginBottom: 28
+                    marginBottom: 26
                   }}
                 >
                   Selamat!{" "}
@@ -1420,27 +2058,32 @@ export default function FormMitraPage() {
                   </strong>{" "}
                   kini resmi menjadi mitra STOCKR. Tim kami akan menghubungi
                   kamu di{" "}
-                  <strong style={{ color: "#0f172a" }}>{form.pic_email}</strong>{" "}
+                  <strong style={{ color: "#0f172a" }}>{form.email}</strong>{" "}
                   dalam 1×24 jam untuk proses onboarding.
                 </div>
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: 10,
+                    gap: 12,
                     width: "100%"
                   }}
                 >
                   <button
                     className="fm-btn"
-                    style={{ width: "100%" }}
-                    onClick={() => router.push("/inventory")}
+                    style={{ width: "100%", height: 54, fontSize: 16 }}
+                    onClick={() => router.push("/login")}
                   >
-                    Masuk ke Dashboard →
+                    Masuk ke Dashboard
                   </button>
                   <button
                     className="fm-btn-ghost"
-                    style={{ width: "100%", height: 46 }}
+                    style={{
+                      width: "100%",
+                      height: 48,
+                      fontSize: 14,
+                      flex: "none"
+                    }}
                     onClick={() => router.push("/")}
                   >
                     Kembali ke Beranda
