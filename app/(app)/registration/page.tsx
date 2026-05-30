@@ -368,7 +368,7 @@ export default function RegistrationPage() {
       setStoreImgStatus("success")
       setSnackbar({
         open: true,
-        msg: "📸 Gambar toko berhasil diupload!",
+        msg: "Gambar toko berhasil diupload!",
         severity: "success"
       })
       setTimeout(() => closeStoreImgModal(), 1000)
@@ -1580,7 +1580,7 @@ export default function RegistrationPage() {
                                     flexShrink: 0
                                   }}
                                 >
-                                  🪪 Scan KTP
+                                  Scan KTP
                                 </button>
                               </Box>
                             </Field>
@@ -1890,7 +1890,7 @@ export default function RegistrationPage() {
                     transition: "all 0.2s"
                   }}
                 >
-                  {m === "upload" ? "📎 Upload File" : "📷 Kamera"}
+                  {m === "upload" ? "Upload File" : "Kamera"}
                 </button>
               ))}
             </Box>
@@ -2855,7 +2855,7 @@ export default function RegistrationPage() {
                     transition: "all 0.2s"
                   }}
                 >
-                  {sm === "upload" ? "📎 Upload File" : "📷 Kamera"}
+                  {sm === "upload" ? "Upload File" : "Kamera"}
                 </button>
               ))}
             </Box>
