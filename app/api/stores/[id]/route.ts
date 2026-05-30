@@ -71,6 +71,8 @@ export async function PUT(
             address: owner.address ?? store.owner?.address ?? "",
             gender: owner.gender ?? store.owner?.gender ?? "",
             ktpImageUrl: owner.ktpImageUrl ?? store.owner?.ktpImageUrl ?? null,
+            signatureUrl:
+              owner.signatureUrl ?? store.owner?.signatureUrl ?? null,
             inputMethod: store.owner?.inputMethod ?? "manual"
           }
         })

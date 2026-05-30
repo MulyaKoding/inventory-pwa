@@ -26,6 +26,7 @@ interface OwnerData {
   address: string
   gender: string
   ktpImageUrl: string
+  signatureUrl: string
   inputMethod: "manual" | "ocr"
 }
 
@@ -173,6 +174,17 @@ export default function RegistrationPage() {
   const [markerSource, setMarkerSource] = useState<
     "geo" | "search" | "click" | null
   >(null)
+  const signatureCanvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [signModalOpen, setSignModalOpen] = useState(false)
+  const [signUploadStatus, setSignUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle")
+  const [signError, setSignError] = useState("")
+  const [hasSignature, setHasSignature] = useState(false)
+  const [signMode, setSignMode] = useState<"draw" | "upload">("draw")
+  const signFileRef = useRef<HTMLInputElement>(null)
+  const [signPreview, setSignPreview] = useState("")
 
   const [storeData, setStoreData] = useState<StoreData>({
     storeName: "",
@@ -198,6 +210,7 @@ export default function RegistrationPage() {
     address: "",
     gender: "",
     ktpImageUrl: "",
+    signatureUrl: "",
     inputMethod: "manual"
   })
   const [storeErrors, setStoreErrors] = useState<Partial<StoreData>>({})
@@ -658,7 +671,8 @@ export default function RegistrationPage() {
       const uploadResult = await uploadRes.json()
       const ktpImageUrl = uploadRes.ok ? uploadResult.url : ""
       const { data } = ocrResult
-      setOwnerData({
+      setOwnerData((prev) => ({
+        ...prev,
         nik: data.nik || "",
         fullName: data.fullName || "",
         birthDate: data.birthDate || "",
@@ -666,7 +680,7 @@ export default function RegistrationPage() {
         gender: data.gender || "",
         ktpImageUrl,
         inputMethod: "ocr"
-      })
+      }))
       setOwnerErrors({})
       setOcrStatus("success")
       setSnackbar({
@@ -682,6 +696,127 @@ export default function RegistrationPage() {
       setOcrError(msg)
       setOcrStatus("error")
     }
+  }
+
+  // ════════════════════════════════════════
+  // SIGNATURE
+  // ════════════════════════════════════════
+  const getSignCtx = () => signatureCanvasRef.current?.getContext("2d") ?? null
+
+  const startSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = signatureCanvasRef.current
+    if (!canvas) return
+    const ctx = getSignCtx()!
+    const rect = canvas.getBoundingClientRect()
+    ctx.beginPath()
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top)
+    setIsDrawing(true)
+  }
+
+  const drawSign = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return
+    const canvas = signatureCanvasRef.current!
+    const ctx = getSignCtx()!
+    const rect = canvas.getBoundingClientRect()
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top)
+    ctx.strokeStyle = isDark ? "#e2e8f0" : "#0f172a"
+    ctx.lineWidth = 2.5
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.stroke()
+    setHasSignature(true)
+  }
+
+  const startSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    const canvas = signatureCanvasRef.current!
+    const ctx = getSignCtx()!
+    const rect = canvas.getBoundingClientRect()
+    const t = e.touches[0]
+    ctx.beginPath()
+    ctx.moveTo(t.clientX - rect.left, t.clientY - rect.top)
+    setIsDrawing(true)
+  }
+
+  const drawSignTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    if (!isDrawing) return
+    const canvas = signatureCanvasRef.current!
+    const ctx = getSignCtx()!
+    const rect = canvas.getBoundingClientRect()
+    const t = e.touches[0]
+    ctx.lineTo(t.clientX - rect.left, t.clientY - rect.top)
+    ctx.strokeStyle = isDark ? "#e2e8f0" : "#0f172a"
+    ctx.lineWidth = 2.5
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.stroke()
+    setHasSignature(true)
+  }
+
+  const stopSign = () => setIsDrawing(false)
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current
+    if (!canvas) return
+    getSignCtx()?.clearRect(0, 0, canvas.width, canvas.height)
+    setHasSignature(false)
+  }
+
+  const uploadSignatureBlob = async (blob: Blob) => {
+    setSignUploadStatus("uploading")
+    setSignError("")
+    try {
+      const form = new FormData()
+      form.append(
+        "file",
+        new File([blob], "signature.png", { type: "image/png" })
+      )
+      const res = await fetch("/api/upload/signature", {
+        method: "POST",
+        body: form
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Gagal upload tanda tangan")
+      updateOwner("signatureUrl", result.url)
+      setSignUploadStatus("success")
+      setSnackbar({
+        open: true,
+        msg: "Tanda tangan berhasil disimpan!",
+        severity: "success"
+      })
+      setTimeout(() => closeSignModal(), 1000)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan"
+      setSignError(msg)
+      setSignUploadStatus("error")
+    }
+  }
+
+  const saveSignature = () => {
+    const canvas = signatureCanvasRef.current
+    if (!canvas || !hasSignature) return
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      await uploadSignatureBlob(blob)
+    }, "image/png")
+  }
+
+  const handleSignFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setSignPreview(URL.createObjectURL(file))
+    await uploadSignatureBlob(file)
+  }
+
+  const closeSignModal = () => {
+    setSignModalOpen(false)
+    setSignUploadStatus("idle")
+    setSignError("")
+    setSignPreview("")
+    setSignMode("draw")
   }
 
   const handleSubmit = async () => {
@@ -1670,6 +1805,162 @@ export default function RegistrationPage() {
                               />
                             </Field>
                           </Box>
+                        </Box>
+
+                        {/* ── TANDA TANGAN DIGITAL ── */}
+                        <Box
+                          sx={{
+                            gridColumn: { xs: "1", sm: "span 2", md: "span 3" },
+                            mt: 1
+                          }}
+                        >
+                          <Field label="TANDA TANGAN DIGITAL">
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                p: 2,
+                                border: `1px solid ${ownerData.signatureUrl ? "#16a34a" : p.border}`,
+                                borderRadius: "8px",
+                                bgcolor: isDark ? "#111" : "#fafafa",
+                                flexWrap: "wrap"
+                              }}
+                            >
+                              {ownerData.signatureUrl ? (
+                                <>
+                                  <Box
+                                    sx={{
+                                      flex: 1,
+                                      minWidth: 160,
+                                      bgcolor: "#fff",
+                                      border: `1px solid ${p.border}`,
+                                      borderRadius: "6px",
+                                      overflow: "hidden",
+                                      height: 64
+                                    }}
+                                  >
+                                    <img
+                                      src={ownerData.signatureUrl}
+                                      alt="Tanda Tangan"
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain"
+                                      }}
+                                    />
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      gap: 1,
+                                      flexWrap: "wrap"
+                                    }}
+                                  >
+                                    <button
+                                      onClick={() => setSignModalOpen(true)}
+                                      style={{
+                                        padding: "6px 14px",
+                                        border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                                        borderRadius: 6,
+                                        background: isDark
+                                          ? "#0d1f3c"
+                                          : "#eff6ff",
+                                        color: "#1e3a8a",
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        fontFamily: "'Nunito', sans-serif",
+                                        cursor: "pointer"
+                                      }}
+                                    >
+                                      Ubah
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        updateOwner("signatureUrl", "")
+                                      }
+                                      style={{
+                                        padding: "6px 12px",
+                                        border: "1px solid #fecaca",
+                                        borderRadius: 6,
+                                        background: "transparent",
+                                        color: "#ef4444",
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        fontFamily: "'Nunito', sans-serif",
+                                        cursor: "pointer"
+                                      }}
+                                    >
+                                      Hapus
+                                    </button>
+                                  </Box>
+                                </>
+                              ) : (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 2,
+                                    width: "100%"
+                                  }}
+                                >
+                                  <Box sx={{ flex: 1 }}>
+                                    <p
+                                      style={{
+                                        margin: "0 0 2px",
+                                        fontSize: 13,
+                                        fontWeight: 700,
+                                        color: p.textPrimary,
+                                        fontFamily: "'Nunito', sans-serif"
+                                      }}
+                                    >
+                                      Belum ada tanda tangan
+                                      <span
+                                        style={{
+                                          marginLeft: 6,
+                                          fontSize: 11,
+                                          fontWeight: 400,
+                                          color: p.textMuted
+                                        }}
+                                      >
+                                        (opsional)
+                                      </span>
+                                    </p>
+                                    <p
+                                      style={{
+                                        margin: 0,
+                                        fontSize: 11,
+                                        color: p.textMuted,
+                                        fontFamily: "'Nunito', sans-serif"
+                                      }}
+                                    >
+                                      Gambar langsung atau upload foto tanda
+                                      tangan
+                                    </p>
+                                  </Box>
+                                  <button
+                                    onClick={() => setSignModalOpen(true)}
+                                    style={{
+                                      padding: "7px 18px",
+                                      border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                                      borderRadius: 6,
+                                      background: isDark
+                                        ? "#0d1f3c"
+                                        : "#eff6ff",
+                                      color: "#1e3a8a",
+                                      fontSize: 13,
+                                      fontWeight: 700,
+                                      fontFamily: "'Nunito', sans-serif",
+                                      cursor: "pointer",
+                                      whiteSpace: "nowrap"
+                                    }}
+                                  >
+                                    ✍️ Tanda Tangan
+                                  </button>
+                                </Box>
+                              )}
+                            </Box>
+                          </Field>
                         </Box>
 
                         {submitError && (
@@ -3221,6 +3512,484 @@ export default function RegistrationPage() {
               </Box>
             )}
           </Box>
+        </Box>
+      </Modal>
+
+      {/* ════════════════════════════════════════
+    SIGNATURE MODAL
+════════════════════════════════════════ */}
+      <Modal open={signModalOpen} onClose={closeSignModal}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%,-50%)",
+            width: { xs: "95vw", sm: 520 },
+            maxHeight: { xs: "90vh", sm: "85vh" },
+            bgcolor: p.bgPaper,
+            border: `1px solid ${p.border}`,
+            borderRadius: "10px",
+            boxShadow: p.menuShadow,
+            outline: "none",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              borderBottom: `1px solid ${p.border}`,
+              bgcolor: p.bg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexShrink: 0
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
+                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14
+                }}
+              >
+                ✍️
+              </Box>
+              <Box>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: p.textPrimary,
+                    fontFamily: "'Nunito', sans-serif"
+                  }}
+                >
+                  Tanda Tangan Digital
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 11,
+                    color: p.textMuted,
+                    fontFamily: "'Nunito', sans-serif"
+                  }}
+                >
+                  Gambar atau upload tanda tangan Anda
+                </p>
+              </Box>
+            </Box>
+            <button
+              onClick={closeSignModal}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: p.textMuted,
+                fontSize: 18,
+                lineHeight: 1,
+                padding: 4
+              }}
+            >
+              ✕
+            </button>
+          </Box>
+
+          <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
+            {/* Tab */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                p: 0.5,
+                bgcolor: p.bg,
+                border: `1px solid ${p.border}`,
+                borderRadius: "6px",
+                mb: 3
+              }}
+            >
+              {(["draw", "upload"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => {
+                    setSignMode(m)
+                    setSignPreview("")
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "7px 12px",
+                    border: `1px solid ${signMode === m ? (isDark ? "#1e3a8a" : "#b5d4f4") : "transparent"}`,
+                    borderRadius: "4px",
+                    background:
+                      signMode === m
+                        ? isDark
+                          ? "#0d1f3c"
+                          : "#e6f1fb"
+                        : "transparent",
+                    color: signMode === m ? "#1e3a8a" : p.textSecondary,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    fontFamily: "'Nunito', sans-serif",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {m === "draw" ? "Gambar" : "Upload"}
+                </button>
+              ))}
+            </Box>
+
+            {/* Draw Mode */}
+            {signMode === "draw" && (
+              <Box>
+                <p
+                  style={{
+                    margin: "0 0 8px",
+                    fontSize: 12,
+                    color: p.textMuted,
+                    fontFamily: "'Nunito', sans-serif"
+                  }}
+                >
+                  Gambar tanda tangan Anda di area bawah ini:
+                </p>
+                <Box
+                  sx={{
+                    border: `1.5px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    bgcolor: isDark ? "#1a1a2e" : "#ffffff",
+                    cursor: "crosshair",
+                    touchAction: "none"
+                  }}
+                >
+                  <canvas
+                    ref={signatureCanvasRef}
+                    width={460}
+                    height={180}
+                    style={{ display: "block", width: "100%", height: 180 }}
+                    onMouseDown={startSign}
+                    onMouseMove={drawSign}
+                    onMouseUp={stopSign}
+                    onMouseLeave={stopSign}
+                    onTouchStart={startSignTouch}
+                    onTouchMove={drawSignTouch}
+                    onTouchEnd={stopSign}
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mt: 1.5,
+                    alignItems: "center"
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 11,
+                      color: p.textMuted,
+                      fontFamily: "'Nunito', sans-serif"
+                    }}
+                  >
+                    {hasSignature
+                      ? "Klik Simpan untuk menyimpan tanda tangan"
+                      : "Belum ada tanda tangan"}
+                  </p>
+                  <button
+                    onClick={clearSignature}
+                    style={{
+                      padding: "5px 14px",
+                      border: `1px solid ${p.border}`,
+                      borderRadius: 5,
+                      background: "transparent",
+                      color: p.textSecondary,
+                      fontSize: 12,
+                      fontFamily: "'Nunito', sans-serif",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Bersihkan
+                  </button>
+                </Box>
+              </Box>
+            )}
+
+            {/* Upload Mode */}
+            {signMode === "upload" && (
+              <>
+                <input
+                  ref={signFileRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleSignFileUpload}
+                  style={{ display: "none" }}
+                />
+                {!signPreview ? (
+                  <Box
+                    onClick={() =>
+                      signUploadStatus !== "uploading" &&
+                      signFileRef.current?.click()
+                    }
+                    sx={{
+                      border: `1.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                      borderRadius: "8px",
+                      py: 5,
+                      textAlign: "center",
+                      cursor:
+                        signUploadStatus === "uploading"
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity: signUploadStatus === "uploading" ? 0.5 : 1,
+                      "&:hover": {
+                        borderColor: "#1e3a8a",
+                        bgcolor: isDark ? "#0d1f3c" : "#eff6ff"
+                      },
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <p style={{ margin: "0 0 6px", fontSize: 28 }}>✍️</p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 14,
+                        color: "#1e3a8a",
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 700
+                      }}
+                    >
+                      Upload foto tanda tangan
+                    </p>
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        fontSize: 11,
+                        color: p.textMuted,
+                        fontFamily: "'Nunito', sans-serif"
+                      }}
+                    >
+                      JPG, PNG, WEBP · Maks 5MB · Latar putih lebih baik
+                    </p>
+                  </Box>
+                ) : (
+                  <Box sx={{ position: "relative" }}>
+                    <img
+                      src={signPreview}
+                      alt="Preview Tanda Tangan"
+                      style={{
+                        width: "100%",
+                        borderRadius: 8,
+                        border: `1px solid ${p.border}`,
+                        maxHeight: 180,
+                        objectFit: "contain",
+                        background: "#fff"
+                      }}
+                    />
+                    {signUploadStatus !== "uploading" &&
+                      signUploadStatus !== "success" && (
+                        <button
+                          onClick={() => {
+                            setSignPreview("")
+                            setSignUploadStatus("idle")
+                            setSignError("")
+                          }}
+                          style={{
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                            background: "rgba(0,0,0,0.5)",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: 28,
+                            height: 28,
+                            color: "#fff",
+                            cursor: "pointer",
+                            fontSize: 12
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                  </Box>
+                )}
+              </>
+            )}
+
+            {/* Status banners */}
+            {signUploadStatus === "uploading" && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  mt: 2.5,
+                  p: 1.5,
+                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
+                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
+                  borderRadius: "6px"
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 14,
+                    height: 14,
+                    border: "2px solid #1e3a8a",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
+                    "@keyframes spin": {
+                      from: { transform: "rotate(0deg)" },
+                      to: { transform: "rotate(360deg)" }
+                    },
+                    flexShrink: 0
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: "#1e3a8a",
+                    fontFamily: "'Nunito', sans-serif"
+                  }}
+                >
+                  Menyimpan tanda tangan...
+                </span>
+              </Box>
+            )}
+            {signUploadStatus === "success" && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  mt: 2.5,
+                  p: 1.5,
+                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
+                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
+                  borderRadius: "6px"
+                }}
+              >
+                <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: isDark ? "#4ade80" : "#16a34a",
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: 600
+                  }}
+                >
+                  Tanda tangan berhasil disimpan! Menutup...
+                </span>
+              </Box>
+            )}
+            {signUploadStatus === "error" && (
+              <Box
+                sx={{
+                  mt: 2.5,
+                  p: 1.5,
+                  bgcolor: isDark ? "#2e1010" : "#fef2f2",
+                  border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
+                  borderRadius: "6px"
+                }}
+              >
+                <p
+                  style={{
+                    margin: "0 0 8px",
+                    fontSize: 13,
+                    color: "#ef4444",
+                    fontFamily: "'Nunito', sans-serif"
+                  }}
+                >
+                  {signError}
+                </p>
+                <button
+                  onClick={() => {
+                    setSignUploadStatus("idle")
+                    setSignError("")
+                    setSignPreview("")
+                  }}
+                  style={{
+                    padding: "6px 14px",
+                    border: "1px solid #ef4444",
+                    borderRadius: 4,
+                    background: "transparent",
+                    color: "#ef4444",
+                    fontSize: 12,
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Coba Lagi
+                </button>
+              </Box>
+            )}
+          </Box>
+
+          {/* Footer */}
+          {signMode === "draw" && (
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                borderTop: `1px solid ${p.border}`,
+                bgcolor: p.bg,
+                display: "flex",
+                gap: 1.5,
+                justifyContent: "flex-end",
+                flexShrink: 0
+              }}
+            >
+              <button
+                onClick={closeSignModal}
+                style={{
+                  padding: "9px 20px",
+                  border: `1px solid ${p.border}`,
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: p.textSecondary,
+                  fontSize: 13,
+                  fontFamily: "'Nunito', sans-serif",
+                  cursor: "pointer"
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={saveSignature}
+                disabled={!hasSignature || signUploadStatus === "uploading"}
+                style={{
+                  padding: "9px 22px",
+                  border: "none",
+                  borderRadius: 6,
+                  background:
+                    hasSignature && signUploadStatus !== "uploading"
+                      ? "#1e3a8a"
+                      : "#64748b",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  cursor:
+                    hasSignature && signUploadStatus !== "uploading"
+                      ? "pointer"
+                      : "not-allowed"
+                }}
+              >
+                Simpan Tanda Tangan
+              </button>
+            </Box>
+          )}
         </Box>
       </Modal>
 

@@ -85,6 +85,7 @@ type Owner {
   address     String
   gender      String
   ktpImageUrl String?
+  signatureUrl String? 
   inputMethod String  @default("manual")
 }
 
