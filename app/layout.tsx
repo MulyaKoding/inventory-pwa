@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Nunito } from "next/font/google"
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter"
+// @ts-ignore
 import "./globals.css"
 
 const nunito = Nunito({
@@ -28,6 +29,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#228CD1" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@700&family=Pinyon+Script&family=Parisienne&display=swap"
+          rel="stylesheet"
+        />
 
         {/* ── Icons ── */}
         <link rel="shortcut icon" href="/favicon.ico" />

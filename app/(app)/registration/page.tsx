@@ -182,9 +182,12 @@ export default function RegistrationPage() {
   >("idle")
   const [signError, setSignError] = useState("")
   const [hasSignature, setHasSignature] = useState(false)
-  const [signMode, setSignMode] = useState<"draw" | "upload">("draw")
+  const [signMode, setSignMode] = useState<"draw" | "upload" | "type">("draw")
   const signFileRef = useRef<HTMLInputElement>(null)
   const [signPreview, setSignPreview] = useState("")
+  const [signTypedText, setSignTypedText] = useState("")
+  const [signFontFamily, setSignFontFamily] = useState("Great Vibes")
+  const [signFontSize, setSignFontSize] = useState(42)
 
   const [storeData, setStoreData] = useState<StoreData>({
     storeName: "",
@@ -793,6 +796,26 @@ export default function RegistrationPage() {
     }
   }
 
+  const renderTypedSignatureToCanvas = (): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement("canvas")
+      canvas.width = 600
+      canvas.height = 200
+      const ctx = canvas.getContext("2d")!
+      ctx.fillStyle = "#ffffff"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = "#111111"
+      ctx.font = `${signFontSize * 2}px '${signFontFamily}'`
+      ctx.textAlign = "center"
+      ctx.textBaseline = "middle"
+      ctx.fillText(signTypedText, canvas.width / 2, canvas.height / 2)
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error("Gagal render tanda tangan"))
+      }, "image/png")
+    })
+  }
+
   const saveSignature = () => {
     const canvas = signatureCanvasRef.current
     if (!canvas || !hasSignature) return
@@ -800,6 +823,17 @@ export default function RegistrationPage() {
       if (!blob) return
       await uploadSignatureBlob(blob)
     }, "image/png")
+  }
+
+  const saveTypedSignature = async () => {
+    if (!signTypedText.trim()) return
+    try {
+      const blob = await renderTypedSignatureToCanvas()
+      await uploadSignatureBlob(blob)
+    } catch {
+      setSignError("Gagal menyimpan tanda tangan")
+      setSignUploadStatus("error")
+    }
   }
 
   const handleSignFileUpload = async (
@@ -817,6 +851,9 @@ export default function RegistrationPage() {
     setSignError("")
     setSignPreview("")
     setSignMode("draw")
+    setSignTypedText("")
+    setSignFontFamily("Great Vibes")
+    setSignFontSize(42)
   }
 
   const handleSubmit = async () => {
@@ -3619,16 +3656,17 @@ export default function RegistrationPage() {
                 mb: 3
               }}
             >
-              {(["draw", "upload"] as const).map((m) => (
+              {(["draw", "type", "upload"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => {
                     setSignMode(m)
                     setSignPreview("")
+                    setSignTypedText("")
                   }}
                   style={{
                     flex: 1,
-                    padding: "7px 12px",
+                    padding: "7px 8px",
                     border: `1px solid ${signMode === m ? (isDark ? "#1e3a8a" : "#b5d4f4") : "transparent"}`,
                     borderRadius: "4px",
                     background:
@@ -3638,14 +3676,14 @@ export default function RegistrationPage() {
                           : "#e6f1fb"
                         : "transparent",
                     color: signMode === m ? "#1e3a8a" : p.textSecondary,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 700,
                     fontFamily: "'Nunito', sans-serif",
                     cursor: "pointer",
                     transition: "all 0.2s"
                   }}
                 >
-                  {m === "draw" ? "Gambar" : "Upload"}
+                  {m === "draw" ? "Gambar" : m === "type" ? "Ketik" : "Upload"}
                 </button>
               ))}
             </Box>
@@ -3722,6 +3760,185 @@ export default function RegistrationPage() {
                   >
                     Bersihkan
                   </button>
+                </Box>
+              </Box>
+            )}
+
+            {/* Type Mode */}
+            {signMode === "type" && (
+              <Box>
+                {/* Font Selector */}
+                <Box sx={{ mb: 2 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: p.textMuted,
+                      marginBottom: 6,
+                      fontFamily: "'Nunito', sans-serif",
+                      letterSpacing: "0.04em"
+                    }}
+                  >
+                    PILIH GAYA FONT
+                  </label>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 1
+                    }}
+                  >
+                    {[
+                      { font: "Great Vibes", label: "Great Vibes" },
+                      { font: "Dancing Script", label: "Dancing Script" },
+                      { font: "Pinyon Script", label: "Pinyon Script" },
+                      { font: "Parisienne", label: "Parisienne" }
+                    ].map(({ font, label }) => (
+                      <Box
+                        key={font}
+                        onClick={() => setSignFontFamily(font)}
+                        sx={{
+                          p: "8px 12px",
+                          border: `1px solid ${signFontFamily === font ? (isDark ? "#1e3a8a" : "#b5d4f4") : p.border}`,
+                          borderRadius: "6px",
+                          bgcolor:
+                            signFontFamily === font
+                              ? isDark
+                                ? "#0d1f3c"
+                                : "#e6f1fb"
+                              : p.bgPaper,
+                          cursor: "pointer",
+                          textAlign: "center",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: 20,
+                            fontFamily: `'${font}', cursive`,
+                            color: p.textPrimary,
+                            lineHeight: 1.3
+                          }}
+                        >
+                          Tanda Tangan
+                        </p>
+                        <p
+                          style={{
+                            margin: "2px 0 0",
+                            fontSize: 10,
+                            color: p.textMuted,
+                            fontFamily: "'Nunito', sans-serif"
+                          }}
+                        >
+                          {label}
+                        </p>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+
+                {/* Font Size */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 2
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: p.textMuted,
+                      fontFamily: "'Nunito', sans-serif",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    UKURAN
+                  </label>
+                  <input
+                    type="range"
+                    min={24}
+                    max={72}
+                    value={signFontSize}
+                    onChange={(e) => setSignFontSize(Number(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: p.textMuted,
+                      fontFamily: "'Nunito', sans-serif",
+                      minWidth: 32
+                    }}
+                  >
+                    {signFontSize}px
+                  </span>
+                </Box>
+
+                {/* Text Input */}
+                <p
+                  style={{
+                    margin: "0 0 8px",
+                    fontSize: 12,
+                    color: p.textMuted,
+                    fontFamily: "'Nunito', sans-serif"
+                  }}
+                >
+                  Ketik nama atau tanda tangan Anda:
+                </p>
+                <input
+                  type="text"
+                  placeholder="Nama Anda..."
+                  value={signTypedText}
+                  onChange={(e) => setSignTypedText(e.target.value)}
+                  maxLength={40}
+                  style={{ ...inputStyle(false), marginBottom: 12 }}
+                />
+
+                {/* Preview */}
+                <Box
+                  sx={{
+                    minHeight: 100,
+                    border: `0.5px solid ${p.border}`,
+                    borderRadius: "8px",
+                    bgcolor: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    p: 2,
+                    overflow: "hidden"
+                  }}
+                >
+                  {signTypedText.trim() ? (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontFamily: `'${signFontFamily}', cursive`,
+                        fontSize: signFontSize,
+                        color: "#111111",
+                        textAlign: "center",
+                        wordBreak: "break-word",
+                        maxWidth: "100%"
+                      }}
+                    >
+                      {signTypedText}
+                    </p>
+                  ) : (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 13,
+                        color: p.textMuted,
+                        fontFamily: "'Nunito', sans-serif"
+                      }}
+                    >
+                      Preview tanda tangan akan muncul di sini
+                    </p>
+                  )}
                 </Box>
               </Box>
             )}
@@ -3937,7 +4154,7 @@ export default function RegistrationPage() {
           </Box>
 
           {/* Footer */}
-          {signMode === "draw" && (
+          {(signMode === "draw" || signMode === "type") && (
             <Box
               sx={{
                 px: 3,
