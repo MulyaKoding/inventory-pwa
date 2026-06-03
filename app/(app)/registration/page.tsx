@@ -300,6 +300,17 @@ export default function RegistrationPage() {
     setOwnerErrors((prev) => ({ ...prev, [field]: "" }))
   }
 
+  const deleteFromCloudinary = async (url: string) => {
+    if (!url) return
+    try {
+      await fetch("/api/upload/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: url })
+      })
+    } catch {}
+  }
+
   const validateStep1 = () => {
     const errors: Partial<StoreData> = {}
     if (!storeData.storeName) errors.storeName = "Nama toko wajib diisi"
@@ -1399,9 +1410,12 @@ export default function RegistrationPage() {
                               </button>
                               {storeData.storeImageUrl && (
                                 <button
-                                  onClick={() =>
+                                  onClick={async () => {
+                                    await deleteFromCloudinary(
+                                      storeData.storeImageUrl
+                                    )
                                     updateStore("storeImageUrl", "")
-                                  }
+                                  }}
                                   style={{
                                     padding: "5px 12px",
                                     border: "1px solid #fecaca",
@@ -1952,9 +1966,12 @@ export default function RegistrationPage() {
                                       Ubah
                                     </button>
                                     <button
-                                      onClick={() =>
+                                      onClick={async () => {
+                                        await deleteFromCloudinary(
+                                          ownerData.signatureUrl
+                                        )
                                         updateOwner("signatureUrl", "")
-                                      }
+                                      }}
                                       style={{
                                         padding: "6px 12px",
                                         border: "1px solid #fecaca",
