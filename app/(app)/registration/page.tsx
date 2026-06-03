@@ -4183,24 +4183,36 @@ export default function RegistrationPage() {
                 Batal
               </button>
               <button
-                onClick={saveSignature}
-                disabled={!hasSignature || signUploadStatus === "uploading"}
+                onClick={
+                  signMode === "draw" ? saveSignature : saveTypedSignature
+                }
+                disabled={
+                  signMode === "draw"
+                    ? !hasSignature || signUploadStatus === "uploading"
+                    : !signTypedText.trim() || signUploadStatus === "uploading"
+                }
                 style={{
                   padding: "9px 22px",
                   border: "none",
                   borderRadius: 6,
-                  background:
-                    hasSignature && signUploadStatus !== "uploading"
-                      ? "#1e3a8a"
-                      : "#64748b",
+                  background: (
+                    signMode === "draw"
+                      ? hasSignature && signUploadStatus !== "uploading"
+                      : signTypedText.trim() && signUploadStatus !== "uploading"
+                  )
+                    ? "#1e3a8a"
+                    : "#64748b",
                   color: "#fff",
                   fontSize: 13,
                   fontWeight: 700,
                   fontFamily: "'Nunito', sans-serif",
-                  cursor:
-                    hasSignature && signUploadStatus !== "uploading"
-                      ? "pointer"
-                      : "not-allowed"
+                  cursor: (
+                    signMode === "draw"
+                      ? hasSignature && signUploadStatus !== "uploading"
+                      : signTypedText.trim() && signUploadStatus !== "uploading"
+                  )
+                    ? "pointer"
+                    : "not-allowed"
                 }}
               >
                 Simpan Tanda Tangan
