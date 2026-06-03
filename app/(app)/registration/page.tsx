@@ -219,6 +219,14 @@ export default function RegistrationPage() {
   const [storeErrors, setStoreErrors] = useState<Partial<StoreData>>({})
   const [ownerErrors, setOwnerErrors] = useState<Partial<OwnerData>>({})
 
+  useEffect(() => {
+    const link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@700&family=Pinyon+Script&family=Parisienne&display=swap"
+    document.head.appendChild(link)
+  }, [])
+
   const theme = useMemo(
     () =>
       createTheme({
@@ -797,22 +805,38 @@ export default function RegistrationPage() {
   }
 
   const renderTypedSignatureToCanvas = (): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas")
-      canvas.width = 600
-      canvas.height = 200
-      const ctx = canvas.getContext("2d")!
-      ctx.fillStyle = "#ffffff"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.fillStyle = "#111111"
-      ctx.font = `${signFontSize * 2}px '${signFontFamily}'`
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
-      ctx.fillText(signTypedText, canvas.width / 2, canvas.height / 2)
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob)
-        else reject(new Error("Gagal render tanda tangan"))
-      }, "image/png")
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Tunggu font load dulu sebelum render ke canvas
+        await document.fonts.load(`${signFontSize * 2}px '${signFontFamily}'`)
+
+        const canvas = document.createElement("canvas")
+        canvas.width = 600
+        canvas.height = 200
+        const ctx = canvas.getContext("2d")!
+
+        // Background putih
+        ctx.fillStyle = "#ffffff"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        // Tulis teks dengan font yang sudah loaded
+        ctx.fillStyle = "#111111"
+        ctx.font = `${signFontSize * 2}px '${signFontFamily}', cursive`
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(signTypedText, canvas.width / 2, canvas.height / 2)
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob)
+            else reject(new Error("Gagal render canvas"))
+          },
+          "image/png",
+          1.0
+        )
+      } catch (err) {
+        reject(err)
+      }
     })
   }
 
