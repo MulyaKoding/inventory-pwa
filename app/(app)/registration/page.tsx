@@ -805,74 +805,32 @@ export default function RegistrationPage() {
   }
 
   const renderTypedSignatureToCanvas = (): Promise<Blob> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const fontFamily = signFontFamily
-        const fontSize = signFontSize * 2
-        const text = signTypedText
+    return new Promise((resolve, reject) => {
+      // Buat SVG dengan font embed via Google Fonts URL
+      const fontUrl = `https://fonts.googleapis.com/css2?family=${signFontFamily.replace(/ /g, "+")}:wght@400&display=swap`
 
-        // Force load font dengan timeout fallback
-        try {
-          await Promise.race([
-            document.fonts.load(`${fontSize}px '${fontFamily}'`),
-            new Promise((_, r) => setTimeout(() => r("timeout"), 3000))
-          ])
-        } catch {}
+      const svgContent = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="800" height="200">
+        <defs>
+          <style>
+            @import url('${fontUrl}');
+          </style>
+        </defs>
+        <rect width="800" height="200" fill="white"/>
+        <text
+          x="400"
+          y="120"
+          font-family="'${signFontFamily}', cursive"
+          font-size="${signFontSize * 2}"
+          fill="#111111"
+          text-anchor="middle"
+          dominant-baseline="middle"
+        >${signTypedText}</text>
+      </svg>
+    `
 
-        // Tunggu sedikit extra agar font benar-benar siap
-        await new Promise((res) => setTimeout(res, 300))
-
-        const canvas = document.createElement("canvas")
-        canvas.width = 800
-        canvas.height = 300
-        const ctx = canvas.getContext("2d")!
-
-        ctx.fillStyle = "#ffffff"
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-        // Cek apakah font loaded
-        const testFont = `${fontSize}px '${fontFamily}', cursive`
-        ctx.font = testFont
-
-        // Measure text untuk validasi
-        const metrics = ctx.measureText(text)
-        console.log("Font:", fontFamily, "Width:", metrics.width)
-
-        ctx.fillStyle = "#111111"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2)
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob && blob.size > 1000) {
-              resolve(blob)
-            } else {
-              // Fallback: font tidak loaded, pakai system cursive
-              ctx.clearRect(0, 0, canvas.width, canvas.height)
-              ctx.fillStyle = "#ffffff"
-              ctx.fillRect(0, 0, canvas.width, canvas.height)
-              ctx.font = `italic ${fontSize}px Georgia, serif`
-              ctx.fillStyle = "#111111"
-              ctx.textAlign = "center"
-              ctx.textBaseline = "middle"
-              ctx.fillText(text, canvas.width / 2, canvas.height / 2)
-              canvas.toBlob(
-                (b2) => {
-                  if (b2) resolve(b2)
-                  else reject(new Error("Gagal render canvas"))
-                },
-                "image/png",
-                1.0
-              )
-            }
-          },
-          "image/png",
-          1.0
-        )
-      } catch (err) {
-        reject(err)
-      }
+      const blob = new Blob([svgContent], { type: "image/svg+xml" })
+      resolve(blob)
     })
   }
 
@@ -887,11 +845,32 @@ export default function RegistrationPage() {
 
   const saveTypedSignature = async () => {
     if (!signTypedText.trim()) return
+    setSignUploadStatus("uploading")
+    setSignError("")
+
     try {
-      const blob = await renderTypedSignatureToCanvas()
-      await uploadSignatureBlob(blob)
-    } catch {
-      setSignError("Gagal menyimpan tanda tangan")
+      const res = await fetch("/api/upload/signature-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: signTypedText,
+          fontFamily: signFontFamily,
+          fontSize: signFontSize * 2
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Gagal upload tanda tangan")
+      updateOwner("signatureUrl", result.url)
+      setSignUploadStatus("success")
+      setSnackbar({
+        open: true,
+        msg: "Tanda tangan berhasil disimpan!",
+        severity: "success"
+      })
+      setTimeout(() => closeSignModal(), 1000)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan"
+      setSignError(msg)
       setSignUploadStatus("error")
     }
   }
