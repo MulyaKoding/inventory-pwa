@@ -807,29 +807,65 @@ export default function RegistrationPage() {
   const renderTypedSignatureToCanvas = (): Promise<Blob> => {
     return new Promise(async (resolve, reject) => {
       try {
-        // Tunggu font load dulu sebelum render ke canvas
-        await document.fonts.load(`${signFontSize * 2}px '${signFontFamily}'`)
+        const fontFamily = signFontFamily
+        const fontSize = signFontSize * 2
+        const text = signTypedText
+
+        // Force load font dengan timeout fallback
+        try {
+          await Promise.race([
+            document.fonts.load(`${fontSize}px '${fontFamily}'`),
+            new Promise((_, r) => setTimeout(() => r("timeout"), 3000))
+          ])
+        } catch {}
+
+        // Tunggu sedikit extra agar font benar-benar siap
+        await new Promise((res) => setTimeout(res, 300))
 
         const canvas = document.createElement("canvas")
-        canvas.width = 600
-        canvas.height = 200
+        canvas.width = 800
+        canvas.height = 300
         const ctx = canvas.getContext("2d")!
 
-        // Background putih
         ctx.fillStyle = "#ffffff"
         ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-        // Tulis teks dengan font yang sudah loaded
+        // Cek apakah font loaded
+        const testFont = `${fontSize}px '${fontFamily}', cursive`
+        ctx.font = testFont
+
+        // Measure text untuk validasi
+        const metrics = ctx.measureText(text)
+        console.log("Font:", fontFamily, "Width:", metrics.width)
+
         ctx.fillStyle = "#111111"
-        ctx.font = `${signFontSize * 2}px '${signFontFamily}', cursive`
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
-        ctx.fillText(signTypedText, canvas.width / 2, canvas.height / 2)
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2)
 
         canvas.toBlob(
           (blob) => {
-            if (blob) resolve(blob)
-            else reject(new Error("Gagal render canvas"))
+            if (blob && blob.size > 1000) {
+              resolve(blob)
+            } else {
+              // Fallback: font tidak loaded, pakai system cursive
+              ctx.clearRect(0, 0, canvas.width, canvas.height)
+              ctx.fillStyle = "#ffffff"
+              ctx.fillRect(0, 0, canvas.width, canvas.height)
+              ctx.font = `italic ${fontSize}px Georgia, serif`
+              ctx.fillStyle = "#111111"
+              ctx.textAlign = "center"
+              ctx.textBaseline = "middle"
+              ctx.fillText(text, canvas.width / 2, canvas.height / 2)
+              canvas.toBlob(
+                (b2) => {
+                  if (b2) resolve(b2)
+                  else reject(new Error("Gagal render canvas"))
+                },
+                "image/png",
+                1.0
+              )
+            }
           },
           "image/png",
           1.0
