@@ -53,13 +53,18 @@ export async function PUT(
     const updated = await prisma.msPabrikBarang.update({
       where: { id },
       data: {
-        ...(body.pabrikName !== undefined && { pabrikName: body.pabrikName }),
+        ...((body.pabrikName || body.nama) && {
+          pabrikName: body.pabrikName || body.nama
+        }),
+        ...((body.pabrikCode || body.kode) && {
+          pabrikCode: body.pabrikCode || body.kode
+        }),
         ...(body.phone !== undefined && { phone: body.phone }),
-        ...(body.email !== undefined && { email: body.email }),
+        ...(body.telepon !== undefined && { phone: body.telepon }),
         ...(body.address !== undefined && { address: body.address }),
+        ...(body.alamat !== undefined && { address: body.alamat }),
         ...(body.city !== undefined && { city: body.city }),
-        ...(body.province !== undefined && { province: body.province }),
-        ...(body.country !== undefined && { country: body.country }),
+        ...(body.kota !== undefined && { city: body.kota }),
         ...(body.status !== undefined && { status: body.status })
       }
     })

@@ -55,34 +55,43 @@ export async function PUT(
         { status: 404 }
       )
 
-    // Validasi relasi jika diubah
+    // Validasi supplier
     if (body.supplierCode) {
       const sup = await prisma.msSupplierBarang.findFirst({
-        where: { supplierCode: body.supplierCode, deleteAt: null }
+        where: {
+          supplierCode: body.supplierCode,
+          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+        }
       })
       if (!sup)
         return NextResponse.json(
-          { error: `Supplier ${body.supplierCode} tidak ditemukan` },
+          { error: `Supplier tidak ditemukan` },
           { status: 400 }
         )
     }
     if (body.pabrikCode) {
       const pab = await prisma.msPabrikBarang.findFirst({
-        where: { pabrikCode: body.pabrikCode, deleteAt: null }
+        where: {
+          pabrikCode: body.pabrikCode,
+          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+        }
       })
       if (!pab)
         return NextResponse.json(
-          { error: `Pabrik ${body.pabrikCode} tidak ditemukan` },
+          { error: `Pabrik tidak ditemukan` },
           { status: 400 }
         )
     }
     if (body.merekCode) {
       const mrk = await prisma.msMerekBarang.findFirst({
-        where: { merekCode: body.merekCode, deleteAt: null }
+        where: {
+          merekCode: body.merekCode,
+          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+        }
       })
       if (!mrk)
         return NextResponse.json(
-          { error: `Merek ${body.merekCode} tidak ditemukan` },
+          { error: `Merek tidak ditemukan` },
           { status: 400 }
         )
     }
@@ -90,20 +99,37 @@ export async function PUT(
     const updated = await prisma.msBarang.update({
       where: { id },
       data: {
-        ...(body.barangName !== undefined && { barangName: body.barangName }),
-        ...(body.barangCategory !== undefined && {
-          barangCategory: body.barangCategory
+        ...((body.barangName || body.nama) && {
+          barangName: body.barangName || body.nama
+        }),
+        ...((body.barangCode || body.kode) && {
+          barangCode: body.barangCode || body.kode
+        }),
+        ...((body.barangCategory || body.jenis) !== undefined && {
+          barangCategory: body.barangCategory || body.jenis || null
         }),
         ...(body.supplierCode !== undefined && {
-          supplierCode: body.supplierCode
+          supplierCode: body.supplierCode || null
         }),
-        ...(body.pabrikCode !== undefined && { pabrikCode: body.pabrikCode }),
-        ...(body.merekCode !== undefined && { merekCode: body.merekCode }),
+        ...(body.pabrikCode !== undefined && {
+          pabrikCode: body.pabrikCode || null
+        }),
+        ...(body.merekCode !== undefined && {
+          merekCode: body.merekCode || null
+        }),
         ...(body.kdSatuanBarang !== undefined && {
           kdSatuanBarang: body.kdSatuanBarang
         }),
-        ...(body.stock !== undefined && { stock: body.stock }),
-        ...(body.price !== undefined && { price: body.price }),
+        ...(body.barcode !== undefined && { barcode: body.barcode }),
+        ...((body.stock !== undefined || body.stokMinimum !== undefined) && {
+          stock: Number(body.stock ?? body.stokMinimum ?? 0)
+        }),
+        ...((body.price !== undefined || body.hargaJual !== undefined) && {
+          price: Number(body.price ?? body.hargaJual ?? 0)
+        }),
+        ...(body.hargaBeli !== undefined && {
+          hargaBeli: Number(body.hargaBeli)
+        }),
         ...(body.status !== undefined && { status: body.status })
       },
       include: {
