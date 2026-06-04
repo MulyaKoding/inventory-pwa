@@ -1702,7 +1702,7 @@ export default function MasterBarangPage() {
     return (
       <Box>
         <ListPageHeader
-          title="Daftar Satuan Barang"
+          title="Daftar Satuan"
           count={filteredSatuan.length}
           onAdd={() => goToForm("satuan")}
           addLabel="Tambah Satuan"
