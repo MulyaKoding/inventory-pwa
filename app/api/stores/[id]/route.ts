@@ -63,7 +63,7 @@ export async function PUT(
         ...(storeKotaKd !== undefined && { storeKotaKd }),
         ...(storeKecamatanKd !== undefined && { storeKecamatanKd }),
         ...(storeKelurahanKd !== undefined && { storeKelurahanKd }),
-        ...(owner && {
+        ...(owner !== undefined && {
           owner: {
             nik: owner.nik ?? store.owner?.nik ?? "",
             fullName: owner.fullName ?? store.owner?.fullName ?? "",
@@ -76,8 +76,7 @@ export async function PUT(
             inputMethod: store.owner?.inputMethod ?? "manual"
           }
         })
-      },
-      include: { owner: true }
+      }
     })
 
     return NextResponse.json({ success: true, data: updated })
