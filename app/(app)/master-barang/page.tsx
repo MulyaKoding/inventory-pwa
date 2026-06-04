@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Alert,
@@ -1190,14 +1190,16 @@ export default function MasterBarangPage() {
       setLoadingSatuan(false)
     }
   }
-  const fetchPabrik = async () => {
+
+  // fetchPabrik SATU definisi saja, terima optional storeId
+  const fetchPabrik = async (storeId?: string) => {
+    const id = storeId ?? selectedStoreId
     setLoadingPabrik(true)
     try {
-      const params = selectedStoreId ? `?storeId=${selectedStoreId}` : ""
+      const params = id ? `?storeId=${id}` : ""
       const r = await fetch(`/api/master/pabrik${params}`)
       const d = await r.json()
       if (d.success) {
-        // Map field API → field frontend
         setPabrikList(
           d.data.map((item: any) => ({
             id: item.id,
@@ -1215,6 +1217,7 @@ export default function MasterBarangPage() {
       setLoadingPabrik(false)
     }
   }
+
   const fetchMerek = async () => {
     setLoadingMerek(true)
     try {
@@ -1226,6 +1229,7 @@ export default function MasterBarangPage() {
       setLoadingMerek(false)
     }
   }
+
   const fetchSupplier = async () => {
     setLoadingSupplier(true)
     try {
@@ -1237,6 +1241,7 @@ export default function MasterBarangPage() {
       setLoadingSupplier(false)
     }
   }
+
   const fetchBarang = async () => {
     setLoadingBarang(true)
     try {
@@ -1249,26 +1254,51 @@ export default function MasterBarangPage() {
     }
   }
 
-  const fetchMyStores = async () => {
+  // fetchMyStores mengembalikan storeId terpilih
+  const fetchMyStores = async (): Promise<string> => {
     setLoadingStores(true)
     try {
       const r = await fetch("/api/stores/my")
       const d = await r.json()
       if (d.success) {
         setStoreList(d.data)
-        // Auto-select jika hanya 1 toko
-        if (d.data.length === 1) setSelectedStoreId(d.data[0].id)
+        if (d.data.length === 1) {
+          setSelectedStoreId(d.data[0].id)
+          return d.data[0].id
+        }
       }
     } catch {
     } finally {
       setLoadingStores(false)
     }
+    return ""
   }
 
+  // ── Effects ──
+
+  // SATU init effect — fetch semua setelah stores selesai
   useEffect(() => {
     fetchSatuan()
-    fetchMyStores()
+    fetchMyStores().then((storeId) => {
+      fetchPabrik(storeId)
+      fetchMerek()
+      fetchSupplier()
+      fetchBarang()
+    })
   }, [])
+
+  // Re-fetch saat user ganti store, SKIP saat mount pertama
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    fetchPabrik()
+    fetchMerek()
+    fetchSupplier()
+    fetchBarang()
+  }, [selectedStoreId])
 
   // ── Save handlers — POST untuk create, PUT untuk edit ──
   const handleSaveSatuan = async () => {
