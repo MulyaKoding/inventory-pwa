@@ -9,25 +9,30 @@ export async function GET(req: NextRequest) {
     const user = getUserFromRequest(req)
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const store = await prisma.store.findFirst({
-      where: { userId: user.userId }
-    })
-
-    if (!store) {
       return NextResponse.json(
-        { error: "Toko tidak ditemukan" },
-        { status: 404 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
       )
     }
 
-    return NextResponse.json({ store })
+    const stores = await prisma.store.findMany({
+      where: { userId: user.userId },
+      select: {
+        id: true,
+        storeId: true,
+        storeName: true
+      },
+      orderBy: { createdAt: "asc" }
+    })
+
+    return NextResponse.json({ success: true, data: stores })
   } catch (err: unknown) {
     console.error("[GET /api/stores/my]", err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Terjadi kesalahan" },
+      {
+        success: false,
+        error: err instanceof Error ? err.message : "Terjadi kesalahan"
+      },
       { status: 500 }
     )
   }
