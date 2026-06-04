@@ -185,3 +185,121 @@ model MsSatuanBarang {
 
   @@map("ms_satuan_barang")
 }
+
+// ── Master Supplier ──────────────────────────────────────
+model MsSupplierBarang {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  supplierCode String   @unique @map("Supplier_Code")   
+  supplierName String   @map("Supplier_Name")
+  phone        String?  @map("Phone")
+  email        String?  @map("Email")
+  address      String?  @map("Address")
+  city         String?  @map("City")
+  province     String?  @map("Province")
+  picName      String?  @map("Pic_Name")               
+  status       String   @default("active") @map("Status")
+
+  // Kepemilikan
+  storeId      String   @map("Store_Id")               
+  userId       String   @map("User_Id") @db.ObjectId   
+
+  createdAt    DateTime @default(now()) @map("Created_at")
+  modifiedAt   DateTime @updatedAt @map("Modified_at")
+  deleteAt     DateTime? @map("Delete_at")
+
+  // Relasi ke barang
+  barangs      MsBarang[]
+
+  @@index([storeId])
+  @@index([userId])
+  @@map("ms_supplier_barang")
+}
+
+// ── Master Pabrik ────────────────────────────────────────
+model MsPabrikBarang {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  pabrikCode  String   @unique @map("Pabrik_Code")     
+  pabrikName  String   @map("Pabrik_Name")
+  phone       String?  @map("Phone")
+  email       String?  @map("Email")
+  address     String?  @map("Address")
+  city        String?  @map("City")
+  province    String?  @map("Province")
+  country     String?  @map("Country") @default("Indonesia")
+  status      String   @default("active") @map("Status")
+
+  // Kepemilikan
+  storeId     String   @map("Store_Id")
+  userId      String   @map("User_Id") @db.ObjectId
+
+  createdAt   DateTime  @default(now()) @map("Created_at")
+  modifiedAt  DateTime  @updatedAt @map("Modified_at")
+  deleteAt    DateTime? @map("Delete_at")
+
+  // Relasi ke barang
+  barangs     MsBarang[]
+
+  @@index([storeId])
+  @@index([userId])
+  @@map("ms_pabrik_barang")
+}
+
+// ── Master Merek ─────────────────────────────────────────
+model MsMerekBarang {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  merekCode  String   @unique @map("Merek_Code")       
+  merekName  String   @map("Merek_Name")
+  status     String   @default("active") @map("Status")
+
+  // Kepemilikan
+  storeId    String   @map("Store_Id")
+  userId     String   @map("User_Id") @db.ObjectId
+
+  createdAt  DateTime  @default(now()) @map("Created_at")
+  modifiedAt DateTime  @updatedAt @map("Modified_at")
+  deleteAt   DateTime? @map("Delete_at")
+
+  // Relasi ke barang
+  barangs    MsBarang[]
+
+  @@index([storeId])
+  @@index([userId])
+  @@map("ms_merek_barang")
+}
+
+// ── Master Barang ─────────────────────────────────────────
+model MsBarang {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  barangCode     String   @unique @map("Barang_Code")
+  barangName     String   @map("Barang_Name")
+  barangCategory String?  @map("Barang_Category")
+
+  // Foreign keys ke master
+  supplierCode   String?  @map("Supplier_Code")
+  pabrikCode     String?  @map("Pabrik_Code")
+  merekCode      String?  @map("Merek_Code")
+  kdSatuanBarang String?  @map("Kd_SatuanBarang")    
+
+  // Kepemilikan
+  storeId        String   @map("Store_Id")
+  userId         String   @map("User_Id") @db.ObjectId
+
+  stock          Int      @default(0) @map("Stock")
+  price          Int      @default(0) @map("Price")
+  status         String   @default("active") @map("Status")
+
+  createdAt      DateTime  @default(now()) @map("Created_at")
+  modifiedAt     DateTime  @updatedAt @map("Modified_at")
+  deleteAt       DateTime? @map("Delete_at")
+
+  // Relasi
+  supplier       MsSupplierBarang? @relation(fields: [supplierCode], references: [supplierCode])
+  pabrik         MsPabrikBarang?   @relation(fields: [pabrikCode], references: [pabrikCode])
+  merek          MsMerekBarang?    @relation(fields: [merekCode], references: [merekCode])
+
+  @@index([storeId])
+  @@index([supplierCode])
+  @@index([pabrikCode])
+  @@index([merekCode])
+  @@map("ms_barang")
+}
