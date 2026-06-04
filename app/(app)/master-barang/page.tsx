@@ -1304,7 +1304,7 @@ export default function MasterBarangPage() {
   }
 
   const handleSavePabrik = async () => {
-    if (!pabrikForm.kode || !pabrikForm.nama || !pabrikForm.storeId) {
+    if (!pabrikForm.kode || !pabrikForm.nama || !selectedStoreId) {
       showSnackbar("Kode, Nama, dan Toko wajib diisi", "error")
       return
     }
@@ -1324,7 +1324,7 @@ export default function MasterBarangPage() {
             city: pabrikForm.kota,
             phone: pabrikForm.telepon,
             address: pabrikForm.alamat,
-            storeId: pabrikForm.storeId
+            storeId: selectedStoreId
           })
         }
       )
