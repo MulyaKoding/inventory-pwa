@@ -34,6 +34,7 @@ interface Pabrik {
   kota?: string
   telepon?: string
   alamat?: string
+  storeId?: string
 }
 interface Merek {
   id: string
@@ -41,6 +42,7 @@ interface Merek {
   nama: string
   pabrikId: string
   pabrikNama?: string
+  storeId?: string
 }
 interface Supplier {
   id: string
@@ -51,6 +53,7 @@ interface Supplier {
   email?: string
   kota?: string
   alamat?: string
+  storeId?: string
 }
 interface Barang {
   id: string
@@ -69,6 +72,13 @@ interface Barang {
   stokMinimum: number
   status: "aktif" | "nonaktif"
   createdAt: string
+  storeId?: string
+}
+
+interface StoreOption {
+  id: string
+  storeId: string
+  storeName: string
 }
 
 type TabKey = "satuan" | "pabrik" | "merek" | "supplier" | "barang"
@@ -717,6 +727,110 @@ function ListPageHeader({
   )
 }
 
+// ── Store Selector ─────────────────────────────────────────────────────────
+function StoreSelector({
+  storeList,
+  value,
+  onChange,
+  loading,
+  p,
+  isDark,
+  inputStyle
+}: {
+  storeList: StoreOption[]
+  value: string
+  onChange: (v: string) => void
+  loading: boolean
+  p: Palette
+  isDark: boolean
+  inputStyle: React.CSSProperties
+}) {
+  return (
+    <Box
+      sx={{
+        gridColumn: "1 / -1",
+        p: 2,
+        mb: 1,
+        bgcolor: isDark ? "#0d1f3c22" : "#eff6ff",
+        border: `1px solid ${isDark ? "#1e3a8a55" : "#bfdbfe"}`,
+        borderRadius: "8px",
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        flexWrap: "wrap"
+      }}
+    >
+      <Box
+        sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}
+      >
+        <svg
+          width={16}
+          height={16}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={isDark ? "#60a5fa" : "#1e3a8a"}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: isDark ? "#60a5fa" : "#1e3a8a",
+            fontFamily: "'Nunito', sans-serif",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Toko Tujuan <span style={{ color: "#ef4444" }}>*</span>
+        </span>
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 200 }}>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={loading || storeList.length === 0}
+          style={{
+            ...inputStyle,
+            borderColor: !value ? "#f87171" : (inputStyle.border as string),
+            background: isDark ? "#0d1f3c" : "#dbeafe",
+            color: isDark ? "#93c5fd" : "#1e3a8a",
+            fontWeight: 700
+          }}
+        >
+          <option value="">
+            {loading
+              ? "Memuat daftar toko..."
+              : storeList.length === 0
+                ? "Tidak ada toko tersedia"
+                : "— Pilih Toko —"}
+          </option>
+          {storeList.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.storeName} ({s.storeId})
+            </option>
+          ))}
+        </select>
+      </Box>
+      {!value && (
+        <span
+          style={{
+            fontSize: 11,
+            color: "#ef4444",
+            fontFamily: "'Nunito', sans-serif",
+            flexShrink: 0
+          }}
+        >
+          Pilih toko terlebih dahulu
+        </span>
+      )}
+    </Box>
+  )
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════
@@ -751,11 +865,23 @@ export default function MasterBarangPage() {
     }
     if (tab === "pabrik") {
       setEditingPabrik(null)
-      setPabrikForm({ kode: "", nama: "", kota: "", telepon: "", alamat: "" })
+      setPabrikForm({
+        kode: "",
+        nama: "",
+        kota: "",
+        telepon: "",
+        alamat: "",
+        storeId: selectedStoreId
+      })
     }
     if (tab === "merek") {
       setEditingMerek(null)
-      setMerekForm({ kode: "", nama: "", pabrikId: "" })
+      setMerekForm({
+        kode: "",
+        nama: "",
+        pabrikId: "",
+        storeId: selectedStoreId
+      })
     }
     if (tab === "supplier") {
       setEditingSupplier(null)
@@ -766,7 +892,8 @@ export default function MasterBarangPage() {
         telepon: "",
         email: "",
         kota: "",
-        alamat: ""
+        alamat: "",
+        storeId: selectedStoreId
       })
     }
     if (tab === "barang") {
@@ -782,7 +909,8 @@ export default function MasterBarangPage() {
         hargaBeli: "",
         hargaJual: "",
         stokMinimum: "",
-        status: "aktif"
+        status: "aktif",
+        storeId: selectedStoreId
       })
     }
   }
@@ -801,12 +929,23 @@ export default function MasterBarangPage() {
   const [loadingBarang, setLoadingBarang] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  const [storeList, setStoreList] = useState<StoreOption[]>([])
+  const [selectedStoreId, setSelectedStoreId] = useState("")
+  const [loadingStores, setLoadingStores] = useState(false)
+
   // ── Editing state per entity ──
   const [editingSatuan, setEditingSatuan] = useState<Satuan | null>(null)
   const [editingPabrik, setEditingPabrik] = useState<Pabrik | null>(null)
   const [editingMerek, setEditingMerek] = useState<Merek | null>(null)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
   const [editingBarang, setEditingBarang] = useState<Barang | null>(null)
+
+  useEffect(() => {
+    setPabrikForm((f) => ({ ...f, storeId: selectedStoreId }))
+    setMerekForm((f) => ({ ...f, storeId: selectedStoreId }))
+    setSupplierForm((f) => ({ ...f, storeId: selectedStoreId }))
+    setBarangForm((f) => ({ ...f, storeId: selectedStoreId }))
+  }, [selectedStoreId])
 
   // ── Helpers buka form Edit dengan pre-fill ──
   const goToFormEditSatuan = (data: Satuan) => {
@@ -826,14 +965,20 @@ export default function MasterBarangPage() {
       nama: data.nama,
       kota: data.kota || "",
       telepon: data.telepon || "",
-      alamat: data.alamat || ""
+      alamat: data.alamat || "",
+      storeId: data.storeId || selectedStoreId
     })
     setActiveTab("pabrik")
     setView("pabrik", "form")
   }
   const goToFormEditMerek = (data: Merek) => {
     setEditingMerek(data)
-    setMerekForm({ kode: data.kode, nama: data.nama, pabrikId: data.pabrikId })
+    setMerekForm({
+      kode: data.kode,
+      nama: data.nama,
+      pabrikId: data.pabrikId,
+      storeId: data.storeId || selectedStoreId
+    })
     setActiveTab("merek")
     setView("merek", "form")
   }
@@ -846,7 +991,8 @@ export default function MasterBarangPage() {
       telepon: data.telepon || "",
       email: data.email || "",
       kota: data.kota || "",
-      alamat: data.alamat || ""
+      alamat: data.alamat || "",
+      storeId: data.storeId || selectedStoreId
     })
     setActiveTab("supplier")
     setView("supplier", "form")
@@ -864,7 +1010,8 @@ export default function MasterBarangPage() {
       hargaBeli: String(data.hargaBeli),
       hargaJual: String(data.hargaJual),
       stokMinimum: String(data.stokMinimum),
-      status: data.status
+      status: data.status,
+      storeId: data.storeId || selectedStoreId
     })
     setActiveTab("barang")
     setView("barang", "form")
@@ -898,12 +1045,14 @@ export default function MasterBarangPage() {
     nama: "",
     kota: "",
     telepon: "",
-    alamat: ""
+    alamat: "",
+    storeId: ""
   })
   const [merekForm, setMerekForm] = useState({
     kode: "",
     nama: "",
-    pabrikId: ""
+    pabrikId: "",
+    storeId: ""
   })
   const [supplierForm, setSupplierForm] = useState({
     kode: "",
@@ -912,7 +1061,8 @@ export default function MasterBarangPage() {
     telepon: "",
     email: "",
     kota: "",
-    alamat: ""
+    alamat: "",
+    storeId: ""
   })
   const [barangForm, setBarangForm] = useState({
     kode: "",
@@ -925,7 +1075,8 @@ export default function MasterBarangPage() {
     hargaBeli: "",
     hargaJual: "",
     stokMinimum: "",
-    status: "aktif"
+    status: "aktif",
+    storeId: ""
   })
 
   const [searchSatuan, setSearchSatuan] = useState("")
@@ -1084,12 +1235,29 @@ export default function MasterBarangPage() {
     }
   }
 
+  const fetchMyStores = async () => {
+    setLoadingStores(true)
+    try {
+      const r = await fetch("/api/stores/my")
+      const d = await r.json()
+      if (d.success) {
+        setStoreList(d.data)
+        // Auto-select jika hanya 1 toko
+        if (d.data.length === 1) setSelectedStoreId(d.data[0].id)
+      }
+    } catch {
+    } finally {
+      setLoadingStores(false)
+    }
+  }
+
   useEffect(() => {
     fetchSatuan()
     fetchPabrik()
     fetchMerek()
     fetchSupplier()
     fetchBarang()
+    fetchMyStores()
   }, [])
 
   // ── Save handlers — POST untuk create, PUT untuk edit ──
@@ -1126,8 +1294,8 @@ export default function MasterBarangPage() {
   }
 
   const handleSavePabrik = async () => {
-    if (!pabrikForm.kode || !pabrikForm.nama) {
-      showSnackbar("Kode dan Nama wajib diisi", "error")
+    if (!pabrikForm.kode || !pabrikForm.nama || !pabrikForm.storeId) {
+      showSnackbar("Kode, Nama, dan Toko wajib diisi", "error")
       return
     }
     setSaving(true)
@@ -1158,8 +1326,8 @@ export default function MasterBarangPage() {
   }
 
   const handleSaveMerek = async () => {
-    if (!merekForm.kode || !merekForm.nama) {
-      showSnackbar("Kode dan Nama wajib diisi", "error")
+    if (!merekForm.kode || !merekForm.nama || !merekForm.storeId) {
+      showSnackbar("Kode, Nama, dan Toko wajib diisi", "error")
       return
     }
     setSaving(true)
@@ -1188,8 +1356,8 @@ export default function MasterBarangPage() {
   }
 
   const handleSaveSupplier = async () => {
-    if (!supplierForm.kode || !supplierForm.nama) {
-      showSnackbar("Kode dan Nama wajib diisi", "error")
+    if (!supplierForm.kode || !supplierForm.nama || !supplierForm.storeId) {
+      showSnackbar("Kode, Nama, dan Toko wajib diisi", "error")
       return
     }
     setSaving(true)
@@ -1220,8 +1388,13 @@ export default function MasterBarangPage() {
   }
 
   const handleSaveBarang = async () => {
-    if (!barangForm.kode || !barangForm.nama || !barangForm.satuanId) {
-      showSnackbar("Kode, Nama, dan Satuan wajib diisi", "error")
+    if (
+      !barangForm.kode ||
+      !barangForm.nama ||
+      !barangForm.satuanId ||
+      !barangForm.storeId
+    ) {
+      showSnackbar("Kode, Nama, Satuan, dan Toko wajib diisi", "error")
       return
     }
     setSaving(true)
@@ -1491,6 +1664,15 @@ export default function MasterBarangPage() {
               gap: 2.5
             }}
           >
+            <StoreSelector
+              storeList={storeList}
+              value={selectedStoreId}
+              onChange={(v) => setSelectedStoreId(v)}
+              loading={loadingStores}
+              p={p}
+              isDark={isDark}
+              inputStyle={inputStyle}
+            />
             <Field label="Kode Pabrik" required>
               <input
                 style={inputStyle}
@@ -1647,6 +1829,15 @@ export default function MasterBarangPage() {
               gap: 2.5
             }}
           >
+            <StoreSelector
+              storeList={storeList}
+              value={selectedStoreId}
+              onChange={(v) => setSelectedStoreId(v)}
+              loading={loadingStores}
+              p={p}
+              isDark={isDark}
+              inputStyle={inputStyle}
+            />
             <Field label="Kode Merek" required>
               <input
                 style={inputStyle}
@@ -1810,6 +2001,15 @@ export default function MasterBarangPage() {
               gap: 2.5
             }}
           >
+            <StoreSelector
+              storeList={storeList}
+              value={selectedStoreId}
+              onChange={(v) => setSelectedStoreId(v)}
+              loading={loadingStores}
+              p={p}
+              isDark={isDark}
+              inputStyle={inputStyle}
+            />
             <Field label="Kode Supplier" required>
               <input
                 style={inputStyle}
@@ -1994,6 +2194,15 @@ export default function MasterBarangPage() {
               gap: 2.5
             }}
           >
+            <StoreSelector
+              storeList={storeList}
+              value={selectedStoreId}
+              onChange={(v) => setSelectedStoreId(v)}
+              loading={loadingStores}
+              p={p}
+              isDark={isDark}
+              inputStyle={inputStyle}
+            />
             <SectionLabel text="IDENTITAS BARANG" isDark={isDark} p={p} />
             <Field label="Kode Barang" required>
               <input
