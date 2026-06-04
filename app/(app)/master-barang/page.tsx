@@ -1243,7 +1243,21 @@ export default function MasterBarangPage() {
       const params = id ? `?storeId=${id}` : ""
       const r = await fetch(`/api/master/supplier${params}`)
       const d = await r.json()
-      if (d.success) setSupplierList(d.data)
+      if (d.success) {
+        setSupplierList(
+          d.data.map((item: any) => ({
+            id: item.id,
+            kode: item.supplierCode,
+            nama: item.supplierName,
+            kontakPerson: item.picName || "",
+            telepon: item.phone || "",
+            email: item.email || "",
+            kota: item.city || "",
+            alamat: item.address || "",
+            storeId: item.storeId
+          }))
+        )
+      }
     } catch {
     } finally {
       setLoadingSupplier(false)
@@ -1414,7 +1428,7 @@ export default function MasterBarangPage() {
   }
 
   const handleSaveSupplier = async () => {
-    if (!supplierForm.kode || !supplierForm.nama || !supplierForm.storeId) {
+    if (!supplierForm.kode || !supplierForm.nama || !selectedStoreId) {
       showSnackbar("Kode, Nama, dan Toko wajib diisi", "error")
       return
     }
@@ -1428,7 +1442,10 @@ export default function MasterBarangPage() {
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(supplierForm)
+          body: JSON.stringify({
+            ...supplierForm,
+            storeId: selectedStoreId
+          })
         }
       )
       if (!res.ok) throw new Error()
