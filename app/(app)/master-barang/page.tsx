@@ -577,6 +577,8 @@ function ListPageHeader({
   count,
   onAdd,
   addLabel,
+  search,
+  onSearch,
   p,
   isDark
 }: {
@@ -584,6 +586,8 @@ function ListPageHeader({
   count: number
   onAdd: () => void
   addLabel: string
+  search: string
+  onSearch: (v: string) => void
   p: Palette
   isDark: boolean
 }) {
@@ -593,7 +597,8 @@ function ListPageHeader({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        mb: 2.5
+        mb: 2.5,
+        gap: 2
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -622,27 +627,72 @@ function ListPageHeader({
           {count}
         </span>
       </Box>
-      <button
-        onClick={onAdd}
-        style={{
+      <Box
+        sx={{
           display: "flex",
           alignItems: "center",
-          gap: 5,
-          padding: "7px 16px",
-          border: "none",
-          borderRadius: 6,
-          background: "linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)",
-          boxShadow: "0 4px 12px rgba(59,130,246,.2)",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: "'Nunito', sans-serif",
-          cursor: "pointer"
+          gap: 1.5,
+          flex: 1,
+          justifyContent: "flex-end"
         }}
       >
-        <Icon d="M12 5v14M5 12h14" size={13} color="#fff" />
-        {addLabel}
-      </button>
+        <Box sx={{ position: "relative", width: { xs: "100%", sm: 220 } }}>
+          <Box
+            sx={{
+              position: "absolute",
+              left: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: p.textMuted
+            }}
+          >
+            <Icon
+              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+              size={13}
+            />
+          </Box>
+          <input
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder="Cari kode / nama..."
+            style={{
+              padding: "7px 12px 7px 30px",
+              borderRadius: 6,
+              border: `1px solid ${p.border}`,
+              background: p.inputBg,
+              color: p.textPrimary,
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: 12,
+              outline: "none",
+              width: "100%",
+              boxSizing: "border-box"
+            }}
+          />
+        </Box>
+        <button
+          onClick={onAdd}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "7px 16px",
+            border: "none",
+            borderRadius: 6,
+            background: "linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)",
+            boxShadow: "0 4px 12px rgba(59,130,246,.2)",
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "'Nunito', sans-serif",
+            cursor: "pointer",
+            whiteSpace: "nowrap"
+          }}
+        >
+          <Icon d="M12 5v14M5 12h14" size={13} color="#fff" />
+          {addLabel}
+        </button>
+      </Box>
     </Box>
   )
 }
@@ -745,6 +795,38 @@ export default function MasterBarangPage() {
     stokMinimum: "",
     status: "aktif"
   })
+
+  const [searchSatuan, setSearchSatuan] = useState("")
+  const [searchPabrik, setSearchPabrik] = useState("")
+  const [searchMerek, setSearchMerek] = useState("")
+  const [searchSupplier, setSearchSupplier] = useState("")
+  const [searchBarang, setSearchBarang] = useState("")
+
+  const filteredSatuan = satuanList.filter(
+    (s) =>
+      s.kode.toLowerCase().includes(searchSatuan.toLowerCase()) ||
+      s.nama.toLowerCase().includes(searchSatuan.toLowerCase())
+  )
+  const filteredPabrik = pabrikList.filter(
+    (s) =>
+      s.kode.toLowerCase().includes(searchPabrik.toLowerCase()) ||
+      s.nama.toLowerCase().includes(searchPabrik.toLowerCase())
+  )
+  const filteredMerek = merekList.filter(
+    (s) =>
+      s.kode.toLowerCase().includes(searchMerek.toLowerCase()) ||
+      s.nama.toLowerCase().includes(searchMerek.toLowerCase())
+  )
+  const filteredSupplier = supplierList.filter(
+    (s) =>
+      s.kode.toLowerCase().includes(searchSupplier.toLowerCase()) ||
+      s.nama.toLowerCase().includes(searchSupplier.toLowerCase())
+  )
+  const filteredBarang = barangList.filter(
+    (s) =>
+      s.kode.toLowerCase().includes(searchBarang.toLowerCase()) ||
+      s.nama.toLowerCase().includes(searchBarang.toLowerCase())
+  )
 
   // ── Theme ──
   const theme = useMemo(
@@ -1164,9 +1246,11 @@ export default function MasterBarangPage() {
       <Box>
         <ListPageHeader
           title="Daftar Satuan Barang"
-          count={satuanList.length}
+          count={filteredSatuan.length}
           onAdd={() => goToForm("satuan")}
           addLabel="Tambah Satuan"
+          search={searchSatuan}
+          onSearch={setSearchSatuan}
           p={p}
           isDark={isDark}
         />
@@ -1185,11 +1269,15 @@ export default function MasterBarangPage() {
             ) : satuanList.length === 0 ? (
               <EmptyRow
                 cols={4}
-                text="Belum ada data satuan. Klik 'Tambah Satuan' untuk menambah."
+                text={
+                  searchSatuan
+                    ? "Tidak ada hasil pencarian."
+                    : "Belum ada data satuan."
+                }
                 p={p}
               />
             ) : (
-              satuanList.map((s) => (
+              filteredSatuan.map((s) => (
                 <tr key={s.id}>
                   <Td p={p} isDark={isDark}>
                     <span
@@ -1305,9 +1393,11 @@ export default function MasterBarangPage() {
       <Box>
         <ListPageHeader
           title="Daftar Pabrik"
-          count={pabrikList.length}
+          count={filteredPabrik.length}
           onAdd={() => goToForm("pabrik")}
           addLabel="Tambah Pabrik"
+          search={searchPabrik}
+          onSearch={setSearchPabrik}
           p={p}
           isDark={isDark}
         />
@@ -1325,9 +1415,17 @@ export default function MasterBarangPage() {
             {loadingPabrik ? (
               <SkeletonRows cols={5} isDark={isDark} />
             ) : pabrikList.length === 0 ? (
-              <EmptyRow cols={5} text="Belum ada data pabrik." p={p} />
+              <EmptyRow
+                cols={5}
+                text={
+                  searchPabrik
+                    ? "Tidak ada hasil pencarian."
+                    : "Belum ada data pabrik."
+                }
+                p={p}
+              />
             ) : (
-              pabrikList.map((s) => (
+              filteredPabrik.map((s) => (
                 <tr key={s.id}>
                   <Td p={p} isDark={isDark}>
                     <span
@@ -1421,7 +1519,7 @@ export default function MasterBarangPage() {
                       }
                     >
                       <option value="">— Pilih Pabrik —</option>
-                      {pabrikList.map((pb) => (
+                      {filteredPabrik.map((pb) => (
                         <option key={pb.id} value={pb.id}>
                           {pb.nama}
                         </option>
@@ -1457,9 +1555,11 @@ export default function MasterBarangPage() {
       <Box>
         <ListPageHeader
           title="Daftar Merek"
-          count={merekList.length}
+          count={filteredMerek.length}
           onAdd={() => goToForm("merek")}
           addLabel="Tambah Merek"
+          search={searchMerek}
+          onSearch={setSearchMerek}
           p={p}
           isDark={isDark}
         />
@@ -1476,9 +1576,17 @@ export default function MasterBarangPage() {
             {loadingMerek ? (
               <SkeletonRows cols={4} isDark={isDark} />
             ) : merekList.length === 0 ? (
-              <EmptyRow cols={4} text="Belum ada data merek." p={p} />
+              <EmptyRow
+                cols={4}
+                text={
+                  searchMerek
+                    ? "Tidak ada hasil pencarian."
+                    : "Belum ada data merek."
+                }
+                p={p}
+              />
             ) : (
-              merekList.map((s) => (
+              filteredMerek.map((s) => (
                 <tr key={s.id}>
                   <Td p={p} isDark={isDark}>
                     <span
@@ -1618,9 +1726,11 @@ export default function MasterBarangPage() {
       <Box>
         <ListPageHeader
           title="Daftar Supplier"
-          count={supplierList.length}
+          count={filteredSupplier.length}
           onAdd={() => goToForm("supplier")}
           addLabel="Tambah Supplier"
+          search={searchSupplier}
+          onSearch={setSearchSupplier}
           p={p}
           isDark={isDark}
         />
@@ -1639,9 +1749,17 @@ export default function MasterBarangPage() {
             {loadingSupplier ? (
               <SkeletonRows cols={6} isDark={isDark} />
             ) : supplierList.length === 0 ? (
-              <EmptyRow cols={6} text="Belum ada data supplier." p={p} />
+              <EmptyRow
+                cols={6}
+                text={
+                  searchSupplier
+                    ? "Tidak ada hasil pencarian."
+                    : "Belum ada data supplier."
+                }
+                p={p}
+              />
             ) : (
-              supplierList.map((s) => (
+              filteredSupplier.map((s) => (
                 <tr key={s.id}>
                   <Td p={p} isDark={isDark}>
                     <span
@@ -1810,7 +1928,7 @@ export default function MasterBarangPage() {
                       }
                     >
                       <option value="">— Pilih Merek —</option>
-                      {merekList.map((m) => (
+                      {filteredMerek.map((m) => (
                         <option key={m.id} value={m.id}>
                           {m.nama}
                         </option>
@@ -1852,7 +1970,7 @@ export default function MasterBarangPage() {
                       }
                     >
                       <option value="">— Pilih Supplier —</option>
-                      {supplierList.map((s) => (
+                      {filteredSupplier.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.nama} ({s.kode})
                         </option>
@@ -1940,9 +2058,11 @@ export default function MasterBarangPage() {
       <Box>
         <ListPageHeader
           title="Daftar Barang"
-          count={barangList.length}
+          count={filteredBarang.length}
           onAdd={() => goToForm("barang")}
           addLabel="Tambah Barang"
+          search={searchBarang}
+          onSearch={setSearchBarang}
           p={p}
           isDark={isDark}
         />
@@ -1962,9 +2082,17 @@ export default function MasterBarangPage() {
             {loadingBarang ? (
               <SkeletonRows cols={7} isDark={isDark} />
             ) : barangList.length === 0 ? (
-              <EmptyRow cols={7} text="Belum ada data barang." p={p} />
+              <EmptyRow
+                cols={7}
+                text={
+                  searchBarang
+                    ? "Tidak ada hasil pencarian."
+                    : "Belum ada data barang."
+                }
+                p={p}
+              />
             ) : (
-              barangList.map((b) => (
+              filteredBarang.map((b) => (
                 <tr key={b.id}>
                   <Td p={p} isDark={isDark}>
                     <span
