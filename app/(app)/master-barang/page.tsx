@@ -994,6 +994,9 @@ export default function MasterBarangPage() {
     setView("supplier", "form")
   }
   const goToFormEditBarang = (data: Barang) => {
+    const matchedSupplier = supplierList.find((s) => s.kode === data.supplierId)
+    const matchedMerek = merekList.find((m) => m.kode === data.merekId)
+
     setEditingBarang(data)
     setBarangForm({
       kode: data.kode,
@@ -1001,8 +1004,8 @@ export default function MasterBarangPage() {
       barcode: data.barcode || "",
       jenis: data.jenis || "",
       satuanId: data.satuanId,
-      merekId: data.merekId || "",
-      supplierId: data.supplierId || "",
+      merekId: matchedMerek?.id || "",
+      supplierId: matchedSupplier?.id || "",
       hargaBeli: String(data.hargaBeli),
       hargaJual: String(data.hargaJual),
       stokMinimum: String(data.stokMinimum),
@@ -1286,7 +1289,7 @@ export default function MasterBarangPage() {
             satuanNama: item.kdSatuanBarang || "",
             merekId: item.merekCode || "",
             merekNama: item.merek?.merekName || "",
-            supplierId: item.supplierCode || "",
+            supplierId: item.supplier?.id || item.supplierId || "",
             supplierNama: item.supplier?.supplierName || "",
             hargaBeli: item.hargaBeli ?? 0,
             hargaJual: item.price ?? 0,
