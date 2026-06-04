@@ -1218,7 +1218,18 @@ export default function MasterBarangPage() {
       const params = id ? `?storeId=${id}` : ""
       const r = await fetch(`/api/master/merek${params}`)
       const d = await r.json()
-      if (d.success) setMerekList(d.data)
+      if (d.success) {
+        setMerekList(
+          d.data.map((item: any) => ({
+            id: item.id,
+            kode: item.merekCode,
+            nama: item.merekName,
+            pabrikId: item.pabrikCode || "",
+            pabrikNama: item.pabrikNama || "",
+            storeId: item.storeId
+          }))
+        )
+      }
     } catch {
     } finally {
       setLoadingMerek(false)
