@@ -174,3 +174,14 @@ model MitraPayment {
 
   @@map("mitra_payments")
 }
+
+model MsSatuanBarang {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  kdSatuanBarang  String    @unique @map("Kd_SatuanBarang")   // ← ubah
+  deskripsiSatuan String    @map("DeskripsiSatuan")
+  createdAt       DateTime  @default(now()) @map("Created_at")
+  modifiedAt      DateTime  @updatedAt @map("Modified_at")
+  deleteAt        DateTime? @map("Delete_at")
+
+  @@map("ms_satuan_barang")
+}
