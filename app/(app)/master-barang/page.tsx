@@ -1249,7 +1249,7 @@ export default function MasterBarangPage() {
       if (d.success) {
         setSupplierList(
           d.data.map((item: any) => ({
-            id: item.id,
+            id: item.id || item._id,
             kode: item.supplierCode,
             nama: item.supplierName,
             kontakPerson: item.picName || "",
@@ -1511,6 +1511,12 @@ export default function MasterBarangPage() {
       const selectedSupplier = supplierList.find(
         (s) => s.id === barangForm.supplierId
       )
+      const supplierCode =
+        selectedSupplier?.kode ||
+        (barangForm.supplierId && !barangForm.supplierId.includes("-")
+          ? barangForm.supplierId
+          : "") ||
+        ""
       const selectedSatuan = satuanList.find(
         (s) => s.id === barangForm.satuanId
       )
@@ -2746,7 +2752,7 @@ export default function MasterBarangPage() {
             sx={{ flex: 1, overflow: "auto", p: { xs: "12px", sm: "16px" } }}
           >
             {storeList.length > 1 && (
-                <StoreSelector
+              <StoreSelector
                 storeList={storeList}
                 value={selectedStoreId}
                 onChange={setSelectedStoreId}
@@ -2755,7 +2761,7 @@ export default function MasterBarangPage() {
                 isDark={isDark}
                 inputStyle={inputStyle}
                 standalone={true}
-                />
+              />
             )}
             {/* Stat cards */}
             <Box
