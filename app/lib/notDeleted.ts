@@ -1,7 +1,7 @@
 export const notDeleted = {
   AND: [
     {
-      OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+      OR: [{ deleteAt: { equals: null } }, { deleteAt: { isSet: false } }]
     }
   ]
 }
