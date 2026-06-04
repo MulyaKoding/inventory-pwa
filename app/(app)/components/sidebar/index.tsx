@@ -49,6 +49,11 @@ export const NAV_ITEMS = [
     href: "/inventory"
   },
   {
+    label: "Master Barang",
+    icon: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4",
+    href: "/master-barang"
+  },
+  {
     label: "Registrasi Toko",
     icon: "M3 3v18h18M18 9l-5 5-4-4-4 4",
     href: "/registration"
@@ -104,7 +109,6 @@ export default function Sidebar({ isDark, T = "0.3s ease" }: SidebarProps) {
         borderRight: "1px solid rgba(255,255,255,.08)",
         position: "relative",
         overflow: "hidden",
-        // Subtle animated grid overlay like the login left panel
         "&::before": {
           content: '""',
           position: "absolute",
@@ -115,7 +119,6 @@ export default function Sidebar({ isDark, T = "0.3s ease" }: SidebarProps) {
           pointerEvents: "none",
           zIndex: 0
         },
-        // Top-right glow
         "&::after": {
           content: '""',
           position: "absolute",
