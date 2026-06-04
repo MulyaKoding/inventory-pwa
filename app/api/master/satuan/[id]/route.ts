@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
 
+function mapSatuan(s: {
+  id: string
+  kdSatuanBarang: string
+  deskripsiSatuan: string
+  deleteAt: Date | null
+}) {
+  return {
+    id: s.id,
+    kode: s.kdSatuanBarang,
+    nama: s.deskripsiSatuan,
+    keterangan: ""
+  }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,7 +35,7 @@ export async function GET(
         { status: 404 }
       )
 
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ success: true, data: mapSatuan(data) })
   } catch (error) {
     console.error("GET satuan detail error:", error)
     return NextResponse.json(
@@ -42,6 +56,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await req.json()
+    // frontend sends: { kode, nama, keterangan }
 
     const existing = await prisma.msSatuanBarang.findFirst({ where: { id } })
     if (!existing)
@@ -53,13 +68,12 @@ export async function PUT(
     const updated = await prisma.msSatuanBarang.update({
       where: { id },
       data: {
-        ...(body.deskripsiSatuan !== undefined && {
-          deskripsiSatuan: body.deskripsiSatuan
-        })
+        ...(body.nama !== undefined && { deskripsiSatuan: body.nama }),
+        ...(body.kode !== undefined && { kdSatuanBarang: body.kode })
       }
     })
 
-    return NextResponse.json({ success: true, data: updated })
+    return NextResponse.json({ success: true, data: mapSatuan(updated) })
   } catch (error) {
     console.error("PUT satuan error:", error)
     return NextResponse.json(

@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
 
+// Helper: map Prisma record → frontend shape
+function mapSatuan(s: {
+  id: string
+  kdSatuanBarang: string
+  deskripsiSatuan: string
+  deleteAt: Date | null
+  Created_at?: Date
+  Modified_at?: Date
+}) {
+  return {
+    id: s.id,
+    kode: s.kdSatuanBarang,
+    nama: s.deskripsiSatuan,
+    keterangan: ""
+  }
+}
+
 // ── GET /api/master/satuan ──────────────────────────────
 export async function GET(req: NextRequest) {
   try {
@@ -25,7 +42,7 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    const [data, total] = await Promise.all([
+    const [raw, total] = await Promise.all([
       prisma.msSatuanBarang.findMany({
         where,
         orderBy: { deskripsiSatuan: "asc" },
@@ -37,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data,
+      data: raw.map(mapSatuan),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     })
   } catch (error) {
@@ -57,26 +74,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const body = await req.json()
-    const { kdSatuanBarang, deskripsiSatuan } = body
+    // frontend sends: { kode, nama, keterangan }
+    const { kode, nama } = body
 
-    if (!kdSatuanBarang)
+    if (!kode)
       return NextResponse.json(
         { error: "Kode satuan wajib diisi" },
         { status: 400 }
       )
-    if (!deskripsiSatuan)
+    if (!nama)
       return NextResponse.json(
-        { error: "Deskripsi satuan wajib diisi" },
+        { error: "Nama satuan wajib diisi" },
         { status: 400 }
       )
 
     const result = await prisma.msSatuanBarang.upsert({
-      where: { kdSatuanBarang },
-      update: { deskripsiSatuan, deleteAt: null },
-      create: { kdSatuanBarang, deskripsiSatuan }
+      where: { kdSatuanBarang: kode },
+      update: { deskripsiSatuan: nama, deleteAt: null },
+      create: { kdSatuanBarang: kode, deskripsiSatuan: nama }
     })
 
-    return NextResponse.json({ success: true, data: result }, { status: 201 })
+    return NextResponse.json(
+      { success: true, data: mapSatuan(result) },
+      { status: 201 }
+    )
   } catch (error) {
     console.error("POST satuan error:", error)
     return NextResponse.json(
