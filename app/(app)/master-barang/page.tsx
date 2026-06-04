@@ -1535,7 +1535,7 @@ export default function MasterBarangPage() {
             jenis: barangForm.jenis,
             kdSatuanBarang: selectedSatuan?.kode || barangForm.satuanId,
             merekCode: selectedMerek?.kode || barangForm.merekId,
-            supplierCode: selectedSupplier?.kode || barangForm.supplierId,
+            supplierCode: barangForm.supplierId || undefined,
             hargaBeli: Number(barangForm.hargaBeli),
             hargaJual: Number(barangForm.hargaJual),
             stokMinimum: Number(barangForm.stokMinimum),
@@ -2486,7 +2486,7 @@ export default function MasterBarangPage() {
                     >
                       <option value="">— Pilih Supplier —</option>
                       {supplierList.map((s) => (
-                        <option key={s.id} value={s.id}>
+                        <option key={s.id} value={s.kode}>
                           {s.nama} ({s.kode})
                         </option>
                       ))}
