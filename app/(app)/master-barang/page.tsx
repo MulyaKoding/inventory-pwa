@@ -1271,7 +1271,29 @@ export default function MasterBarangPage() {
       const params = id ? `?storeId=${id}` : ""
       const r = await fetch(`/api/master/barang${params}`)
       const d = await r.json()
-      if (d.success) setBarangList(d.data)
+      if (d.success) {
+        setBarangList(
+          d.data.map((item: any) => ({
+            id: item.id,
+            kode: item.barangCode,
+            nama: item.barangName,
+            barcode: item.barcode || "",
+            jenis: item.barangCategory || "",
+            satuanId: item.kdSatuanBarang || "",
+            satuanNama: item.kdSatuanBarang || "",
+            merekId: item.merekCode || "",
+            merekNama: item.merek?.merekName || "",
+            supplierId: item.supplierCode || "",
+            supplierNama: item.supplier?.supplierName || "",
+            hargaBeli: item.hargaBeli ?? 0,
+            hargaJual: item.price ?? 0,
+            stokMinimum: item.stock ?? 0,
+            status: item.status === "active" ? "aktif" : "nonaktif",
+            createdAt: item.createdAt,
+            storeId: item.storeId
+          }))
+        )
+      }
     } catch {
     } finally {
       setLoadingBarang(false)
@@ -1467,7 +1489,7 @@ export default function MasterBarangPage() {
       !barangForm.kode ||
       !barangForm.nama ||
       !barangForm.satuanId ||
-      !barangForm.storeId
+      !selectedStoreId
     ) {
       showSnackbar("Kode, Nama, Satuan, dan Toko wajib diisi", "error")
       return
@@ -1483,10 +1505,18 @@ export default function MasterBarangPage() {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...barangForm,
+            kode: barangForm.kode,
+            nama: barangForm.nama,
+            barcode: barangForm.barcode,
+            jenis: barangForm.jenis,
+            kdSatuanBarang: barangForm.satuanId,
+            merekCode: barangForm.merekId,
+            supplierId: barangForm.supplierId,
             hargaBeli: Number(barangForm.hargaBeli),
             hargaJual: Number(barangForm.hargaJual),
-            stokMinimum: Number(barangForm.stokMinimum)
+            stokMinimum: Number(barangForm.stokMinimum),
+            status: barangForm.status,
+            storeId: selectedStoreId
           })
         }
       )
