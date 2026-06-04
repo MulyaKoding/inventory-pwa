@@ -71,18 +71,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       pabrikCode,
+      kode,
       pabrikName,
+      nama,
       phone,
+      telepon,
       email,
       address,
+      alamat,
       city,
+      kota,
       province,
       country,
       status = "active",
       storeId
     } = body
 
-    if (!pabrikName)
+    const resolvedName = pabrikName || nama
+    const resolvedPhone = phone || telepon || null
+    const resolvedAddress = address || alamat || null
+    const resolvedCity = city || kota || null
+    const resolvedCode = pabrikCode || kode
+
+    if (!resolvedName)
       return NextResponse.json(
         { error: "Nama pabrik wajib diisi" },
         { status: 400 }
@@ -93,16 +104,16 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
 
-    const code = pabrikCode || (await generatePabrikCode(storeId))
+    const code = resolvedCode || (await generatePabrikCode(storeId))
 
     const result = await prisma.msPabrikBarang.upsert({
       where: { pabrikCode: code },
       update: {
-        pabrikName,
-        phone: phone ?? null,
+        pabrikName: resolvedName,
+        phone: resolvedPhone,
         email: email ?? null,
-        address: address ?? null,
-        city: city ?? null,
+        address: resolvedAddress,
+        city: resolvedCity,
         province: province ?? null,
         country: country ?? "Indonesia",
         status,
@@ -110,11 +121,11 @@ export async function POST(req: NextRequest) {
       },
       create: {
         pabrikCode: code,
-        pabrikName,
-        phone: phone ?? null,
+        pabrikName: resolvedName,
+        phone: resolvedPhone,
         email: email ?? null,
-        address: address ?? null,
-        city: city ?? null,
+        address: resolvedAddress,
+        city: resolvedCity,
         province: province ?? null,
         country: country ?? "Indonesia",
         status,
