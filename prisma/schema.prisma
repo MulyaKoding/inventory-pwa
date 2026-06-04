@@ -273,29 +273,24 @@ model MsBarang {
   barangCode     String   @unique @map("Barang_Code")
   barangName     String   @map("Barang_Name")
   barangCategory String?  @map("Barang_Category")
-
-  // Foreign keys ke master
   supplierCode   String?  @map("Supplier_Code")
   pabrikCode     String?  @map("Pabrik_Code")
   merekCode      String?  @map("Merek_Code")
-  kdSatuanBarang String?  @map("Kd_SatuanBarang")    
-
-  // Kepemilikan
+  kdSatuanBarang String?  @map("Kd_SatuanBarang")
   storeId        String   @map("Store_Id")
   userId         String   @map("User_Id") @db.ObjectId
-
   stock          Int      @default(0) @map("Stock")
   price          Int      @default(0) @map("Price")
+  hargaBeli      Int      @default(0) @map("Harga_Beli")  // ← tambah ini
+  barcode        String?  @map("Barcode")                  // ← ini juga belum ada!
   status         String   @default("active") @map("Status")
-
-  createdAt      DateTime  @default(now()) @map("Created_at")
-  modifiedAt     DateTime  @updatedAt @map("Modified_at")
+  createdAt      DateTime @default(now()) @map("Created_at")
+  modifiedAt     DateTime @updatedAt @map("Modified_at")
   deleteAt       DateTime? @map("Delete_at")
 
-  // Relasi
-  supplier       MsSupplierBarang? @relation(fields: [supplierCode], references: [supplierCode])
-  pabrik         MsPabrikBarang?   @relation(fields: [pabrikCode], references: [pabrikCode])
-  merek          MsMerekBarang?    @relation(fields: [merekCode], references: [merekCode])
+  supplier  MsSupplierBarang? @relation(fields: [supplierCode], references: [supplierCode])
+  pabrik    MsPabrikBarang?   @relation(fields: [pabrikCode], references: [pabrikCode])
+  merek     MsMerekBarang?    @relation(fields: [merekCode], references: [merekCode])
 
   @@index([storeId])
   @@index([supplierCode])
