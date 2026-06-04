@@ -25,9 +25,8 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit
 
     const where: any = {
-      userId: user.userId, // filter by user jika tidak ada storeId
       deleteAt: null,
-      ...(storeId && { storeId }), // filter by storeId jika ada
+      ...(storeId ? { storeId } : { userId: user.userId }),
       ...(status && { status }),
       ...(search && {
         OR: [
