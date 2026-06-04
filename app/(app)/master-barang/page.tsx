@@ -72,7 +72,6 @@ interface Barang {
 }
 
 type TabKey = "satuan" | "pabrik" | "merek" | "supplier" | "barang"
-// view: "list" = tabel, "form" = form tambah
 type ViewMode = "list" | "form"
 
 const TAB_LIST: { key: TabKey; label: string; step: number }[] = [
@@ -388,17 +387,38 @@ function Td({
   )
 }
 
+// ── ActionBtns — NOW WITH EDIT ─────────────────────────────────────────────
 function ActionBtns({
+  onEdit,
   onDelete,
   p,
   isDark
 }: {
+  onEdit: () => void
   onDelete: () => void
   p: Palette
   isDark: boolean
 }) {
   return (
     <Box sx={{ display: "flex", gap: 0.5 }}>
+      <Tooltip title="Edit">
+        <IconButton
+          size="small"
+          onClick={onEdit}
+          sx={{
+            color: p.textMuted,
+            "&:hover": {
+              color: isDark ? "#60a5fa" : "#1e3a8a",
+              bgcolor: isDark ? "#0d1f3c" : "#e6f1fb"
+            }
+          }}
+        >
+          <Icon
+            d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+            size={14}
+          />
+        </IconButton>
+      </Tooltip>
       <Tooltip title="Hapus">
         <IconButton
           size="small"
@@ -482,7 +502,7 @@ function SectionLabel({
   )
 }
 
-// ── Form Page Header (back button style) ───────────────────────────────────
+// ── Form Page Header ───────────────────────────────────────────────────────
 function FormPageHeader({
   title,
   onBack,
@@ -706,7 +726,6 @@ export default function MasterBarangPage() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<TabKey>("satuan")
 
-  // view per tab: "list" atau "form"
   const [viewMode, setViewMode] = useState<Record<TabKey, ViewMode>>({
     satuan: "list",
     pabrik: "list",
@@ -722,7 +741,51 @@ export default function MasterBarangPage() {
     setActiveTab(tab)
     setView(tab, "form")
   }
-  const goToList = (tab: TabKey) => setView(tab, "list")
+
+  // Reset form & editing state saat kembali ke list
+  const goToList = (tab: TabKey) => {
+    setView(tab, "list")
+    if (tab === "satuan") {
+      setEditingSatuan(null)
+      setSatuanForm({ kode: "", nama: "", keterangan: "" })
+    }
+    if (tab === "pabrik") {
+      setEditingPabrik(null)
+      setPabrikForm({ kode: "", nama: "", kota: "", telepon: "", alamat: "" })
+    }
+    if (tab === "merek") {
+      setEditingMerek(null)
+      setMerekForm({ kode: "", nama: "", pabrikId: "" })
+    }
+    if (tab === "supplier") {
+      setEditingSupplier(null)
+      setSupplierForm({
+        kode: "",
+        nama: "",
+        kontakPerson: "",
+        telepon: "",
+        email: "",
+        kota: "",
+        alamat: ""
+      })
+    }
+    if (tab === "barang") {
+      setEditingBarang(null)
+      setBarangForm({
+        kode: "",
+        nama: "",
+        barcode: "",
+        jenis: "",
+        satuanId: "",
+        merekId: "",
+        supplierId: "",
+        hargaBeli: "",
+        hargaJual: "",
+        stokMinimum: "",
+        status: "aktif"
+      })
+    }
+  }
 
   // ── Data ──
   const [satuanList, setSatuanList] = useState<Satuan[]>([])
@@ -737,6 +800,75 @@ export default function MasterBarangPage() {
   const [loadingSupplier, setLoadingSupplier] = useState(false)
   const [loadingBarang, setLoadingBarang] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // ── Editing state per entity ──
+  const [editingSatuan, setEditingSatuan] = useState<Satuan | null>(null)
+  const [editingPabrik, setEditingPabrik] = useState<Pabrik | null>(null)
+  const [editingMerek, setEditingMerek] = useState<Merek | null>(null)
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+  const [editingBarang, setEditingBarang] = useState<Barang | null>(null)
+
+  // ── Helpers buka form Edit dengan pre-fill ──
+  const goToFormEditSatuan = (data: Satuan) => {
+    setEditingSatuan(data)
+    setSatuanForm({
+      kode: data.kode,
+      nama: data.nama,
+      keterangan: data.keterangan || ""
+    })
+    setActiveTab("satuan")
+    setView("satuan", "form")
+  }
+  const goToFormEditPabrik = (data: Pabrik) => {
+    setEditingPabrik(data)
+    setPabrikForm({
+      kode: data.kode,
+      nama: data.nama,
+      kota: data.kota || "",
+      telepon: data.telepon || "",
+      alamat: data.alamat || ""
+    })
+    setActiveTab("pabrik")
+    setView("pabrik", "form")
+  }
+  const goToFormEditMerek = (data: Merek) => {
+    setEditingMerek(data)
+    setMerekForm({ kode: data.kode, nama: data.nama, pabrikId: data.pabrikId })
+    setActiveTab("merek")
+    setView("merek", "form")
+  }
+  const goToFormEditSupplier = (data: Supplier) => {
+    setEditingSupplier(data)
+    setSupplierForm({
+      kode: data.kode,
+      nama: data.nama,
+      kontakPerson: data.kontakPerson || "",
+      telepon: data.telepon || "",
+      email: data.email || "",
+      kota: data.kota || "",
+      alamat: data.alamat || ""
+    })
+    setActiveTab("supplier")
+    setView("supplier", "form")
+  }
+  const goToFormEditBarang = (data: Barang) => {
+    setEditingBarang(data)
+    setBarangForm({
+      kode: data.kode,
+      nama: data.nama,
+      barcode: data.barcode || "",
+      jenis: data.jenis || "",
+      satuanId: data.satuanId,
+      merekId: data.merekId || "",
+      supplierId: data.supplierId || "",
+      hargaBeli: String(data.hargaBeli),
+      hargaJual: String(data.hargaJual),
+      stokMinimum: String(data.stokMinimum),
+      status: data.status
+    })
+    setActiveTab("barang")
+    setView("barang", "form")
+  }
 
   // ── Delete ──
   const [deleteModal, setDeleteModal] = useState<{
@@ -960,7 +1092,7 @@ export default function MasterBarangPage() {
     fetchBarang()
   }, [])
 
-  // ── Save handlers ──
+  // ── Save handlers — POST untuk create, PUT untuk edit ──
   const handleSaveSatuan = async () => {
     if (!satuanForm.kode || !satuanForm.nama) {
       showSnackbar("Kode dan Nama wajib diisi", "error")
@@ -968,14 +1100,22 @@ export default function MasterBarangPage() {
     }
     setSaving(true)
     try {
-      const res = await fetch("/api/master/satuan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(satuanForm)
-      })
+      const isEdit = !!editingSatuan
+      const res = await fetch(
+        isEdit
+          ? `/api/master/satuan/${editingSatuan!.id}`
+          : "/api/master/satuan",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(satuanForm)
+        }
+      )
       if (!res.ok) throw new Error()
-      showSnackbar("Satuan berhasil disimpan", "success")
-      setSatuanForm({ kode: "", nama: "", keterangan: "" })
+      showSnackbar(
+        isEdit ? "Satuan berhasil diperbarui" : "Satuan berhasil disimpan",
+        "success"
+      )
       goToList("satuan")
       fetchSatuan()
     } catch {
@@ -992,14 +1132,22 @@ export default function MasterBarangPage() {
     }
     setSaving(true)
     try {
-      const res = await fetch("/api/master/pabrik", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pabrikForm)
-      })
+      const isEdit = !!editingPabrik
+      const res = await fetch(
+        isEdit
+          ? `/api/master/pabrik/${editingPabrik!.id}`
+          : "/api/master/pabrik",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pabrikForm)
+        }
+      )
       if (!res.ok) throw new Error()
-      showSnackbar("Pabrik berhasil disimpan", "success")
-      setPabrikForm({ kode: "", nama: "", kota: "", telepon: "", alamat: "" })
+      showSnackbar(
+        isEdit ? "Pabrik berhasil diperbarui" : "Pabrik berhasil disimpan",
+        "success"
+      )
       goToList("pabrik")
       fetchPabrik()
     } catch {
@@ -1016,14 +1164,20 @@ export default function MasterBarangPage() {
     }
     setSaving(true)
     try {
-      const res = await fetch("/api/master/merek", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(merekForm)
-      })
+      const isEdit = !!editingMerek
+      const res = await fetch(
+        isEdit ? `/api/master/merek/${editingMerek!.id}` : "/api/master/merek",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(merekForm)
+        }
+      )
       if (!res.ok) throw new Error()
-      showSnackbar("Merek berhasil disimpan", "success")
-      setMerekForm({ kode: "", nama: "", pabrikId: "" })
+      showSnackbar(
+        isEdit ? "Merek berhasil diperbarui" : "Merek berhasil disimpan",
+        "success"
+      )
       goToList("merek")
       fetchMerek()
     } catch {
@@ -1040,22 +1194,22 @@ export default function MasterBarangPage() {
     }
     setSaving(true)
     try {
-      const res = await fetch("/api/master/supplier", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(supplierForm)
-      })
+      const isEdit = !!editingSupplier
+      const res = await fetch(
+        isEdit
+          ? `/api/master/supplier/${editingSupplier!.id}`
+          : "/api/master/supplier",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(supplierForm)
+        }
+      )
       if (!res.ok) throw new Error()
-      showSnackbar("Supplier berhasil disimpan", "success")
-      setSupplierForm({
-        kode: "",
-        nama: "",
-        kontakPerson: "",
-        telepon: "",
-        email: "",
-        kota: "",
-        alamat: ""
-      })
+      showSnackbar(
+        isEdit ? "Supplier berhasil diperbarui" : "Supplier berhasil disimpan",
+        "success"
+      )
       goToList("supplier")
       fetchSupplier()
     } catch {
@@ -1072,31 +1226,27 @@ export default function MasterBarangPage() {
     }
     setSaving(true)
     try {
-      const res = await fetch("/api/master/barang", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...barangForm,
-          hargaBeli: Number(barangForm.hargaBeli),
-          hargaJual: Number(barangForm.hargaJual),
-          stokMinimum: Number(barangForm.stokMinimum)
-        })
-      })
+      const isEdit = !!editingBarang
+      const res = await fetch(
+        isEdit
+          ? `/api/master/barang/${editingBarang!.id}`
+          : "/api/master/barang",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...barangForm,
+            hargaBeli: Number(barangForm.hargaBeli),
+            hargaJual: Number(barangForm.hargaJual),
+            stokMinimum: Number(barangForm.stokMinimum)
+          })
+        }
+      )
       if (!res.ok) throw new Error()
-      showSnackbar("Barang berhasil disimpan", "success")
-      setBarangForm({
-        kode: "",
-        nama: "",
-        barcode: "",
-        jenis: "",
-        satuanId: "",
-        merekId: "",
-        supplierId: "",
-        hargaBeli: "",
-        hargaJual: "",
-        stokMinimum: "",
-        status: "aktif"
-      })
+      showSnackbar(
+        isEdit ? "Barang berhasil diperbarui" : "Barang berhasil disimpan",
+        "success"
+      )
       goToList("barang")
       fetchBarang()
     } catch {
@@ -1190,11 +1340,15 @@ export default function MasterBarangPage() {
       return (
         <Box>
           <FormPageHeader
-            title="Tambah Satuan Barang"
+            title={
+              editingSatuan
+                ? `Edit Satuan — ${editingSatuan.nama}`
+                : "Tambah Satuan Barang"
+            }
             onBack={() => goToList("satuan")}
             onSave={handleSaveSatuan}
             saving={saving}
-            saveLabel="Simpan Satuan"
+            saveLabel={editingSatuan ? "Simpan Perubahan" : "Simpan Satuan"}
             p={p}
             isDark={isDark}
           />
@@ -1260,13 +1414,13 @@ export default function MasterBarangPage() {
               <Th p={p}>KODE</Th>
               <Th p={p}>NAMA SATUAN</Th>
               <Th p={p}>KETERANGAN</Th>
-              <Th p={p} w={60} />
+              <Th p={p} w={80} />
             </tr>
           </thead>
           <tbody>
             {loadingSatuan ? (
               <SkeletonRows cols={4} isDark={isDark} />
-            ) : satuanList.length === 0 ? (
+            ) : filteredSatuan.length === 0 ? (
               <EmptyRow
                 cols={4}
                 text={
@@ -1298,6 +1452,7 @@ export default function MasterBarangPage() {
                   </Td>
                   <Td p={p} isDark={isDark}>
                     <ActionBtns
+                      onEdit={() => goToFormEditSatuan(s)}
                       onDelete={() => deleteSatuan(s.id, s.nama)}
                       p={p}
                       isDark={isDark}
@@ -1317,11 +1472,15 @@ export default function MasterBarangPage() {
       return (
         <Box>
           <FormPageHeader
-            title="Tambah Pabrik"
+            title={
+              editingPabrik
+                ? `Edit Pabrik — ${editingPabrik.nama}`
+                : "Tambah Pabrik"
+            }
             onBack={() => goToList("pabrik")}
             onSave={handleSavePabrik}
             saving={saving}
-            saveLabel="Simpan Pabrik"
+            saveLabel={editingPabrik ? "Simpan Perubahan" : "Simpan Pabrik"}
             p={p}
             isDark={isDark}
           />
@@ -1408,13 +1567,13 @@ export default function MasterBarangPage() {
               <Th p={p}>NAMA PABRIK</Th>
               <Th p={p}>KOTA</Th>
               <Th p={p}>TELEPON</Th>
-              <Th p={p} w={60} />
+              <Th p={p} w={80} />
             </tr>
           </thead>
           <tbody>
             {loadingPabrik ? (
               <SkeletonRows cols={5} isDark={isDark} />
-            ) : pabrikList.length === 0 ? (
+            ) : filteredPabrik.length === 0 ? (
               <EmptyRow
                 cols={5}
                 text={
@@ -1449,6 +1608,7 @@ export default function MasterBarangPage() {
                   </Td>
                   <Td p={p} isDark={isDark}>
                     <ActionBtns
+                      onEdit={() => goToFormEditPabrik(s)}
                       onDelete={() => deletePabrik(s.id, s.nama)}
                       p={p}
                       isDark={isDark}
@@ -1468,11 +1628,15 @@ export default function MasterBarangPage() {
       return (
         <Box>
           <FormPageHeader
-            title="Tambah Merek"
+            title={
+              editingMerek
+                ? `Edit Merek — ${editingMerek.nama}`
+                : "Tambah Merek"
+            }
             onBack={() => goToList("merek")}
             onSave={handleSaveMerek}
             saving={saving}
-            saveLabel="Simpan Merek"
+            saveLabel={editingMerek ? "Simpan Perubahan" : "Simpan Merek"}
             p={p}
             isDark={isDark}
           />
@@ -1519,7 +1683,7 @@ export default function MasterBarangPage() {
                       }
                     >
                       <option value="">— Pilih Pabrik —</option>
-                      {filteredPabrik.map((pb) => (
+                      {pabrikList.map((pb) => (
                         <option key={pb.id} value={pb.id}>
                           {pb.nama}
                         </option>
@@ -1569,13 +1733,13 @@ export default function MasterBarangPage() {
               <Th p={p}>KODE</Th>
               <Th p={p}>NAMA MEREK</Th>
               <Th p={p}>PABRIK</Th>
-              <Th p={p} w={60} />
+              <Th p={p} w={80} />
             </tr>
           </thead>
           <tbody>
             {loadingMerek ? (
               <SkeletonRows cols={4} isDark={isDark} />
-            ) : merekList.length === 0 ? (
+            ) : filteredMerek.length === 0 ? (
               <EmptyRow
                 cols={4}
                 text={
@@ -1607,6 +1771,7 @@ export default function MasterBarangPage() {
                   </Td>
                   <Td p={p} isDark={isDark}>
                     <ActionBtns
+                      onEdit={() => goToFormEditMerek(s)}
                       onDelete={() => deleteMerek(s.id, s.nama)}
                       p={p}
                       isDark={isDark}
@@ -1626,11 +1791,15 @@ export default function MasterBarangPage() {
       return (
         <Box>
           <FormPageHeader
-            title="Tambah Supplier"
+            title={
+              editingSupplier
+                ? `Edit Supplier — ${editingSupplier.nama}`
+                : "Tambah Supplier"
+            }
             onBack={() => goToList("supplier")}
             onSave={handleSaveSupplier}
             saving={saving}
-            saveLabel="Simpan Supplier"
+            saveLabel={editingSupplier ? "Simpan Perubahan" : "Simpan Supplier"}
             p={p}
             isDark={isDark}
           />
@@ -1742,13 +1911,13 @@ export default function MasterBarangPage() {
               <Th p={p}>KOTA</Th>
               <Th p={p}>KONTAK</Th>
               <Th p={p}>TELEPON</Th>
-              <Th p={p} w={60} />
+              <Th p={p} w={80} />
             </tr>
           </thead>
           <tbody>
             {loadingSupplier ? (
               <SkeletonRows cols={6} isDark={isDark} />
-            ) : supplierList.length === 0 ? (
+            ) : filteredSupplier.length === 0 ? (
               <EmptyRow
                 cols={6}
                 text={
@@ -1786,6 +1955,7 @@ export default function MasterBarangPage() {
                   </Td>
                   <Td p={p} isDark={isDark}>
                     <ActionBtns
+                      onEdit={() => goToFormEditSupplier(s)}
                       onDelete={() => deleteSupplier(s.id, s.nama)}
                       p={p}
                       isDark={isDark}
@@ -1805,11 +1975,15 @@ export default function MasterBarangPage() {
       return (
         <Box>
           <FormPageHeader
-            title="Tambah Barang"
+            title={
+              editingBarang
+                ? `Edit Barang — ${editingBarang.nama}`
+                : "Tambah Barang"
+            }
             onBack={() => goToList("barang")}
             onSave={handleSaveBarang}
             saving={saving}
-            saveLabel="Simpan Barang"
+            saveLabel={editingBarang ? "Simpan Perubahan" : "Simpan Barang"}
             p={p}
             isDark={isDark}
           />
@@ -1928,7 +2102,7 @@ export default function MasterBarangPage() {
                       }
                     >
                       <option value="">— Pilih Merek —</option>
-                      {filteredMerek.map((m) => (
+                      {merekList.map((m) => (
                         <option key={m.id} value={m.id}>
                           {m.nama}
                         </option>
@@ -1970,7 +2144,7 @@ export default function MasterBarangPage() {
                       }
                     >
                       <option value="">— Pilih Supplier —</option>
-                      {filteredSupplier.map((s) => (
+                      {supplierList.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.nama} ({s.kode})
                         </option>
@@ -2075,13 +2249,13 @@ export default function MasterBarangPage() {
               <Th p={p}>MEREK</Th>
               <Th p={p}>HARGA JUAL</Th>
               <Th p={p}>STATUS</Th>
-              <Th p={p} w={60} />
+              <Th p={p} w={80} />
             </tr>
           </thead>
           <tbody>
             {loadingBarang ? (
               <SkeletonRows cols={7} isDark={isDark} />
-            ) : barangList.length === 0 ? (
+            ) : filteredBarang.length === 0 ? (
               <EmptyRow
                 cols={7}
                 text={
@@ -2150,6 +2324,7 @@ export default function MasterBarangPage() {
                   </Td>
                   <Td p={p} isDark={isDark}>
                     <ActionBtns
+                      onEdit={() => goToFormEditBarang(b)}
                       onDelete={() => deleteBarang(b.id, b.nama)}
                       p={p}
                       isDark={isDark}
@@ -2363,9 +2538,7 @@ export default function MasterBarangPage() {
                   return (
                     <button
                       key={tab.key}
-                      onClick={() => {
-                        setActiveTab(tab.key)
-                      }}
+                      onClick={() => setActiveTab(tab.key)}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -2417,7 +2590,6 @@ export default function MasterBarangPage() {
                         {tab.step}
                       </span>
                       {tab.label}
-                      {/* dot indicator kalau sedang di mode form */}
                       {isFormMode && (
                         <span
                           style={{
