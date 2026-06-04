@@ -59,7 +59,11 @@ export async function POST(req: NextRequest) {
       )
 
     const result = await prisma.msSatuanBarang.create({
-      data: { kdSatuanBarang: kode, deskripsiSatuan: nama }
+      data: {
+        kdSatuanBarang: kode,
+        deskripsiSatuan: nama,
+        deleteAt: null
+      }
     })
 
     return NextResponse.json(
