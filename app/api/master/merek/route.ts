@@ -74,9 +74,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const body = await req.json()
-    const { merekCode, merekName, status = "active", storeId } = body
+    const {
+      merekCode,
+      kode,
+      merekName,
+      nama,
+      pabrikId,
+      status = "active",
+      storeId
+    } = body
 
-    if (!merekName)
+    const resolvedCode = merekCode || kode
+    const resolvedName = merekName || nama
+
+    if (!resolvedName)
       return NextResponse.json(
         { error: "Nama merek wajib diisi" },
         { status: 400 }
@@ -87,14 +98,20 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
 
-    const code = merekCode || (await generateMerekCode(storeId))
+    const code = resolvedCode || (await generateMerekCode(storeId))
 
     const result = await prisma.msMerekBarang.upsert({
       where: { merekCode: code },
-      update: { merekName, status, deleteAt: null },
+      update: {
+        merekName: resolvedName,
+        pabrikId: pabrikId ?? null,
+        status,
+        deleteAt: null
+      },
       create: {
         merekCode: code,
-        merekName,
+        merekName: resolvedName,
+        pabrikId: pabrikId ?? null,
         status,
         storeId,
         userId: user.userId

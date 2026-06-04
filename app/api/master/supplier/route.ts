@@ -83,18 +83,32 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       supplierCode,
+      kode,
       supplierName,
+      nama,
       phone,
+      telepon,
       email,
       address,
+      alamat,
       city,
-      province,
+      kota,
+      province, // ← tambahkan ini
       picName,
+      kontakPerson,
       status = "active",
       storeId
     } = body
 
-    if (!supplierName)
+    const resolvedCode = supplierCode || kode
+    const resolvedName = supplierName || nama
+    const resolvedPhone = phone || telepon || null
+    const resolvedAddress = address || alamat || null
+    const resolvedCity = city || kota || null
+    const resolvedPic = picName || kontakPerson || null
+
+    // Validasi pakai resolved vars:
+    if (!resolvedName)
       return NextResponse.json(
         { error: "Nama supplier wajib diisi" },
         { status: 400 }
@@ -105,30 +119,30 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
 
-    const code = supplierCode || (await generateSupplierCode(storeId))
+    const code = resolvedCode || (await generateSupplierCode(storeId))
 
     const result = await prisma.msSupplierBarang.upsert({
       where: { supplierCode: code },
       update: {
-        supplierName,
-        phone: phone ?? null,
+        supplierName: resolvedName,
+        phone: resolvedPhone,
         email: email ?? null,
-        address: address ?? null,
-        city: city ?? null,
+        address: resolvedAddress,
+        city: resolvedCity,
         province: province ?? null,
-        picName: picName ?? null,
+        picName: resolvedPic,
         status,
         deleteAt: null
       },
       create: {
         supplierCode: code,
-        supplierName,
-        phone: phone ?? null,
+        supplierName: resolvedName,
+        phone: resolvedPhone,
         email: email ?? null,
-        address: address ?? null,
-        city: city ?? null,
+        address: resolvedAddress,
+        city: resolvedCity,
         province: province ?? null,
-        picName: picName ?? null,
+        picName: resolvedPic,
         status,
         storeId,
         userId: user.userId

@@ -89,19 +89,37 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       barangCode,
+      kode,
       barangName,
+      nama,
       barangCategory,
+      jenis,
       supplierCode,
+      supplierId,
       pabrikCode,
       merekCode,
+      merekId,
       kdSatuanBarang,
-      stock = 0,
-      price = 0,
+      satuanId,
+      hargaBeli,
+      hargaJual,
+      stokMinimum,
+      barcode,
       status = "active",
       storeId
     } = body
 
-    if (!barangName)
+    const resolvedCode = barangCode || kode
+    const resolvedName = barangName || nama
+    const resolvedCategory = barangCategory || jenis || null
+    const resolvedSupplier = supplierCode || supplierId || null
+    const resolvedMerek = merekCode || merekId || null
+    const resolvedSatuan = kdSatuanBarang || satuanId || null
+    const resolvedPrice = Number(hargaJual ?? 0)
+    const resolvedStock = Number(stokMinimum ?? 0)
+
+    // Validasi pakai resolved vars:
+    if (!resolvedName)
       return NextResponse.json(
         { error: "Nama barang wajib diisi" },
         { status: 400 }
@@ -112,14 +130,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
 
-    // Validasi relasi jika diisi
-    if (supplierCode) {
+    // Validasi relasi pakai resolved vars:
+    if (resolvedSupplier) {
       const sup = await prisma.msSupplierBarang.findFirst({
-        where: { supplierCode, deleteAt: null }
+        where: { supplierCode: resolvedSupplier, deleteAt: null }
       })
       if (!sup)
         return NextResponse.json(
-          { error: `Supplier ${supplierCode} tidak ditemukan` },
+          { error: `Supplier tidak ditemukan` },
           { status: 400 }
         )
     }
@@ -129,57 +147,57 @@ export async function POST(req: NextRequest) {
       })
       if (!pab)
         return NextResponse.json(
-          { error: `Pabrik ${pabrikCode} tidak ditemukan` },
+          { error: `Pabrik tidak ditemukan` },
           { status: 400 }
         )
     }
-    if (merekCode) {
+    if (resolvedMerek) {
       const mrk = await prisma.msMerekBarang.findFirst({
-        where: { merekCode, deleteAt: null }
+        where: { merekCode: resolvedMerek, deleteAt: null }
       })
       if (!mrk)
         return NextResponse.json(
-          { error: `Merek ${merekCode} tidak ditemukan` },
+          { error: `Merek tidak ditemukan` },
           { status: 400 }
         )
     }
-    if (kdSatuanBarang) {
+    if (resolvedSatuan) {
       const sat = await prisma.msSatuanBarang.findFirst({
-        where: { kdSatuanBarang }
+        where: { kdSatuanBarang: resolvedSatuan }
       })
       if (!sat)
         return NextResponse.json(
-          { error: `Satuan ${kdSatuanBarang} tidak ditemukan` },
+          { error: `Satuan tidak ditemukan` },
           { status: 400 }
         )
     }
 
-    const code = barangCode || (await generateBarangCode(storeId))
+    const code = resolvedCode || (await generateBarangCode(storeId))
 
     const result = await prisma.msBarang.upsert({
       where: { barangCode: code },
       update: {
-        barangName,
-        barangCategory: barangCategory ?? null,
-        supplierCode: supplierCode ?? null,
+        barangName: resolvedName,
+        barangCategory: resolvedCategory,
+        supplierCode: resolvedSupplier,
         pabrikCode: pabrikCode ?? null,
-        merekCode: merekCode ?? null,
-        kdSatuanBarang: kdSatuanBarang ?? null,
-        stock,
-        price,
+        merekCode: resolvedMerek,
+        kdSatuanBarang: resolvedSatuan,
+        stock: resolvedStock,
+        price: resolvedPrice,
         status,
         deleteAt: null
       },
       create: {
         barangCode: code,
-        barangName,
-        barangCategory: barangCategory ?? null,
-        supplierCode: supplierCode ?? null,
+        barangName: resolvedName,
+        barangCategory: resolvedCategory,
+        supplierCode: resolvedSupplier,
         pabrikCode: pabrikCode ?? null,
-        merekCode: merekCode ?? null,
-        kdSatuanBarang: kdSatuanBarang ?? null,
-        stock,
-        price,
+        merekCode: resolvedMerek,
+        kdSatuanBarang: resolvedSatuan,
+        stock: resolvedStock,
+        price: resolvedPrice,
         status,
         storeId,
         userId: user.userId

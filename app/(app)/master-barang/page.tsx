@@ -940,13 +940,6 @@ export default function MasterBarangPage() {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
   const [editingBarang, setEditingBarang] = useState<Barang | null>(null)
 
-  useEffect(() => {
-    fetchPabrik()
-    fetchMerek()
-    fetchSupplier()
-    fetchBarang()
-  }, [selectedStoreId])
-
   // ── Helpers buka form Edit dengan pre-fill ──
   const goToFormEditSatuan = (data: Satuan) => {
     setEditingSatuan(data)
@@ -1218,10 +1211,12 @@ export default function MasterBarangPage() {
     }
   }
 
-  const fetchMerek = async () => {
+  const fetchMerek = async (storeId?: string) => {
+    const id = storeId ?? selectedStoreId
     setLoadingMerek(true)
     try {
-      const r = await fetch("/api/master/merek")
+      const params = id ? `?storeId=${id}` : ""
+      const r = await fetch(`/api/master/merek${params}`)
       const d = await r.json()
       if (d.success) setMerekList(d.data)
     } catch {
@@ -1230,10 +1225,12 @@ export default function MasterBarangPage() {
     }
   }
 
-  const fetchSupplier = async () => {
+  const fetchSupplier = async (storeId?: string) => {
+    const id = storeId ?? selectedStoreId
     setLoadingSupplier(true)
     try {
-      const r = await fetch("/api/master/supplier")
+      const params = id ? `?storeId=${id}` : ""
+      const r = await fetch(`/api/master/supplier${params}`)
       const d = await r.json()
       if (d.success) setSupplierList(d.data)
     } catch {
@@ -1242,10 +1239,12 @@ export default function MasterBarangPage() {
     }
   }
 
-  const fetchBarang = async () => {
+  const fetchBarang = async (storeId?: string) => {
+    const id = storeId ?? selectedStoreId
     setLoadingBarang(true)
     try {
-      const r = await fetch("/api/master/barang")
+      const params = id ? `?storeId=${id}` : ""
+      const r = await fetch(`/api/master/barang${params}`)
       const d = await r.json()
       if (d.success) setBarangList(d.data)
     } catch {
@@ -1276,18 +1275,16 @@ export default function MasterBarangPage() {
 
   // ── Effects ──
 
-  // SATU init effect — fetch semua setelah stores selesai
   useEffect(() => {
     fetchSatuan()
     fetchMyStores().then((storeId) => {
       fetchPabrik(storeId)
-      fetchMerek()
-      fetchSupplier()
-      fetchBarang()
+      fetchMerek(storeId)
+      fetchSupplier(storeId)
+      fetchBarang(storeId)
     })
   }, [])
 
-  // Re-fetch saat user ganti store, SKIP saat mount pertama
   const isFirstRender = useRef(true)
   useEffect(() => {
     if (isFirstRender.current) {
