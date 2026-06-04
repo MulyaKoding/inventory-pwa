@@ -735,7 +735,8 @@ function StoreSelector({
   loading,
   p,
   isDark,
-  inputStyle
+  inputStyle,
+  standalone = false // ← tambah prop ini
 }: {
   storeList: StoreOption[]
   value: string
@@ -744,13 +745,14 @@ function StoreSelector({
   p: Palette
   isDark: boolean
   inputStyle: React.CSSProperties
+  standalone?: boolean
 }) {
   return (
     <Box
       sx={{
-        gridColumn: "1 / -1",
+        ...(!standalone && { gridColumn: "1 / -1" }),
         p: 2,
-        mb: 1,
+        mb: standalone ? 2 : 1,
         bgcolor: isDark ? "#0d1f3c22" : "#eff6ff",
         border: `1px solid ${isDark ? "#1e3a8a55" : "#bfdbfe"}`,
         borderRadius: "8px",
@@ -785,7 +787,8 @@ function StoreSelector({
             whiteSpace: "nowrap"
           }}
         >
-          Toko Tujuan <span style={{ color: "#ef4444" }}>*</span>
+          {standalone ? "Toko" : "Toko Tujuan"}{" "}
+          <span style={{ color: "#ef4444" }}>*</span>
         </span>
       </Box>
       <Box sx={{ flex: 1, minWidth: 200 }}>
@@ -1321,27 +1324,32 @@ export default function MasterBarangPage() {
   }
 
   // ── Effects ──
+  const initialFetchDone = useRef(false)
 
   useEffect(() => {
     fetchSatuan()
     fetchMyStores().then((storeId) => {
-      fetchPabrik(storeId)
-      fetchMerek(storeId)
-      fetchSupplier(storeId)
-      fetchBarang(storeId)
+      if (storeId) {
+        initialFetchDone.current = true
+        fetchPabrik(storeId)
+        fetchMerek(storeId)
+        fetchSupplier(storeId)
+        fetchBarang(storeId)
+      }
     })
   }, [])
 
-  const isFirstRender = useRef(true)
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
+    if (!selectedStoreId) return
+    if (initialFetchDone.current) {
+      // Skip fetch pertama karena sudah dilakukan di mount effect
+      initialFetchDone.current = false
       return
     }
-    fetchPabrik()
-    fetchMerek()
-    fetchSupplier()
-    fetchBarang()
+    fetchPabrik(selectedStoreId)
+    fetchMerek(selectedStoreId)
+    fetchSupplier(selectedStoreId)
+    fetchBarang(selectedStoreId)
   }, [selectedStoreId])
 
   // ── Save handlers — POST untuk create, PUT untuk edit ──
@@ -1497,6 +1505,16 @@ export default function MasterBarangPage() {
     setSaving(true)
     try {
       const isEdit = !!editingBarang
+
+      // Cari kode dari list berdasarkan id yang dipilih
+      const selectedMerek = merekList.find((m) => m.id === barangForm.merekId)
+      const selectedSupplier = supplierList.find(
+        (s) => s.id === barangForm.supplierId
+      )
+      const selectedSatuan = satuanList.find(
+        (s) => s.id === barangForm.satuanId
+      )
+
       const res = await fetch(
         isEdit
           ? `/api/master/barang/${editingBarang!.id}`
@@ -1509,26 +1527,29 @@ export default function MasterBarangPage() {
             nama: barangForm.nama,
             barcode: barangForm.barcode,
             jenis: barangForm.jenis,
-            kdSatuanBarang: barangForm.satuanId,
-            merekCode: barangForm.merekId,
-            supplierId: barangForm.supplierId,
+            kdSatuanBarang: selectedSatuan?.kode || barangForm.satuanId,
+            merekCode: selectedMerek?.kode || barangForm.merekId,
+            supplierCode: selectedSupplier?.kode || barangForm.supplierId,
             hargaBeli: Number(barangForm.hargaBeli),
             hargaJual: Number(barangForm.hargaJual),
             stokMinimum: Number(barangForm.stokMinimum),
-            status: barangForm.status,
+            status: barangForm.status === "aktif" ? "active" : "inactive",
             storeId: selectedStoreId
           })
         }
       )
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Gagal")
+      }
       showSnackbar(
         isEdit ? "Barang berhasil diperbarui" : "Barang berhasil disimpan",
         "success"
       )
       goToList("barang")
       fetchBarang()
-    } catch {
-      showSnackbar("Gagal menyimpan barang", "error")
+    } catch (e: any) {
+      showSnackbar(e.message || "Gagal menyimpan barang", "error")
     } finally {
       setSaving(false)
     }
@@ -2724,6 +2745,18 @@ export default function MasterBarangPage() {
           <Box
             sx={{ flex: 1, overflow: "auto", p: { xs: "12px", sm: "16px" } }}
           >
+            {storeList.length > 1 && (
+                <StoreSelector
+                storeList={storeList}
+                value={selectedStoreId}
+                onChange={setSelectedStoreId}
+                loading={loadingStores}
+                p={p}
+                isDark={isDark}
+                inputStyle={inputStyle}
+                standalone={true}
+                />
+            )}
             {/* Stat cards */}
             <Box
               sx={{
