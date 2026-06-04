@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       kode,
       merekName,
       nama,
+      pabrikCode,
       pabrikId,
       status = "active",
       storeId
@@ -86,17 +87,7 @@ export async function POST(req: NextRequest) {
 
     const resolvedCode = merekCode || kode
     const resolvedName = merekName || nama
-
-    if (!resolvedName)
-      return NextResponse.json(
-        { error: "Nama merek wajib diisi" },
-        { status: 400 }
-      )
-    if (!storeId)
-      return NextResponse.json(
-        { error: "storeId wajib diisi" },
-        { status: 400 }
-      )
+    const resolvedPabrik = pabrikCode || pabrikId || null
 
     const code = resolvedCode || (await generateMerekCode(storeId))
 
@@ -104,14 +95,14 @@ export async function POST(req: NextRequest) {
       where: { merekCode: code },
       update: {
         merekName: resolvedName,
-        pabrikId: pabrikId ?? null,
+        pabrikCode: resolvedPabrik,
         status,
         deleteAt: null
       },
       create: {
         merekCode: code,
         merekName: resolvedName,
-        pabrikId: pabrikId ?? null,
+        pabrikCode: resolvedPabrik,
         status,
         storeId,
         userId: user.userId

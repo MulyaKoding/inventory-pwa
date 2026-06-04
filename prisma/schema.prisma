@@ -247,11 +247,11 @@ model MsPabrikBarang {
 // ── Master Merek ─────────────────────────────────────────
 model MsMerekBarang {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  merekCode  String   @unique @map("Merek_Code")       
+  merekCode  String   @unique @map("Merek_Code")
   merekName  String   @map("Merek_Name")
+  pabrikCode String?  @map("Pabrik_Code")   // ← tambah ini
   status     String   @default("active") @map("Status")
 
-  // Kepemilikan
   storeId    String   @map("Store_Id")
   userId     String   @map("User_Id") @db.ObjectId
 
@@ -259,10 +259,10 @@ model MsMerekBarang {
   modifiedAt DateTime  @updatedAt @map("Modified_at")
   deleteAt   DateTime? @map("Delete_at")
 
-  // Relasi ke barang
   barangs    MsBarang[]
 
   @@index([storeId])
+  @@index([pabrikCode])   // ← tambah index
   @@index([userId])
   @@map("ms_merek_barang")
 }
