@@ -1,11 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Alert,
   Box,
-  Chip,
   Drawer,
   IconButton,
   Modal,
@@ -13,7 +12,8 @@ import {
   ThemeProvider,
   Tooltip,
   createTheme,
-  useMediaQuery
+  useMediaQuery,
+  Collapse
 } from "@mui/material"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
@@ -86,7 +86,6 @@ const TAB_LIST: { key: TabKey; label: string; step: number }[] = [
   { key: "barang", label: "Buat Barang", step: 5 }
 ]
 
-// ── Palette type ──────────────────────────────────────────────────────────
 interface Palette {
   bg: string
   bgPaper: string
@@ -106,7 +105,7 @@ interface Palette {
   inputBg: string
 }
 
-// ── Small Icon helper ──────────────────────────────────────────────────────
+// ── Icons ──────────────────────────────────────────────────────────────────
 const Icon = ({
   d,
   size = 16,
@@ -132,7 +131,7 @@ const Icon = ({
   </svg>
 )
 
-// ── Reusable form field ────────────────────────────────────────────────────
+// ── Field ──────────────────────────────────────────────────────────────────
 function Field({
   label,
   required,
@@ -161,7 +160,7 @@ function Field({
   )
 }
 
-// ── Delete Confirm Modal ───────────────────────────────────────────────────
+// ── Delete Modal ───────────────────────────────────────────────────────────
 function DeleteModal({
   open,
   label,
@@ -283,11 +282,11 @@ function DeleteModal({
   )
 }
 
-// ── Skeleton rows ──────────────────────────────────────────────────────────
+// ── Skeleton ───────────────────────────────────────────────────────────────
 function SkeletonRows({ cols, isDark }: { cols: number; isDark: boolean }) {
   return (
     <>
-      {Array.from({ length: 4 }).map((_, i) => (
+      {Array.from({ length: 5 }).map((_, i) => (
         <tr key={i}>
           {Array.from({ length: cols }).map((_, j) => (
             <td key={j} style={{ padding: "12px 14px" }}>
@@ -319,8 +318,7 @@ function TableWrap({ children, p }: { children: React.ReactNode; p: Palette }) {
       sx={{
         border: `1px solid ${p.border}`,
         borderRadius: "6px",
-        overflow: "hidden",
-        mt: 2
+        overflow: "hidden"
       }}
     >
       <Box sx={{ overflowX: "auto" }}>
@@ -338,7 +336,6 @@ function TableWrap({ children, p }: { children: React.ReactNode; p: Palette }) {
   )
 }
 
-// ── Th ────────────────────────────────────────────────────────────────────
 function Th({
   children,
   w,
@@ -368,7 +365,6 @@ function Th({
   )
 }
 
-// ── Td ────────────────────────────────────────────────────────────────────
 function Td({
   children,
   muted,
@@ -395,7 +391,6 @@ function Td({
   )
 }
 
-// ── Action buttons ────────────────────────────────────────────────────────
 function ActionBtns({
   onDelete,
   p,
@@ -425,121 +420,6 @@ function ActionBtns({
           />
         </IconButton>
       </Tooltip>
-    </Box>
-  )
-}
-
-// ── Info note ──────────────────────────────────────────────────────────────
-function InfoNote({ text, isDark }: { text: string; isDark: boolean }) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 1,
-        p: "10px 14px",
-        bgcolor: isDark ? "#0a2219" : "#f0fdf4",
-        border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-        borderRadius: "6px",
-        mb: 2
-      }}
-    >
-      <Icon
-        d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4M12 16h.01"
-        size={15}
-        color={isDark ? "#4ade80" : "#16a34a"}
-      />
-      <span
-        style={{
-          fontSize: 12,
-          color: isDark ? "#4ade80" : "#166534",
-          fontFamily: "'Nunito', sans-serif",
-          lineHeight: 1.5
-        }}
-      >
-        {text}
-      </span>
-    </Box>
-  )
-}
-
-// ── Save + Next button ─────────────────────────────────────────────────────
-function SaveNextBtn({
-  onSave,
-  onSkip,
-  nextTab,
-  saving,
-  setActiveTab,
-  p
-}: {
-  onSave: () => void
-  onSkip?: () => void
-  nextTab?: TabKey
-  saving: boolean
-  setActiveTab: (tab: TabKey) => void
-  p: Palette
-}) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "flex-end",
-        gap: 1,
-        mt: 2,
-        pt: 2,
-        borderTop: `1px solid ${p.border}`
-      }}
-    >
-      {onSkip && nextTab && (
-        <button
-          onClick={() => {
-            onSkip()
-            setActiveTab(nextTab)
-          }}
-          style={{
-            padding: "9px 18px",
-            border: `1px solid ${p.border}`,
-            borderRadius: 6,
-            background: "transparent",
-            color: p.textSecondary,
-            fontSize: 13,
-            fontWeight: 700,
-            fontFamily: "'Nunito', sans-serif",
-            cursor: "pointer"
-          }}
-        >
-          Lewati
-        </button>
-      )}
-      <button
-        onClick={onSave}
-        disabled={saving}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "9px 20px",
-          border: "none",
-          borderRadius: 6,
-          background: saving
-            ? "#1e3a8a"
-            : "linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)",
-          boxShadow: "0 4px 12px rgba(59,130,246,.25)",
-          color: "#fff",
-          fontSize: 13,
-          fontWeight: 700,
-          fontFamily: "'Nunito', sans-serif",
-          cursor: saving ? "not-allowed" : "pointer",
-          opacity: saving ? 0.7 : 1
-        }}
-      >
-        <Icon d="M12 5v14M5 12h14" size={14} color="#fff" />
-        {saving
-          ? "Menyimpan..."
-          : nextTab
-            ? "Simpan & Lanjut"
-            : "Simpan Barang"}
-      </button>
     </Box>
   )
 }
@@ -579,7 +459,202 @@ function SectionLabel({
   )
 }
 
-// ── MAIN PAGE ──────────────────────────────────────────────────────────────
+// ── Form Panel (collapsible) ───────────────────────────────────────────────
+function FormPanel({
+  open,
+  onClose,
+  onSave,
+  saving,
+  isDark,
+  p,
+  children,
+  saveLabel = "Simpan"
+}: {
+  open: boolean
+  onClose: () => void
+  onSave: () => void
+  saving: boolean
+  isDark: boolean
+  p: Palette
+  children: React.ReactNode
+  saveLabel?: string
+}) {
+  return (
+    <Collapse in={open} unmountOnExit>
+      <Box
+        sx={{
+          border: `1px solid ${isDark ? "#1e3a8a44" : "#bfdbfe"}`,
+          borderRadius: "8px",
+          bgcolor: isDark ? "#0a1628" : "#f0f7ff",
+          mb: 2,
+          overflow: "hidden"
+        }}
+      >
+        {/* Panel header */}
+        <Box
+          sx={{
+            px: 2.5,
+            py: 1.5,
+            borderBottom: `1px solid ${isDark ? "#1e3a8a44" : "#bfdbfe"}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            bgcolor: isDark ? "#0d1f3c" : "#dbeafe"
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: isDark ? "#93c5fd" : "#1e40af",
+              fontFamily: "'Nunito', sans-serif",
+              letterSpacing: "0.04em"
+            }}
+          >
+            FORM TAMBAH DATA
+          </span>
+          <IconButton
+            size="small"
+            onClick={onClose}
+            sx={{
+              color: isDark ? "#60a5fa" : "#3b82f6",
+              "&:hover": { bgcolor: isDark ? "#1e3a8a33" : "#bfdbfe" }
+            }}
+          >
+            <Icon d="M18 6L6 18M6 6l12 12" size={14} />
+          </IconButton>
+        </Box>
+
+        {/* Form body */}
+        <Box sx={{ p: 2.5 }}>
+          {children}
+
+          {/* Actions */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 1,
+              mt: 2,
+              pt: 2,
+              borderTop: `1px solid ${isDark ? "#1e3a8a44" : "#bfdbfe"}`
+            }}
+          >
+            <button
+              onClick={onClose}
+              style={{
+                padding: "8px 18px",
+                border: `1px solid ${p.border}`,
+                borderRadius: 6,
+                background: "transparent",
+                color: p.textSecondary,
+                fontSize: 13,
+                fontWeight: 700,
+                fontFamily: "'Nunito', sans-serif",
+                cursor: "pointer"
+              }}
+            >
+              Batal
+            </button>
+            <button
+              onClick={onSave}
+              disabled={saving}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 20px",
+                border: "none",
+                borderRadius: 6,
+                background: saving
+                  ? "#1e3a8a"
+                  : "linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)",
+                boxShadow: "0 4px 12px rgba(59,130,246,.25)",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 700,
+                fontFamily: "'Nunito', sans-serif",
+                cursor: saving ? "not-allowed" : "pointer",
+                opacity: saving ? 0.7 : 1
+              }}
+            >
+              <Icon d="M5 13l4 4L19 7" size={14} color="#fff" />
+              {saving ? "Menyimpan..." : saveLabel}
+            </button>
+          </Box>
+        </Box>
+      </Box>
+    </Collapse>
+  )
+}
+
+// ── Add Button ─────────────────────────────────────────────────────────────
+function AddButton({
+  label,
+  onClick,
+  isDark
+}: {
+  label: string
+  onClick: () => void
+  isDark: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "7px 14px",
+        border: "none",
+        borderRadius: 6,
+        background: "linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)",
+        boxShadow: "0 4px 12px rgba(59,130,246,.2)",
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: 700,
+        fontFamily: "'Nunito', sans-serif",
+        cursor: "pointer",
+        whiteSpace: "nowrap"
+      }}
+    >
+      <Icon d="M12 5v14M5 12h14" size={13} color="#fff" />
+      {label}
+    </button>
+  )
+}
+
+// ── Empty state ────────────────────────────────────────────────────────────
+function EmptyRow({
+  cols,
+  text,
+  p
+}: {
+  cols: number
+  text: string
+  p: Palette
+}) {
+  return (
+    <tr>
+      <td
+        colSpan={cols}
+        style={{
+          padding: "40px 32px",
+          textAlign: "center",
+          fontSize: 13,
+          color: p.textMuted,
+          fontFamily: "'Nunito', sans-serif"
+        }}
+      >
+        {text}
+      </td>
+    </tr>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ══════════════════════════════════════════════════════════════════════════
 export default function MasterBarangPage() {
   const router = useRouter()
   const { isDark, toggleTheme } = useTheme()
@@ -599,9 +674,14 @@ export default function MasterBarangPage() {
   const [loadingMerek, setLoadingMerek] = useState(false)
   const [loadingSupplier, setLoadingSupplier] = useState(false)
   const [loadingBarang, setLoadingBarang] = useState(false)
-
-  // ── Saving ──
   const [saving, setSaving] = useState(false)
+
+  // ── Form visibility ──
+  const [showSatuanForm, setShowSatuanForm] = useState(false)
+  const [showPabrikForm, setShowPabrikForm] = useState(false)
+  const [showMerekForm, setShowMerekForm] = useState(false)
+  const [showSupplierForm, setShowSupplierForm] = useState(false)
+  const [showBarangForm, setShowBarangForm] = useState(false)
 
   // ── Delete modal ──
   const [deleteModal, setDeleteModal] = useState<{
@@ -729,7 +809,7 @@ export default function MasterBarangPage() {
     height: 72
   }
 
-  // ── Fetch helpers ──
+  // ── Fetchers ──
   const fetchSatuan = async () => {
     setLoadingSatuan(true)
     try {
@@ -737,7 +817,6 @@ export default function MasterBarangPage() {
       const data = await res.json()
       if (data.success) setSatuanList(data.data)
     } catch {
-      /* silent */
     } finally {
       setLoadingSatuan(false)
     }
@@ -750,7 +829,6 @@ export default function MasterBarangPage() {
       const data = await res.json()
       if (data.success) setPabrikList(data.data)
     } catch {
-      /* silent */
     } finally {
       setLoadingPabrik(false)
     }
@@ -763,7 +841,6 @@ export default function MasterBarangPage() {
       const data = await res.json()
       if (data.success) setMerekList(data.data)
     } catch {
-      /* silent */
     } finally {
       setLoadingMerek(false)
     }
@@ -776,7 +853,6 @@ export default function MasterBarangPage() {
       const data = await res.json()
       if (data.success) setSupplierList(data.data)
     } catch {
-      /* silent */
     } finally {
       setLoadingSupplier(false)
     }
@@ -789,7 +865,6 @@ export default function MasterBarangPage() {
       const data = await res.json()
       if (data.success) setBarangList(data.data)
     } catch {
-      /* silent */
     } finally {
       setLoadingBarang(false)
     }
@@ -819,6 +894,7 @@ export default function MasterBarangPage() {
       if (!res.ok) throw new Error()
       showSnackbar("Satuan berhasil disimpan", "success")
       setSatuanForm({ kode: "", nama: "", keterangan: "" })
+      setShowSatuanForm(false)
       fetchSatuan()
     } catch {
       showSnackbar("Gagal menyimpan satuan", "error")
@@ -842,6 +918,7 @@ export default function MasterBarangPage() {
       if (!res.ok) throw new Error()
       showSnackbar("Pabrik berhasil disimpan", "success")
       setPabrikForm({ kode: "", nama: "", kota: "", telepon: "", alamat: "" })
+      setShowPabrikForm(false)
       fetchPabrik()
     } catch {
       showSnackbar("Gagal menyimpan pabrik", "error")
@@ -865,6 +942,7 @@ export default function MasterBarangPage() {
       if (!res.ok) throw new Error()
       showSnackbar("Merek berhasil disimpan", "success")
       setMerekForm({ kode: "", nama: "", pabrikId: "" })
+      setShowMerekForm(false)
       fetchMerek()
     } catch {
       showSnackbar("Gagal menyimpan merek", "error")
@@ -896,6 +974,7 @@ export default function MasterBarangPage() {
         kota: "",
         alamat: ""
       })
+      setShowSupplierForm(false)
       fetchSupplier()
     } catch {
       showSnackbar("Gagal menyimpan supplier", "error")
@@ -936,6 +1015,7 @@ export default function MasterBarangPage() {
         stokMinimum: "",
         status: "aktif"
       })
+      setShowBarangForm(false)
       fetchBarang()
     } catch {
       showSnackbar("Gagal menyimpan barang", "error")
@@ -1023,62 +1103,150 @@ export default function MasterBarangPage() {
       }
     })
 
-  // ── Tab content renderers ──────────────────────────────────────────────
+  // ── Tab header with Add button ─────────────────────────────────────────
+  function TabHeader({
+    label,
+    count,
+    showForm,
+    onToggleForm,
+    addLabel
+  }: {
+    label: string
+    count: number
+    showForm: boolean
+    onToggleForm: () => void
+    addLabel: string
+  }) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 2
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: p.textPrimary,
+              fontFamily: "'Nunito', sans-serif"
+            }}
+          >
+            {label}
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: isDark ? "#60a5fa" : "#1e3a8a",
+              background: isDark ? "#0d1f3c" : "#dbeafe",
+              border: `1px solid ${isDark ? "#1e3a8a" : "#bfdbfe"}`,
+              borderRadius: 100,
+              padding: "1px 9px",
+              fontFamily: "'Nunito', sans-serif"
+            }}
+          >
+            {count}
+          </span>
+        </Box>
+        <button
+          onClick={onToggleForm}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "7px 14px",
+            border: showForm
+              ? `1px solid ${isDark ? "#1e3a8a" : "#bfdbfe"}`
+              : "none",
+            borderRadius: 6,
+            background: showForm
+              ? "transparent"
+              : "linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)",
+            boxShadow: showForm ? "none" : "0 4px 12px rgba(59,130,246,.2)",
+            color: showForm ? (isDark ? "#60a5fa" : "#1e40af") : "#fff",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "'Nunito', sans-serif",
+            cursor: "pointer"
+          }}
+        >
+          <Icon
+            d={showForm ? "M18 6L6 18M6 6l12 12" : "M12 5v14M5 12h14"}
+            size={13}
+            color={showForm ? (isDark ? "#60a5fa" : "#1e40af") : "#fff"}
+          />
+          {showForm ? "Tutup Form" : addLabel}
+        </button>
+      </Box>
+    )
+  }
+
+  // ── Tab renderers ──────────────────────────────────────────────────────
 
   const renderSatuan = () => (
     <Box>
-      <InfoNote
-        text="Satuan digunakan sebagai referensi penghitungan stok barang."
-        isDark={isDark}
+      <TabHeader
+        label="Daftar Satuan Barang"
+        count={satuanList.length}
+        showForm={showSatuanForm}
+        onToggleForm={() => setShowSatuanForm((v) => !v)}
+        addLabel="Tambah Satuan"
       />
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 2
-        }}
+
+      <FormPanel
+        open={showSatuanForm}
+        onClose={() => setShowSatuanForm(false)}
+        onSave={handleSaveSatuan}
+        saving={saving}
+        isDark={isDark}
+        p={p}
+        saveLabel="Simpan Satuan"
       >
-        <Field label="Kode Satuan" required>
-          <input
-            style={inputStyle}
-            value={satuanForm.kode}
-            onChange={(e) =>
-              setSatuanForm((f) => ({ ...f, kode: e.target.value }))
-            }
-            placeholder="Contoh: PCS, BOX, BTL"
-          />
-        </Field>
-        <Field label="Nama Satuan" required>
-          <input
-            style={inputStyle}
-            value={satuanForm.nama}
-            onChange={(e) =>
-              setSatuanForm((f) => ({ ...f, nama: e.target.value }))
-            }
-            placeholder="Contoh: Pieces, Box, Botol"
-          />
-        </Field>
-        <Box sx={{ gridColumn: "1 / -1" }}>
-          <Field label="Keterangan">
-            <textarea
-              style={textareaStyle}
-              value={satuanForm.keterangan}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2
+          }}
+        >
+          <Field label="Kode Satuan" required>
+            <input
+              style={inputStyle}
+              value={satuanForm.kode}
               onChange={(e) =>
-                setSatuanForm((f) => ({ ...f, keterangan: e.target.value }))
+                setSatuanForm((f) => ({ ...f, kode: e.target.value }))
               }
-              placeholder="Deskripsi tambahan (opsional)"
+              placeholder="Contoh: PCS, BOX, BTL"
             />
           </Field>
+          <Field label="Nama Satuan" required>
+            <input
+              style={inputStyle}
+              value={satuanForm.nama}
+              onChange={(e) =>
+                setSatuanForm((f) => ({ ...f, nama: e.target.value }))
+              }
+              placeholder="Contoh: Pieces, Box, Botol"
+            />
+          </Field>
+          <Box sx={{ gridColumn: "1 / -1" }}>
+            <Field label="Keterangan">
+              <textarea
+                style={textareaStyle}
+                value={satuanForm.keterangan}
+                onChange={(e) =>
+                  setSatuanForm((f) => ({ ...f, keterangan: e.target.value }))
+                }
+                placeholder="Deskripsi tambahan (opsional)"
+              />
+            </Field>
+          </Box>
         </Box>
-      </Box>
-      <SaveNextBtn
-        onSave={handleSaveSatuan}
-        onSkip={() => {}}
-        nextTab="pabrik"
-        saving={saving}
-        setActiveTab={setActiveTab}
-        p={p}
-      />
+      </FormPanel>
 
       <TableWrap p={p}>
         <thead>
@@ -1086,27 +1254,14 @@ export default function MasterBarangPage() {
             <Th p={p}>KODE</Th>
             <Th p={p}>NAMA SATUAN</Th>
             <Th p={p}>KETERANGAN</Th>
-            <Th p={p} w={60}></Th>
+            <Th p={p} w={60} />
           </tr>
         </thead>
         <tbody>
           {loadingSatuan ? (
             <SkeletonRows cols={4} isDark={isDark} />
           ) : satuanList.length === 0 ? (
-            <tr>
-              <td
-                colSpan={4}
-                style={{
-                  padding: "32px",
-                  textAlign: "center",
-                  fontSize: 13,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Belum ada data satuan
-              </td>
-            </tr>
+            <EmptyRow cols={4} text="Belum ada data satuan" p={p} />
           ) : (
             satuanList.map((s) => (
               <tr key={s.id}>
@@ -1144,78 +1299,84 @@ export default function MasterBarangPage() {
 
   const renderPabrik = () => (
     <Box>
-      <InfoNote
-        text="Data pabrik digunakan sebagai referensi produsen barang."
-        isDark={isDark}
+      <TabHeader
+        label="Daftar Pabrik"
+        count={pabrikList.length}
+        showForm={showPabrikForm}
+        onToggleForm={() => setShowPabrikForm((v) => !v)}
+        addLabel="Tambah Pabrik"
       />
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 2
-        }}
+
+      <FormPanel
+        open={showPabrikForm}
+        onClose={() => setShowPabrikForm(false)}
+        onSave={handleSavePabrik}
+        saving={saving}
+        isDark={isDark}
+        p={p}
+        saveLabel="Simpan Pabrik"
       >
-        <Field label="Kode Pabrik" required>
-          <input
-            style={inputStyle}
-            value={pabrikForm.kode}
-            onChange={(e) =>
-              setPabrikForm((f) => ({ ...f, kode: e.target.value }))
-            }
-            placeholder="Contoh: KF, GSK"
-          />
-        </Field>
-        <Field label="Nama Pabrik" required>
-          <input
-            style={inputStyle}
-            value={pabrikForm.nama}
-            onChange={(e) =>
-              setPabrikForm((f) => ({ ...f, nama: e.target.value }))
-            }
-            placeholder="Nama perusahaan pabrik"
-          />
-        </Field>
-        <Field label="Kota">
-          <input
-            style={inputStyle}
-            value={pabrikForm.kota}
-            onChange={(e) =>
-              setPabrikForm((f) => ({ ...f, kota: e.target.value }))
-            }
-            placeholder="Kota pabrik"
-          />
-        </Field>
-        <Field label="No. Telepon">
-          <input
-            style={inputStyle}
-            value={pabrikForm.telepon}
-            onChange={(e) =>
-              setPabrikForm((f) => ({ ...f, telepon: e.target.value }))
-            }
-            placeholder="+62..."
-          />
-        </Field>
-        <Box sx={{ gridColumn: "1 / -1" }}>
-          <Field label="Alamat">
-            <textarea
-              style={textareaStyle}
-              value={pabrikForm.alamat}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2
+          }}
+        >
+          <Field label="Kode Pabrik" required>
+            <input
+              style={inputStyle}
+              value={pabrikForm.kode}
               onChange={(e) =>
-                setPabrikForm((f) => ({ ...f, alamat: e.target.value }))
+                setPabrikForm((f) => ({ ...f, kode: e.target.value }))
               }
-              placeholder="Alamat lengkap pabrik"
+              placeholder="Contoh: KF, GSK"
             />
           </Field>
+          <Field label="Nama Pabrik" required>
+            <input
+              style={inputStyle}
+              value={pabrikForm.nama}
+              onChange={(e) =>
+                setPabrikForm((f) => ({ ...f, nama: e.target.value }))
+              }
+              placeholder="Nama perusahaan pabrik"
+            />
+          </Field>
+          <Field label="Kota">
+            <input
+              style={inputStyle}
+              value={pabrikForm.kota}
+              onChange={(e) =>
+                setPabrikForm((f) => ({ ...f, kota: e.target.value }))
+              }
+              placeholder="Kota pabrik"
+            />
+          </Field>
+          <Field label="No. Telepon">
+            <input
+              style={inputStyle}
+              value={pabrikForm.telepon}
+              onChange={(e) =>
+                setPabrikForm((f) => ({ ...f, telepon: e.target.value }))
+              }
+              placeholder="+62..."
+            />
+          </Field>
+          <Box sx={{ gridColumn: "1 / -1" }}>
+            <Field label="Alamat">
+              <textarea
+                style={textareaStyle}
+                value={pabrikForm.alamat}
+                onChange={(e) =>
+                  setPabrikForm((f) => ({ ...f, alamat: e.target.value }))
+                }
+                placeholder="Alamat lengkap pabrik"
+              />
+            </Field>
+          </Box>
         </Box>
-      </Box>
-      <SaveNextBtn
-        onSave={handleSavePabrik}
-        onSkip={() => {}}
-        nextTab="merek"
-        saving={saving}
-        setActiveTab={setActiveTab}
-        p={p}
-      />
+      </FormPanel>
 
       <TableWrap p={p}>
         <thead>
@@ -1224,27 +1385,14 @@ export default function MasterBarangPage() {
             <Th p={p}>NAMA PABRIK</Th>
             <Th p={p}>KOTA</Th>
             <Th p={p}>TELEPON</Th>
-            <Th p={p} w={60}></Th>
+            <Th p={p} w={60} />
           </tr>
         </thead>
         <tbody>
           {loadingPabrik ? (
             <SkeletonRows cols={5} isDark={isDark} />
           ) : pabrikList.length === 0 ? (
-            <tr>
-              <td
-                colSpan={5}
-                style={{
-                  padding: "32px",
-                  textAlign: "center",
-                  fontSize: 13,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Belum ada data pabrik
-              </td>
-            </tr>
+            <EmptyRow cols={5} text="Belum ada data pabrik" p={p} />
           ) : (
             pabrikList.map((s) => (
               <tr key={s.id}>
@@ -1285,86 +1433,96 @@ export default function MasterBarangPage() {
 
   const renderMerek = () => (
     <Box>
-      <InfoNote
-        text="Merek dikaitkan dengan pabrik produsen yang sudah terdaftar."
-        isDark={isDark}
+      <TabHeader
+        label="Daftar Merek"
+        count={merekList.length}
+        showForm={showMerekForm}
+        onToggleForm={() => setShowMerekForm((v) => !v)}
+        addLabel="Tambah Merek"
       />
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 2
-        }}
+
+      <FormPanel
+        open={showMerekForm}
+        onClose={() => setShowMerekForm(false)}
+        onSave={handleSaveMerek}
+        saving={saving}
+        isDark={isDark}
+        p={p}
+        saveLabel="Simpan Merek"
       >
-        <Field label="Kode Merek" required>
-          <input
-            style={inputStyle}
-            value={merekForm.kode}
-            onChange={(e) =>
-              setMerekForm((f) => ({ ...f, kode: e.target.value }))
-            }
-            placeholder="Contoh: PAR, AMX"
-          />
-        </Field>
-        <Field label="Nama Merek" required>
-          <input
-            style={inputStyle}
-            value={merekForm.nama}
-            onChange={(e) =>
-              setMerekForm((f) => ({ ...f, nama: e.target.value }))
-            }
-            placeholder="Nama merek produk"
-          />
-        </Field>
-        <Box sx={{ gridColumn: "1 / -1" }}>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-            <Box sx={{ flex: 1 }}>
-              <Field label="Pabrik">
-                <select
-                  style={inputStyle}
-                  value={merekForm.pabrikId}
-                  onChange={(e) =>
-                    setMerekForm((f) => ({ ...f, pabrikId: e.target.value }))
-                  }
-                >
-                  <option value="">— Pilih Pabrik —</option>
-                  {pabrikList.map((pb) => (
-                    <option key={pb.id} value={pb.id}>
-                      {pb.nama}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2
+          }}
+        >
+          <Field label="Kode Merek" required>
+            <input
+              style={inputStyle}
+              value={merekForm.kode}
+              onChange={(e) =>
+                setMerekForm((f) => ({ ...f, kode: e.target.value }))
+              }
+              placeholder="Contoh: PAR, AMX"
+            />
+          </Field>
+          <Field label="Nama Merek" required>
+            <input
+              style={inputStyle}
+              value={merekForm.nama}
+              onChange={(e) =>
+                setMerekForm((f) => ({ ...f, nama: e.target.value }))
+              }
+              placeholder="Nama merek produk"
+            />
+          </Field>
+          <Box sx={{ gridColumn: "1 / -1" }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <Box sx={{ flex: 1 }}>
+                <Field label="Pabrik">
+                  <select
+                    style={inputStyle}
+                    value={merekForm.pabrikId}
+                    onChange={(e) =>
+                      setMerekForm((f) => ({ ...f, pabrikId: e.target.value }))
+                    }
+                  >
+                    <option value="">— Pilih Pabrik —</option>
+                    {pabrikList.map((pb) => (
+                      <option key={pb.id} value={pb.id}>
+                        {pb.nama}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </Box>
+              <button
+                onClick={() => {
+                  setShowMerekForm(false)
+                  setActiveTab("pabrik")
+                  setShowPabrikForm(true)
+                }}
+                style={{
+                  padding: "8px 12px",
+                  border: `1px solid ${p.border}`,
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: p.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  height: 38
+                }}
+              >
+                + Pabrik Baru
+              </button>
             </Box>
-            <button
-              onClick={() => setActiveTab("pabrik")}
-              style={{
-                padding: "8px 12px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                height: 38
-              }}
-            >
-              + Pabrik Baru
-            </button>
           </Box>
         </Box>
-      </Box>
-      <SaveNextBtn
-        onSave={handleSaveMerek}
-        onSkip={() => {}}
-        nextTab="supplier"
-        saving={saving}
-        setActiveTab={setActiveTab}
-        p={p}
-      />
+      </FormPanel>
 
       <TableWrap p={p}>
         <thead>
@@ -1372,27 +1530,14 @@ export default function MasterBarangPage() {
             <Th p={p}>KODE</Th>
             <Th p={p}>NAMA MEREK</Th>
             <Th p={p}>PABRIK</Th>
-            <Th p={p} w={60}></Th>
+            <Th p={p} w={60} />
           </tr>
         </thead>
         <tbody>
           {loadingMerek ? (
             <SkeletonRows cols={4} isDark={isDark} />
           ) : merekList.length === 0 ? (
-            <tr>
-              <td
-                colSpan={4}
-                style={{
-                  padding: "32px",
-                  textAlign: "center",
-                  fontSize: 13,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Belum ada data merek
-              </td>
-            </tr>
+            <EmptyRow cols={4} text="Belum ada data merek" p={p} />
           ) : (
             merekList.map((s) => (
               <tr key={s.id}>
@@ -1430,99 +1575,105 @@ export default function MasterBarangPage() {
 
   const renderSupplier = () => (
     <Box>
-      <InfoNote
-        text="Supplier adalah distributor atau pemasok yang akan tercatat di setiap penerimaan barang."
-        isDark={isDark}
+      <TabHeader
+        label="Daftar Supplier"
+        count={supplierList.length}
+        showForm={showSupplierForm}
+        onToggleForm={() => setShowSupplierForm((v) => !v)}
+        addLabel="Tambah Supplier"
       />
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 2
-        }}
+
+      <FormPanel
+        open={showSupplierForm}
+        onClose={() => setShowSupplierForm(false)}
+        onSave={handleSaveSupplier}
+        saving={saving}
+        isDark={isDark}
+        p={p}
+        saveLabel="Simpan Supplier"
       >
-        <Field label="Kode Supplier" required>
-          <input
-            style={inputStyle}
-            value={supplierForm.kode}
-            onChange={(e) =>
-              setSupplierForm((f) => ({ ...f, kode: e.target.value }))
-            }
-            placeholder="Contoh: SUP001"
-          />
-        </Field>
-        <Field label="Nama Supplier" required>
-          <input
-            style={inputStyle}
-            value={supplierForm.nama}
-            onChange={(e) =>
-              setSupplierForm((f) => ({ ...f, nama: e.target.value }))
-            }
-            placeholder="Nama perusahaan supplier"
-          />
-        </Field>
-        <Field label="Kontak Person">
-          <input
-            style={inputStyle}
-            value={supplierForm.kontakPerson}
-            onChange={(e) =>
-              setSupplierForm((f) => ({ ...f, kontakPerson: e.target.value }))
-            }
-            placeholder="Nama PIC"
-          />
-        </Field>
-        <Field label="No. Telepon">
-          <input
-            style={inputStyle}
-            value={supplierForm.telepon}
-            onChange={(e) =>
-              setSupplierForm((f) => ({ ...f, telepon: e.target.value }))
-            }
-            placeholder="+62..."
-          />
-        </Field>
-        <Field label="Email">
-          <input
-            style={inputStyle}
-            type="email"
-            value={supplierForm.email}
-            onChange={(e) =>
-              setSupplierForm((f) => ({ ...f, email: e.target.value }))
-            }
-            placeholder="email@supplier.com"
-          />
-        </Field>
-        <Field label="Kota">
-          <input
-            style={inputStyle}
-            value={supplierForm.kota}
-            onChange={(e) =>
-              setSupplierForm((f) => ({ ...f, kota: e.target.value }))
-            }
-            placeholder="Kota"
-          />
-        </Field>
-        <Box sx={{ gridColumn: "1 / -1" }}>
-          <Field label="Alamat">
-            <textarea
-              style={textareaStyle}
-              value={supplierForm.alamat}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2
+          }}
+        >
+          <Field label="Kode Supplier" required>
+            <input
+              style={inputStyle}
+              value={supplierForm.kode}
               onChange={(e) =>
-                setSupplierForm((f) => ({ ...f, alamat: e.target.value }))
+                setSupplierForm((f) => ({ ...f, kode: e.target.value }))
               }
-              placeholder="Alamat lengkap supplier"
+              placeholder="Contoh: SUP001"
             />
           </Field>
+          <Field label="Nama Supplier" required>
+            <input
+              style={inputStyle}
+              value={supplierForm.nama}
+              onChange={(e) =>
+                setSupplierForm((f) => ({ ...f, nama: e.target.value }))
+              }
+              placeholder="Nama perusahaan supplier"
+            />
+          </Field>
+          <Field label="Kontak Person">
+            <input
+              style={inputStyle}
+              value={supplierForm.kontakPerson}
+              onChange={(e) =>
+                setSupplierForm((f) => ({ ...f, kontakPerson: e.target.value }))
+              }
+              placeholder="Nama PIC"
+            />
+          </Field>
+          <Field label="No. Telepon">
+            <input
+              style={inputStyle}
+              value={supplierForm.telepon}
+              onChange={(e) =>
+                setSupplierForm((f) => ({ ...f, telepon: e.target.value }))
+              }
+              placeholder="+62..."
+            />
+          </Field>
+          <Field label="Email">
+            <input
+              style={inputStyle}
+              type="email"
+              value={supplierForm.email}
+              onChange={(e) =>
+                setSupplierForm((f) => ({ ...f, email: e.target.value }))
+              }
+              placeholder="email@supplier.com"
+            />
+          </Field>
+          <Field label="Kota">
+            <input
+              style={inputStyle}
+              value={supplierForm.kota}
+              onChange={(e) =>
+                setSupplierForm((f) => ({ ...f, kota: e.target.value }))
+              }
+              placeholder="Kota"
+            />
+          </Field>
+          <Box sx={{ gridColumn: "1 / -1" }}>
+            <Field label="Alamat">
+              <textarea
+                style={textareaStyle}
+                value={supplierForm.alamat}
+                onChange={(e) =>
+                  setSupplierForm((f) => ({ ...f, alamat: e.target.value }))
+                }
+                placeholder="Alamat lengkap supplier"
+              />
+            </Field>
+          </Box>
         </Box>
-      </Box>
-      <SaveNextBtn
-        onSave={handleSaveSupplier}
-        onSkip={() => {}}
-        nextTab="barang"
-        saving={saving}
-        setActiveTab={setActiveTab}
-        p={p}
-      />
+      </FormPanel>
 
       <TableWrap p={p}>
         <thead>
@@ -1532,27 +1683,14 @@ export default function MasterBarangPage() {
             <Th p={p}>KOTA</Th>
             <Th p={p}>KONTAK</Th>
             <Th p={p}>TELEPON</Th>
-            <Th p={p} w={60}></Th>
+            <Th p={p} w={60} />
           </tr>
         </thead>
         <tbody>
           {loadingSupplier ? (
             <SkeletonRows cols={6} isDark={isDark} />
           ) : supplierList.length === 0 ? (
-            <tr>
-              <td
-                colSpan={6}
-                style={{
-                  padding: "32px",
-                  textAlign: "center",
-                  fontSize: 13,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Belum ada data supplier
-              </td>
-            </tr>
+            <EmptyRow cols={6} text="Belum ada data supplier" p={p} />
           ) : (
             supplierList.map((s) => (
               <tr key={s.id}>
@@ -1596,241 +1734,267 @@ export default function MasterBarangPage() {
 
   const renderBarang = () => (
     <Box>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 2
-        }}
-      >
-        <SectionLabel text="IDENTITAS BARANG" isDark={isDark} p={p} />
-        <Field label="Kode Barang" required>
-          <input
-            style={inputStyle}
-            value={barangForm.kode}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, kode: e.target.value }))
-            }
-            placeholder="Auto / Manual"
-          />
-        </Field>
-        <Field label="Nama Barang" required>
-          <input
-            style={inputStyle}
-            value={barangForm.nama}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, nama: e.target.value }))
-            }
-            placeholder="Nama lengkap barang"
-          />
-        </Field>
-        <Field label="Barcode">
-          <input
-            style={inputStyle}
-            value={barangForm.barcode}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, barcode: e.target.value }))
-            }
-            placeholder="Scan atau ketik barcode"
-          />
-        </Field>
-        <Field label="Jenis Barang">
-          <select
-            style={inputStyle}
-            value={barangForm.jenis}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, jenis: e.target.value }))
-            }
-          >
-            <option value="">— Pilih Jenis —</option>
-            <option>Obat Bebas</option>
-            <option>Obat Keras</option>
-            <option>Alat Kesehatan</option>
-            <option>Kosmetik</option>
-            <option>Suplemen</option>
-            <option>Lainnya</option>
-          </select>
-        </Field>
+      <TabHeader
+        label="Daftar Barang"
+        count={barangList.length}
+        showForm={showBarangForm}
+        onToggleForm={() => setShowBarangForm((v) => !v)}
+        addLabel="Tambah Barang"
+      />
 
-        <SectionLabel text="REFERENSI" isDark={isDark} p={p} />
-        <Box>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-            <Box sx={{ flex: 1 }}>
-              <Field label="Satuan" required>
-                <select
-                  style={inputStyle}
-                  value={barangForm.satuanId}
-                  onChange={(e) =>
-                    setBarangForm((f) => ({ ...f, satuanId: e.target.value }))
-                  }
-                >
-                  <option value="">— Pilih Satuan —</option>
-                  {satuanList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.kode} — {s.nama}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </Box>
-            <button
-              onClick={() => setActiveTab("satuan")}
-              style={{
-                padding: "8px 10px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer",
-                height: 38
-              }}
-            >
-              +
-            </button>
-          </Box>
-        </Box>
-        <Box>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-            <Box sx={{ flex: 1 }}>
-              <Field label="Merek">
-                <select
-                  style={inputStyle}
-                  value={barangForm.merekId}
-                  onChange={(e) =>
-                    setBarangForm((f) => ({ ...f, merekId: e.target.value }))
-                  }
-                >
-                  <option value="">— Pilih Merek —</option>
-                  {merekList.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nama}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </Box>
-            <button
-              onClick={() => setActiveTab("merek")}
-              style={{
-                padding: "8px 10px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer",
-                height: 38
-              }}
-            >
-              +
-            </button>
-          </Box>
-        </Box>
-        <Box sx={{ gridColumn: "1 / -1" }}>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-            <Box sx={{ flex: 1 }}>
-              <Field label="Supplier Default">
-                <select
-                  style={inputStyle}
-                  value={barangForm.supplierId}
-                  onChange={(e) =>
-                    setBarangForm((f) => ({ ...f, supplierId: e.target.value }))
-                  }
-                >
-                  <option value="">— Pilih Supplier —</option>
-                  {supplierList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nama} ({s.kode})
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </Box>
-            <button
-              onClick={() => setActiveTab("supplier")}
-              style={{
-                padding: "8px 10px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer",
-                height: 38
-              }}
-            >
-              +
-            </button>
-          </Box>
-        </Box>
-
-        <SectionLabel text="HARGA & STOK" isDark={isDark} p={p} />
-        <Field label="Harga Beli (Rp)">
-          <input
-            style={inputStyle}
-            type="number"
-            value={barangForm.hargaBeli}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, hargaBeli: e.target.value }))
-            }
-            placeholder="0"
-            min={0}
-          />
-        </Field>
-        <Field label="Harga Jual (Rp)">
-          <input
-            style={inputStyle}
-            type="number"
-            value={barangForm.hargaJual}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, hargaJual: e.target.value }))
-            }
-            placeholder="0"
-            min={0}
-          />
-        </Field>
-        <Field label="Stok Minimum">
-          <input
-            style={inputStyle}
-            type="number"
-            value={barangForm.stokMinimum}
-            onChange={(e) =>
-              setBarangForm((f) => ({ ...f, stokMinimum: e.target.value }))
-            }
-            placeholder="0"
-            min={0}
-          />
-        </Field>
-        <Field label="Status">
-          <select
-            style={inputStyle}
-            value={barangForm.status}
-            onChange={(e) =>
-              setBarangForm((f) => ({
-                ...f,
-                status: e.target.value as "aktif" | "nonaktif"
-              }))
-            }
-          >
-            <option value="aktif">Aktif</option>
-            <option value="nonaktif">Non-Aktif</option>
-          </select>
-        </Field>
-      </Box>
-
-      <SaveNextBtn
+      <FormPanel
+        open={showBarangForm}
+        onClose={() => setShowBarangForm(false)}
         onSave={handleSaveBarang}
         saving={saving}
-        setActiveTab={setActiveTab}
+        isDark={isDark}
         p={p}
-      />
+        saveLabel="Simpan Barang"
+      >
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2
+          }}
+        >
+          <SectionLabel text="IDENTITAS BARANG" isDark={isDark} p={p} />
+          <Field label="Kode Barang" required>
+            <input
+              style={inputStyle}
+              value={barangForm.kode}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, kode: e.target.value }))
+              }
+              placeholder="Auto / Manual"
+            />
+          </Field>
+          <Field label="Nama Barang" required>
+            <input
+              style={inputStyle}
+              value={barangForm.nama}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, nama: e.target.value }))
+              }
+              placeholder="Nama lengkap barang"
+            />
+          </Field>
+          <Field label="Barcode">
+            <input
+              style={inputStyle}
+              value={barangForm.barcode}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, barcode: e.target.value }))
+              }
+              placeholder="Scan atau ketik barcode"
+            />
+          </Field>
+          <Field label="Jenis Barang">
+            <select
+              style={inputStyle}
+              value={barangForm.jenis}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, jenis: e.target.value }))
+              }
+            >
+              <option value="">— Pilih Jenis —</option>
+              <option>Obat Bebas</option>
+              <option>Obat Keras</option>
+              <option>Alat Kesehatan</option>
+              <option>Kosmetik</option>
+              <option>Suplemen</option>
+              <option>Lainnya</option>
+            </select>
+          </Field>
+
+          <SectionLabel text="REFERENSI" isDark={isDark} p={p} />
+          <Box>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <Box sx={{ flex: 1 }}>
+                <Field label="Satuan" required>
+                  <select
+                    style={inputStyle}
+                    value={barangForm.satuanId}
+                    onChange={(e) =>
+                      setBarangForm((f) => ({ ...f, satuanId: e.target.value }))
+                    }
+                  >
+                    <option value="">— Pilih Satuan —</option>
+                    {satuanList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.kode} — {s.nama}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </Box>
+              <button
+                onClick={() => {
+                  setShowBarangForm(false)
+                  setActiveTab("satuan")
+                  setShowSatuanForm(true)
+                }}
+                style={{
+                  padding: "8px 10px",
+                  border: `1px solid ${p.border}`,
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: p.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  cursor: "pointer",
+                  height: 38
+                }}
+              >
+                +
+              </button>
+            </Box>
+          </Box>
+          <Box>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <Box sx={{ flex: 1 }}>
+                <Field label="Merek">
+                  <select
+                    style={inputStyle}
+                    value={barangForm.merekId}
+                    onChange={(e) =>
+                      setBarangForm((f) => ({ ...f, merekId: e.target.value }))
+                    }
+                  >
+                    <option value="">— Pilih Merek —</option>
+                    {merekList.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nama}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </Box>
+              <button
+                onClick={() => {
+                  setShowBarangForm(false)
+                  setActiveTab("merek")
+                  setShowMerekForm(true)
+                }}
+                style={{
+                  padding: "8px 10px",
+                  border: `1px solid ${p.border}`,
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: p.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  cursor: "pointer",
+                  height: 38
+                }}
+              >
+                +
+              </button>
+            </Box>
+          </Box>
+          <Box sx={{ gridColumn: "1 / -1" }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <Box sx={{ flex: 1 }}>
+                <Field label="Supplier Default">
+                  <select
+                    style={inputStyle}
+                    value={barangForm.supplierId}
+                    onChange={(e) =>
+                      setBarangForm((f) => ({
+                        ...f,
+                        supplierId: e.target.value
+                      }))
+                    }
+                  >
+                    <option value="">— Pilih Supplier —</option>
+                    {supplierList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nama} ({s.kode})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </Box>
+              <button
+                onClick={() => {
+                  setShowBarangForm(false)
+                  setActiveTab("supplier")
+                  setShowSupplierForm(true)
+                }}
+                style={{
+                  padding: "8px 10px",
+                  border: `1px solid ${p.border}`,
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: p.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  cursor: "pointer",
+                  height: 38
+                }}
+              >
+                +
+              </button>
+            </Box>
+          </Box>
+
+          <SectionLabel text="HARGA & STOK" isDark={isDark} p={p} />
+          <Field label="Harga Beli (Rp)">
+            <input
+              style={inputStyle}
+              type="number"
+              value={barangForm.hargaBeli}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, hargaBeli: e.target.value }))
+              }
+              placeholder="0"
+              min={0}
+            />
+          </Field>
+          <Field label="Harga Jual (Rp)">
+            <input
+              style={inputStyle}
+              type="number"
+              value={barangForm.hargaJual}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, hargaJual: e.target.value }))
+              }
+              placeholder="0"
+              min={0}
+            />
+          </Field>
+          <Field label="Stok Minimum">
+            <input
+              style={inputStyle}
+              type="number"
+              value={barangForm.stokMinimum}
+              onChange={(e) =>
+                setBarangForm((f) => ({ ...f, stokMinimum: e.target.value }))
+              }
+              placeholder="0"
+              min={0}
+            />
+          </Field>
+          <Field label="Status">
+            <select
+              style={inputStyle}
+              value={barangForm.status}
+              onChange={(e) =>
+                setBarangForm((f) => ({
+                  ...f,
+                  status: e.target.value as "aktif" | "nonaktif"
+                }))
+              }
+            >
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Non-Aktif</option>
+            </select>
+          </Field>
+        </Box>
+      </FormPanel>
 
       <TableWrap p={p}>
         <thead>
@@ -1848,20 +2012,7 @@ export default function MasterBarangPage() {
           {loadingBarang ? (
             <SkeletonRows cols={7} isDark={isDark} />
           ) : barangList.length === 0 ? (
-            <tr>
-              <td
-                colSpan={7}
-                style={{
-                  padding: "32px",
-                  textAlign: "center",
-                  fontSize: 13,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Belum ada data barang
-              </td>
-            </tr>
+            <EmptyRow cols={7} text="Belum ada data barang" p={p} />
           ) : (
             barangList.map((b) => (
               <tr key={b.id}>
@@ -1910,15 +2061,7 @@ export default function MasterBarangPage() {
                           : isDark
                             ? "#888"
                             : "#64748b",
-                      border: `1px solid ${
-                        b.status === "aktif"
-                          ? isDark
-                            ? "#1a5c38"
-                            : "#bbf7d0"
-                          : isDark
-                            ? "#333"
-                            : "#e2e8f0"
-                      }`,
+                      border: `1px solid ${b.status === "aktif" ? (isDark ? "#1a5c38" : "#bbf7d0") : isDark ? "#333" : "#e2e8f0"}`,
                       fontSize: 11,
                       fontWeight: 700,
                       fontFamily: "'Nunito', sans-serif"
@@ -1942,10 +2085,8 @@ export default function MasterBarangPage() {
     </Box>
   )
 
-  // ── Step indicator ──
   const currentStep = TAB_LIST.find((t) => t.key === activeTab)?.step ?? 1
 
-  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -1994,7 +2135,7 @@ export default function MasterBarangPage() {
           <Sidebar isDark={isDark} T={T} />
         </Drawer>
 
-        {/* Main content */}
+        {/* Main */}
         <Box
           sx={{
             flex: 1,
@@ -2031,29 +2172,40 @@ export default function MasterBarangPage() {
               }}
             >
               {[
-                { label: "Satuan", value: satuanList.length, color: "#1e3a8a" },
-                { label: "Pabrik", value: pabrikList.length, color: "#0891b2" },
-                { label: "Merek", value: merekList.length, color: "#7c3aed" },
+                {
+                  label: "Satuan",
+                  value: satuanList.length,
+                  color: "#1e3a8a",
+                  tab: "satuan" as TabKey
+                },
+                {
+                  label: "Pabrik",
+                  value: pabrikList.length,
+                  color: "#0891b2",
+                  tab: "pabrik" as TabKey
+                },
+                {
+                  label: "Merek",
+                  value: merekList.length,
+                  color: "#7c3aed",
+                  tab: "merek" as TabKey
+                },
                 {
                   label: "Supplier",
                   value: supplierList.length,
-                  color: "#d97706"
+                  color: "#d97706",
+                  tab: "supplier" as TabKey
                 },
                 {
                   label: "Total Barang",
                   value: barangList.length,
-                  color: "#16a34a"
+                  color: "#16a34a",
+                  tab: "barang" as TabKey
                 }
               ].map((s) => (
                 <Box
                   key={s.label}
-                  onClick={() => {
-                    if (s.label !== "Total Barang") {
-                      setActiveTab(s.label.toLowerCase() as TabKey)
-                    } else {
-                      setActiveTab("barang")
-                    }
-                  }}
+                  onClick={() => setActiveTab(s.tab)}
                   sx={{
                     p: { xs: 1.5, sm: 2 },
                     border: `1px solid ${p.border}`,
@@ -2116,7 +2268,7 @@ export default function MasterBarangPage() {
                 overflow: "hidden"
               }}
             >
-              {/* Tab header */}
+              {/* Tabs */}
               <Box
                 sx={{
                   borderBottom: `1px solid ${p.border}`,
@@ -2188,57 +2340,8 @@ export default function MasterBarangPage() {
                 })}
               </Box>
 
-              {/* Tab content */}
+              {/* Content */}
               <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                {/* Progress hint */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mb: 2.5
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    Langkah {currentStep} dari 5
-                  </span>
-                  <Box
-                    sx={{
-                      flex: 1,
-                      height: 3,
-                      bgcolor: isDark ? "#1f1f1f" : "#f1f5f9",
-                      borderRadius: 2,
-                      overflow: "hidden"
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        height: "100%",
-                        width: `${(currentStep / 5) * 100}%`,
-                        background: "linear-gradient(90deg,#1e3a8a,#3b82f6)",
-                        borderRadius: 2,
-                        transition: "width .3s ease"
-                      }}
-                    />
-                  </Box>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: isDark ? "#60a5fa" : "#1e3a8a",
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    {Math.round((currentStep / 5) * 100)}%
-                  </span>
-                </Box>
-
                 {activeTab === "satuan" && renderSatuan()}
                 {activeTab === "pabrik" && renderPabrik()}
                 {activeTab === "merek" && renderMerek()}
@@ -2250,7 +2353,6 @@ export default function MasterBarangPage() {
         </Box>
       </Box>
 
-      {/* Delete modal */}
       <DeleteModal
         open={deleteModal.open}
         label={deleteModal.label}
@@ -2261,7 +2363,6 @@ export default function MasterBarangPage() {
         isDeleting={isDeleting}
       />
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}

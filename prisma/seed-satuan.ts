@@ -46,10 +46,8 @@ async function main() {
     await prisma.msSatuanBarang.upsert({
       where: { kdSatuanBarang: item.kdSatuanBarang },
       update: { deskripsiSatuan: item.deskripsiSatuan },
-      create: item
+      create: { ...item, deleteAt: null }
     })
-    inserted++
-    console.log(`✓ ${item.kdSatuanBarang} - ${item.deskripsiSatuan}`)
   }
 
   console.log(`\nSelesai: ${inserted} record berhasil dimasukkan`)
