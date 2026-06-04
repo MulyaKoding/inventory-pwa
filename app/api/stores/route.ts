@@ -106,7 +106,8 @@ export async function POST(req: NextRequest) {
           address: owner.address,
           gender: owner.gender,
           ktpImageUrl: owner.ktpImageUrl || null,
-          inputMethod: owner.inputMethod || "manual"
+          inputMethod: owner.inputMethod || "manual",
+          signatureUrl: body.owner.signatureUrl ?? null
         }
       }
     })
