@@ -60,7 +60,7 @@ export async function PUT(
       const mrk = await prisma.msMerekBarang.findFirst({
         where: {
           merekCode: body.merekCode,
-          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+          OR: [{ deleteAt: { equals: null } }, { deleteAt: { isSet: false } }]
         }
       })
       if (!mrk)
