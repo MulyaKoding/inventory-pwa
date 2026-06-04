@@ -1370,7 +1370,7 @@ export default function MasterBarangPage() {
   }
 
   const handleSaveMerek = async () => {
-    if (!merekForm.kode || !merekForm.nama || !merekForm.storeId) {
+    if (!merekForm.kode || !merekForm.nama || !selectedStoreId) {
       showSnackbar("Kode, Nama, dan Toko wajib diisi", "error")
       return
     }
@@ -1382,7 +1382,10 @@ export default function MasterBarangPage() {
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(merekForm)
+          body: JSON.stringify({
+            ...merekForm,
+            storeId: selectedStoreId
+          })
         }
       )
       if (!res.ok) throw new Error()
