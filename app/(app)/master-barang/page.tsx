@@ -935,6 +935,11 @@ export default function MasterBarangPage() {
   const [storeList, setStoreList] = useState<StoreOption[]>([])
   const [selectedStoreId, setSelectedStoreId] = useState("")
   const [loadingStores, setLoadingStores] = useState(false)
+  const [barangKodeAsli, setBarangKodeAsli] = useState<{
+    merekCode: string | null
+    supplierCode: string | null
+    satuanKode: string | null
+  }>({ merekCode: null, supplierCode: null, satuanKode: null })
 
   // ── Editing state per entity ──
   const [editingSatuan, setEditingSatuan] = useState<Satuan | null>(null)
@@ -994,8 +999,8 @@ export default function MasterBarangPage() {
     setView("supplier", "form")
   }
   const goToFormEditBarang = (data: Barang) => {
-    const matchedSupplier = supplierList.find((s) => s.kode === data.supplierId)
     const matchedMerek = merekList.find((m) => m.kode === data.merekId)
+    const matchedSupplier = supplierList.find((s) => s.id === data.supplierId)
 
     setEditingBarang(data)
     setBarangForm({
@@ -1003,7 +1008,7 @@ export default function MasterBarangPage() {
       nama: data.nama,
       barcode: data.barcode || "",
       jenis: data.jenis || "",
-      satuanId: data.satuanId,
+      satuanId: satuanList.find((s) => s.kode === data.satuanId)?.id || "",
       merekId: matchedMerek?.id || "",
       supplierId: matchedSupplier?.id || "",
       hargaBeli: String(data.hargaBeli),
@@ -1011,6 +1016,11 @@ export default function MasterBarangPage() {
       stokMinimum: String(data.stokMinimum),
       status: data.status,
       storeId: data.storeId || selectedStoreId
+    })
+    setBarangKodeAsli({
+      merekCode: data.merekId || null,
+      supplierCode: matchedSupplier?.kode || null,
+      satuanKode: data.satuanId || null
     })
     setActiveTab("barang")
     setView("barang", "form")
@@ -1514,7 +1524,6 @@ export default function MasterBarangPage() {
       const selectedSupplier = supplierList.find(
         (s) => s.id === barangForm.supplierId
       )
-      const supplierCode = selectedSupplier?.kode || ""
       const selectedSatuan = satuanList.find(
         (s) => s.id === barangForm.satuanId
       )
@@ -1531,9 +1540,14 @@ export default function MasterBarangPage() {
             nama: barangForm.nama,
             barcode: barangForm.barcode,
             jenis: barangForm.jenis,
-            kdSatuanBarang: selectedSatuan?.kode || barangForm.satuanId,
-            merekCode: selectedMerek?.kode || barangForm.merekId,
-            supplierCode: supplierCode || undefined,
+            kdSatuanBarang:
+              selectedSatuan?.kode ||
+              (isEdit ? barangKodeAsli.satuanKode : barangForm.satuanId),
+            merekCode:
+              selectedMerek?.kode || (isEdit ? barangKodeAsli.merekCode : null),
+            supplierCode:
+              selectedSupplier?.kode ||
+              (isEdit ? barangKodeAsli.supplierCode : null),
             hargaBeli: Number(barangForm.hargaBeli),
             hargaJual: Number(barangForm.hargaJual),
             stokMinimum: Number(barangForm.stokMinimum),
