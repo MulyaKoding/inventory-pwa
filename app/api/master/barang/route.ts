@@ -213,7 +213,8 @@ export async function POST(req: NextRequest) {
         price: resolvedPrice,
         status,
         storeId,
-        userId: user.userId
+        userId: user.userId,
+        deleteAt: null
       },
       include: {
         supplier: { select: { supplierCode: true, supplierName: true } },
