@@ -1511,12 +1511,7 @@ export default function MasterBarangPage() {
       const selectedSupplier = supplierList.find(
         (s) => s.id === barangForm.supplierId
       )
-      const supplierCode =
-        selectedSupplier?.kode ||
-        (barangForm.supplierId && !barangForm.supplierId.includes("-")
-          ? barangForm.supplierId
-          : "") ||
-        ""
+      const supplierCode = selectedSupplier?.kode || ""
       const selectedSatuan = satuanList.find(
         (s) => s.id === barangForm.satuanId
       )
@@ -1535,7 +1530,7 @@ export default function MasterBarangPage() {
             jenis: barangForm.jenis,
             kdSatuanBarang: selectedSatuan?.kode || barangForm.satuanId,
             merekCode: selectedMerek?.kode || barangForm.merekId,
-            supplierCode: barangForm.supplierId || undefined,
+            supplierCode: supplierCode || undefined,
             hargaBeli: Number(barangForm.hargaBeli),
             hargaJual: Number(barangForm.hargaJual),
             stokMinimum: Number(barangForm.stokMinimum),
@@ -2486,7 +2481,7 @@ export default function MasterBarangPage() {
                     >
                       <option value="">— Pilih Supplier —</option>
                       {supplierList.map((s) => (
-                        <option key={s.id} value={s.kode}>
+                        <option key={s.id} value={s.id}>
                           {s.nama} ({s.kode})
                         </option>
                       ))}
