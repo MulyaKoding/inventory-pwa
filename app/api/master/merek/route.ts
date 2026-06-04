@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
+import { notDeleted } from "@/app/lib/notDeleted"
 
 async function generateMerekCode(storeId: string): Promise<string> {
   const count = await prisma.msMerekBarang.count({
-    where: { storeId, deleteAt: null }
+    where: {
+      storeId,
+      OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+    }
   })
   return `MRK-${String(count + 1).padStart(3, "0")}`
 }
@@ -31,8 +35,8 @@ export async function GET(req: NextRequest) {
       )
 
     const where: any = {
-      storeId,
-      deleteAt: null,
+      ...notDeleted,
+      ...(storeId && { storeId }),
       ...(status && { status }),
       ...(search && {
         OR: [

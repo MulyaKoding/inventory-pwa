@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
+import { notDeleted } from "@/app/lib/notDeleted"
 
 async function generateBarangCode(storeId: string): Promise<string> {
   const count = await prisma.msBarang.count({
-    where: { storeId, deleteAt: null }
+    where: {
+      storeId,
+      OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+    }
   })
   return `BRG-${String(count + 1).padStart(4, "0")}`
 }
@@ -35,8 +39,8 @@ export async function GET(req: NextRequest) {
       )
 
     const where: any = {
+      ...notDeleted,
       storeId,
-      deleteAt: null,
       ...(status && { status }),
       ...(supplierCode && { supplierCode }),
       ...(pabrikCode && { pabrikCode }),

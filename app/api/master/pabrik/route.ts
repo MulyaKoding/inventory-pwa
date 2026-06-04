@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
+import { notDeleted } from "@/app/lib/notDeleted"
 
 async function generatePabrikCode(storeId: string): Promise<string> {
   const count = await prisma.msPabrikBarang.count({
-    where: { storeId, deleteAt: null }
+    where: {
+      storeId,
+      OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+    }
   })
   return `PAB-${String(count + 1).padStart(3, "0")}`
 }
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit
 
     const where: any = {
-      deleteAt: null,
+      ...notDeleted,
       ...(storeId ? { storeId } : { userId: user.userId }),
       ...(status && { status }),
       ...(search && {

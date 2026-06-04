@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
+import { notDeleted } from "@/app/lib/notDeleted"
 
 // ── Generate supplier code ──────────────────────────────
 async function generateSupplierCode(storeId: string): Promise<string> {
   const count = await prisma.msSupplierBarang.count({
-    where: { storeId, deleteAt: null }
+    where: {
+      storeId,
+      OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+    }
   })
   return `SUP-${String(count + 1).padStart(3, "0")}`
 }
@@ -32,8 +36,8 @@ export async function GET(req: NextRequest) {
       )
 
     const where: any = {
+      ...notDeleted,
       storeId,
-      deleteAt: null,
       ...(status && { status }),
       ...(search && {
         OR: [
