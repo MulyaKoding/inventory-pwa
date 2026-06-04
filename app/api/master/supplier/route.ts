@@ -149,7 +149,8 @@ export async function POST(req: NextRequest) {
         picName: resolvedPic,
         status,
         storeId,
-        userId: user.userId
+        userId: user.userId,
+        deleteAt: null
       }
     })
 

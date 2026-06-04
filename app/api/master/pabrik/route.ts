@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
         country: country ?? "Indonesia",
         status,
         storeId,
-        userId: user.userId
+        userId: user.userId,
+        deleteAt: null
       }
     })
 

@@ -109,7 +109,8 @@ export async function POST(req: NextRequest) {
         pabrikCode: resolvedPabrik,
         status,
         storeId,
-        userId: user.userId
+        userId: user.userId,
+        deleteAt: null
       }
     })
 
