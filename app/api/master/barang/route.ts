@@ -137,7 +137,10 @@ export async function POST(req: NextRequest) {
     // Validasi relasi pakai resolved vars:
     if (resolvedSupplier) {
       const sup = await prisma.msSupplierBarang.findFirst({
-        where: { supplierCode: resolvedSupplier, deleteAt: null }
+        where: {
+          supplierCode: resolvedSupplier,
+          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+        }
       })
       if (!sup)
         return NextResponse.json(
@@ -147,7 +150,10 @@ export async function POST(req: NextRequest) {
     }
     if (pabrikCode) {
       const pab = await prisma.msPabrikBarang.findFirst({
-        where: { pabrikCode, deleteAt: null }
+        where: {
+          pabrikCode,
+          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+        }
       })
       if (!pab)
         return NextResponse.json(
@@ -157,7 +163,10 @@ export async function POST(req: NextRequest) {
     }
     if (resolvedMerek) {
       const mrk = await prisma.msMerekBarang.findFirst({
-        where: { merekCode: resolvedMerek, deleteAt: null }
+        where: {
+          merekCode: resolvedMerek,
+          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+        }
       })
       if (!mrk)
         return NextResponse.json(
