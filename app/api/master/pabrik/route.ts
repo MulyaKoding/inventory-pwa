@@ -24,15 +24,10 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
-    if (!storeId)
-      return NextResponse.json(
-        { error: "storeId wajib diisi" },
-        { status: 400 }
-      )
-
     const where: any = {
-      storeId,
+      userId: user.userId, // filter by user jika tidak ada storeId
       deleteAt: null,
+      ...(storeId && { storeId }), // filter by storeId jika ada
       ...(status && { status }),
       ...(search && {
         OR: [

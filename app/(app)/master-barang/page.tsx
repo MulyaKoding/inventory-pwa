@@ -941,10 +941,10 @@ export default function MasterBarangPage() {
   const [editingBarang, setEditingBarang] = useState<Barang | null>(null)
 
   useEffect(() => {
-    setPabrikForm((f) => ({ ...f, storeId: selectedStoreId }))
-    setMerekForm((f) => ({ ...f, storeId: selectedStoreId }))
-    setSupplierForm((f) => ({ ...f, storeId: selectedStoreId }))
-    setBarangForm((f) => ({ ...f, storeId: selectedStoreId }))
+    fetchPabrik()
+    fetchMerek()
+    fetchSupplier()
+    fetchBarang()
   }, [selectedStoreId])
 
   // ── Helpers buka form Edit dengan pre-fill ──
@@ -1193,9 +1193,23 @@ export default function MasterBarangPage() {
   const fetchPabrik = async () => {
     setLoadingPabrik(true)
     try {
-      const r = await fetch("/api/master/pabrik")
+      const params = selectedStoreId ? `?storeId=${selectedStoreId}` : ""
+      const r = await fetch(`/api/master/pabrik${params}`)
       const d = await r.json()
-      if (d.success) setPabrikList(d.data)
+      if (d.success) {
+        // Map field API → field frontend
+        setPabrikList(
+          d.data.map((item: any) => ({
+            id: item.id,
+            kode: item.pabrikCode,
+            nama: item.pabrikName,
+            kota: item.city,
+            telepon: item.phone,
+            alamat: item.address,
+            storeId: item.storeId
+          }))
+        )
+      }
     } catch {
     } finally {
       setLoadingPabrik(false)
@@ -1253,10 +1267,6 @@ export default function MasterBarangPage() {
 
   useEffect(() => {
     fetchSatuan()
-    fetchPabrik()
-    fetchMerek()
-    fetchSupplier()
-    fetchBarang()
     fetchMyStores()
   }, [])
 
@@ -1308,7 +1318,14 @@ export default function MasterBarangPage() {
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pabrikForm)
+          body: JSON.stringify({
+            pabrikCode: pabrikForm.kode,
+            pabrikName: pabrikForm.nama,
+            city: pabrikForm.kota,
+            phone: pabrikForm.telepon,
+            address: pabrikForm.alamat,
+            storeId: pabrikForm.storeId
+          })
         }
       )
       if (!res.ok) throw new Error()
