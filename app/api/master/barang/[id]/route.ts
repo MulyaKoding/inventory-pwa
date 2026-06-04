@@ -65,37 +65,36 @@ export async function PUT(
       })
       if (!mrk)
         return NextResponse.json(
-          { error: `Merek tidak ditemukan` },
+          { error: "Merek tidak ditemukan" },
           { status: 400 }
         )
     }
 
-    // Sama untuk supplier
     if (body.supplierCode && body.supplierCode !== existing.supplierCode) {
       const sup = await prisma.msSupplierBarang.findFirst({
         where: {
           supplierCode: body.supplierCode,
-          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+          OR: [{ deleteAt: { equals: null } }, { deleteAt: { isSet: false } }] // ← fix ini
         }
       })
       if (!sup)
         return NextResponse.json(
-          { error: `Supplier tidak ditemukan` },
+          { error: "Supplier tidak ditemukan" },
           { status: 400 }
         )
     }
 
-    // Sama untuk pabrik
+    // Validasi pabrik — fix juga
     if (body.pabrikCode && body.pabrikCode !== existing.pabrikCode) {
       const pab = await prisma.msPabrikBarang.findFirst({
         where: {
           pabrikCode: body.pabrikCode,
-          OR: [{ deleteAt: null }, { deleteAt: { isSet: false } }]
+          OR: [{ deleteAt: { equals: null } }, { deleteAt: { isSet: false } }] // ← fix ini
         }
       })
       if (!pab)
         return NextResponse.json(
-          { error: `Pabrik tidak ditemukan` },
+          { error: "Pabrik tidak ditemukan" },
           { status: 400 }
         )
     }
