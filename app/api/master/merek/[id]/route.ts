@@ -50,10 +50,33 @@ export async function PUT(
         { status: 404 }
       )
 
+    // Resolve field names dari frontend (kode/nama) maupun API langsung (merekCode/merekName)
+    const resolvedName = body.merekName || body.nama
+    const resolvedCode = body.merekCode || body.kode
+
+    // pabrikId dari frontend adalah id MongoDB, cari kodenya dulu
+    let resolvedPabrikCode: string | null | undefined = undefined
+    if (body.pabrikCode !== undefined) {
+      resolvedPabrikCode = body.pabrikCode || null
+    } else if (body.pabrikId !== undefined) {
+      if (!body.pabrikId) {
+        resolvedPabrikCode = null
+      } else {
+        const pabrik = await prisma.msPabrikBarang.findUnique({
+          where: { id: body.pabrikId }
+        })
+        resolvedPabrikCode = pabrik?.pabrikCode || null
+      }
+    }
+
     const updated = await prisma.msMerekBarang.update({
       where: { id },
       data: {
-        ...(body.merekName !== undefined && { merekName: body.merekName }),
+        ...(resolvedCode && { merekCode: resolvedCode }),
+        ...(resolvedName && { merekName: resolvedName }),
+        ...(resolvedPabrikCode !== undefined && {
+          pabrikCode: resolvedPabrikCode
+        }),
         ...(body.status !== undefined && { status: body.status })
       }
     })
