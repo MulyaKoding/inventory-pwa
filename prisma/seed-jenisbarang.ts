@@ -149,7 +149,8 @@ async function main() {
         update: { jenisBarang: item.JenisBarang },
         create: {
           kdBarang: item.Kd_Barang,
-          jenisBarang: item.JenisBarang
+          jenisBarang: item.JenisBarang,
+          deleteAt: null
         }
       })
       inserted++
