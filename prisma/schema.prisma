@@ -59,17 +59,17 @@ model Store {
   storeEmail       String?
   storeAddress     String
   storeCity        String
-  storeDistrict    String?          
-  storeVillage     String?          
+  storeDistrict    String?
+  storeVillage     String?
   storeProvince    String
   storePostalCode  String?
-  storeProvinsiKd  String?          
-  storeKotaKd      String?          
-  storeKecamatanKd String?          
-  storeKelurahanKd String?        
-  storeLat         String?        
-  storeLng         String?       
-  storeImageUrl    String?      
+  storeProvinsiKd  String?
+  storeKotaKd      String?
+  storeKecamatanKd String?
+  storeKelurahanKd String?
+  storeLat         String?
+  storeLng         String?
+  storeImageUrl    String?
   status           String   @default("active")
   owner            Owner?
   createdAt        DateTime @default(now())
@@ -79,14 +79,14 @@ model Store {
 }
 
 type Owner {
-  nik         String
-  fullName    String
-  birthDate   String
-  address     String
-  gender      String
-  ktpImageUrl String?
-  signatureUrl String? 
-  inputMethod String  @default("manual")
+  nik          String
+  fullName     String
+  birthDate    String
+  address      String
+  gender       String
+  ktpImageUrl  String?
+  signatureUrl String?
+  inputMethod  String  @default("manual")
 }
 
 // ── Wilayah ──────────────────────────────────────────────
@@ -100,10 +100,10 @@ model MsProvinsi {
 }
 
 model MsKota {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  kdKota       String  @unique @map("Kd_Kota")
-  namaKota     String  @map("NamaKota")
-  kdProvinsi   String  @map("Kd_Provinsi")
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  kdKota     String @unique @map("Kd_Kota")
+  namaKota   String @map("NamaKota")
+  kdProvinsi String @map("Kd_Provinsi")
 
   @@map("ms_kota")
 }
@@ -128,29 +128,29 @@ model MsKelurahan {
 }
 
 model Mitra {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  mitraId          String    @unique
-  picName          String
-  picEmail         String    @unique
-  picPhone         String
-  picPosition      String
-  picKtp           String?
-  companyName      String
-  companyType      String
-  companyNpwp      String?
-  companyAddress   String
-  companyCity      String
-  companyProvince  String?
-  companyPostal    String?
-  companyWebsite   String?
-  employeeCount    String?
-  plan             String    @default("growth")
-  planPrice        Int       @default(0)
-  paymentId        String?
-  status           String    @default("pending")
-  activatedAt      DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  mitraId         String    @unique
+  picName         String
+  picEmail        String    @unique
+  picPhone        String
+  picPosition     String
+  picKtp          String?
+  companyName     String
+  companyType     String
+  companyNpwp     String?
+  companyAddress  String
+  companyCity     String
+  companyProvince String?
+  companyPostal   String?
+  companyWebsite  String?
+  employeeCount   String?
+  plan            String    @default("growth")
+  planPrice       Int       @default(0)
+  paymentId       String?
+  status          String    @default("pending")
+  activatedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@map("mitras")
 }
@@ -177,7 +177,7 @@ model MitraPayment {
 
 model MsSatuanBarang {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
-  kdSatuanBarang  String    @unique @map("Kd_SatuanBarang")   // ← ubah
+  kdSatuanBarang  String    @unique @map("Kd_SatuanBarang")
   deskripsiSatuan String    @map("DeskripsiSatuan")
   createdAt       DateTime  @default(now()) @map("Created_at")
   modifiedAt      DateTime  @updatedAt @map("Modified_at")
@@ -186,28 +186,38 @@ model MsSatuanBarang {
   @@map("ms_satuan_barang")
 }
 
-// ── Master Supplier ──────────────────────────────────────
+// ── Master Jenis Barang ───────────────────────────────────
+model MsJenisBarang {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  kdBarang    String    @unique @map("Kd_Barang")
+  jenisBarang String    @map("JenisBarang")
+  createdAt   DateTime  @default(now()) @map("Created_at")
+  modifiedAt  DateTime  @updatedAt @map("Modified_at")
+  deleteAt    DateTime? @map("Delete_at")
+
+  barangs     MsBarang[]
+
+  @@map("ms_jenisbarang")
+}
+
+// ── Master Supplier ───────────────────────────────────────
 model MsSupplierBarang {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  supplierCode String   @unique @map("Supplier_Code")   
-  supplierName String   @map("Supplier_Name")
-  phone        String?  @map("Phone")
-  email        String?  @map("Email")
-  address      String?  @map("Address")
-  city         String?  @map("City")
-  province     String?  @map("Province")
-  picName      String?  @map("Pic_Name")               
-  status       String   @default("active") @map("Status")
-
-  // Kepemilikan
-  storeId      String   @map("Store_Id")               
-  userId       String   @map("User_Id") @db.ObjectId   
-
-  createdAt    DateTime @default(now()) @map("Created_at")
-  modifiedAt   DateTime @updatedAt @map("Modified_at")
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  supplierCode String    @unique @map("Supplier_Code")
+  supplierName String    @map("Supplier_Name")
+  phone        String?   @map("Phone")
+  email        String?   @map("Email")
+  address      String?   @map("Address")
+  city         String?   @map("City")
+  province     String?   @map("Province")
+  picName      String?   @map("Pic_Name")
+  status       String    @default("active") @map("Status")
+  storeId      String    @map("Store_Id")
+  userId       String    @map("User_Id") @db.ObjectId
+  createdAt    DateTime  @default(now()) @map("Created_at")
+  modifiedAt   DateTime  @updatedAt @map("Modified_at")
   deleteAt     DateTime? @map("Delete_at")
 
-  // Relasi ke barang
   barangs      MsBarang[]
 
   @@index([storeId])
@@ -215,46 +225,20 @@ model MsSupplierBarang {
   @@map("ms_supplier_barang")
 }
 
-// ── Master Pabrik ────────────────────────────────────────
+// ── Master Pabrik ─────────────────────────────────────────
 model MsPabrikBarang {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  pabrikCode  String   @unique @map("Pabrik_Code")     
-  pabrikName  String   @map("Pabrik_Name")
-  phone       String?  @map("Phone")
-  email       String?  @map("Email")
-  address     String?  @map("Address")
-  city        String?  @map("City")
-  province    String?  @map("Province")
-  country     String?  @map("Country") @default("Indonesia")
-  status      String   @default("active") @map("Status")
-
-  // Kepemilikan
-  storeId     String   @map("Store_Id")
-  userId      String   @map("User_Id") @db.ObjectId
-
-  createdAt   DateTime  @default(now()) @map("Created_at")
-  modifiedAt  DateTime  @updatedAt @map("Modified_at")
-  deleteAt    DateTime? @map("Delete_at")
-
-  // Relasi ke barang
-  barangs     MsBarang[]
-
-  @@index([storeId])
-  @@index([userId])
-  @@map("ms_pabrik_barang")
-}
-
-// ── Master Merek ─────────────────────────────────────────
-model MsMerekBarang {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  merekCode  String   @unique @map("Merek_Code")
-  merekName  String   @map("Merek_Name")
-  pabrikCode String?  @map("Pabrik_Code")   // ← tambah ini
-  status     String   @default("active") @map("Status")
-
-  storeId    String   @map("Store_Id")
-  userId     String   @map("User_Id") @db.ObjectId
-
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  pabrikCode String    @unique @map("Pabrik_Code")
+  pabrikName String    @map("Pabrik_Name")
+  phone      String?   @map("Phone")
+  email      String?   @map("Email")
+  address    String?   @map("Address")
+  city       String?   @map("City")
+  province   String?   @map("Province")
+  country    String?   @default("Indonesia") @map("Country")
+  status     String    @default("active") @map("Status")
+  storeId    String    @map("Store_Id")
+  userId     String    @map("User_Id") @db.ObjectId
   createdAt  DateTime  @default(now()) @map("Created_at")
   modifiedAt DateTime  @updatedAt @map("Modified_at")
   deleteAt   DateTime? @map("Delete_at")
@@ -262,37 +246,60 @@ model MsMerekBarang {
   barangs    MsBarang[]
 
   @@index([storeId])
-  @@index([pabrikCode])   // ← tambah index
+  @@index([userId])
+  @@map("ms_pabrik_barang")
+}
+
+// ── Master Merek ──────────────────────────────────────────
+model MsMerekBarang {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  merekCode  String    @unique @map("Merek_Code")
+  merekName  String    @map("Merek_Name")
+  pabrikCode String?   @map("Pabrik_Code")
+  status     String    @default("active") @map("Status")
+  storeId    String    @map("Store_Id")
+  userId     String    @map("User_Id") @db.ObjectId
+  createdAt  DateTime  @default(now()) @map("Created_at")
+  modifiedAt DateTime  @updatedAt @map("Modified_at")
+  deleteAt   DateTime? @map("Delete_at")
+
+  barangs    MsBarang[]
+
+  @@index([storeId])
+  @@index([pabrikCode])
   @@index([userId])
   @@map("ms_merek_barang")
 }
 
 // ── Master Barang ─────────────────────────────────────────
 model MsBarang {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  barangCode     String   @unique @map("Barang_Code")
-  barangName     String   @map("Barang_Name")
-  barangCategory String?  @map("Barang_Category")
-  supplierCode   String?  @map("Supplier_Code")
-  pabrikCode     String?  @map("Pabrik_Code")
-  merekCode      String?  @map("Merek_Code")
-  kdSatuanBarang String?  @map("Kd_SatuanBarang")
-  storeId        String   @map("Store_Id")
-  userId         String   @map("User_Id") @db.ObjectId
-  stock          Int      @default(0) @map("Stock")
-  price          Int      @default(0) @map("Price")
-  hargaBeli      Int      @default(0) @map("Harga_Beli")  // ← tambah ini
-  barcode        String?  @map("Barcode")                  // ← ini juga belum ada!
-  status         String   @default("active") @map("Status")
-  createdAt      DateTime @default(now()) @map("Created_at")
-  modifiedAt     DateTime @updatedAt @map("Modified_at")
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  barangCode     String    @unique @map("Barang_Code")
+  barangName     String    @map("Barang_Name")
+  barangCategory String?   @map("Barang_Category")
+  kdJenisBarang  String?   @map("Kd_Barang")
+  supplierCode   String?   @map("Supplier_Code")
+  pabrikCode     String?   @map("Pabrik_Code")
+  merekCode      String?   @map("Merek_Code")
+  kdSatuanBarang String?   @map("Kd_SatuanBarang")
+  storeId        String    @map("Store_Id")
+  userId         String    @map("User_Id") @db.ObjectId
+  stock          Int       @default(0) @map("Stock")
+  price          Int       @default(0) @map("Price")
+  hargaBeli      Int       @default(0) @map("Harga_Beli")
+  barcode        String?   @map("Barcode")
+  status         String    @default("active") @map("Status")
+  createdAt      DateTime  @default(now()) @map("Created_at")
+  modifiedAt     DateTime  @updatedAt @map("Modified_at")
   deleteAt       DateTime? @map("Delete_at")
 
-  supplier  MsSupplierBarang? @relation(fields: [supplierCode], references: [supplierCode])
-  pabrik    MsPabrikBarang?   @relation(fields: [pabrikCode], references: [pabrikCode])
-  merek     MsMerekBarang?    @relation(fields: [merekCode], references: [merekCode])
+  jenisBarang MsJenisBarang?    @relation(fields: [kdJenisBarang], references: [kdBarang])
+  supplier    MsSupplierBarang? @relation(fields: [supplierCode], references: [supplierCode])
+  pabrik      MsPabrikBarang?   @relation(fields: [pabrikCode], references: [pabrikCode])
+  merek       MsMerekBarang?    @relation(fields: [merekCode], references: [merekCode])
 
   @@index([storeId])
+  @@index([kdJenisBarang])
   @@index([supplierCode])
   @@index([pabrikCode])
   @@index([merekCode])
