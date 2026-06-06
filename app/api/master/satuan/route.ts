@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUserFromRequest } from "@/app/lib/auth"
+import { cookies } from "next/headers"
 
 function mapSatuan(s: {
   id: string
@@ -18,10 +19,6 @@ function mapSatuan(s: {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = getUserFromRequest(req)
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
     const raw = await prisma.msSatuanBarang.findMany({
       where: { deleteAt: null },
       orderBy: { deskripsiSatuan: "asc" },
