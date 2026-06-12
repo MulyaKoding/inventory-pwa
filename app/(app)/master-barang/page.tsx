@@ -15,8 +15,8 @@ import {
   useMediaQuery
 } from "@mui/material"
 import Header from "../components/header/page"
-import Sidebar from "../components/sidebar"
 import { useTheme } from "../hooks/useTheme"
+import Sidebar from "../components/sidebar"
 
 const DRAWER_WIDTH = 220
 
@@ -27,6 +27,7 @@ interface Satuan {
   nama: string
   keterangan?: string
 }
+
 interface Pabrik {
   id: string
   kode: string
@@ -44,6 +45,7 @@ interface Merek {
   pabrikNama?: string
   storeId?: string
 }
+
 interface Supplier {
   id: string
   kode: string
@@ -55,6 +57,7 @@ interface Supplier {
   alamat?: string
   storeId?: string
 }
+
 interface Barang {
   id: string
   kode: string
