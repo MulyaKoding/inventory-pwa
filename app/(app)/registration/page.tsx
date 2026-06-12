@@ -14,7 +14,7 @@ import {
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
 import { useTheme } from "../hooks/useTheme"
-import CanvasMap from "./CanvasMap"
+import MapLibreMap from "./MapLibreMap"
 import LocationSelector, { LocationValue } from "./LocationSelector"
 
 const DRAWER_WIDTH = 220
@@ -3000,7 +3000,7 @@ export default function RegistrationPage() {
                 position: "relative"
               }}
             >
-              <CanvasMap
+              <MapLibreMap
                 center={mapCenter}
                 marker={mapMarker}
                 markerLabel={mapLabel}
