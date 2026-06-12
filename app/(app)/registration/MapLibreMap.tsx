@@ -186,7 +186,7 @@ export default function MapLibreMap({
         container: el,
         style: isDarkRef.current
           ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-          : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+          : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
         center: [center[1], center[0]], // MapLibre: [lng, lat]
         zoom: 15,
         attributionControl: false
