@@ -189,7 +189,7 @@ export default function MapLibreMap({
           : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
         center: [center[1], center[0]], // MapLibre: [lng, lat]
         zoom: 15,
-        attributionControl: { compact: true }
+        attributionControl: false
       })
 
       // Remove default nav controls (we add our own)

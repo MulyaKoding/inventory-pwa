@@ -3017,6 +3017,7 @@ export default function RegistrationPage() {
                 sx={{
                   mx: 3,
                   mt: 1.5,
+                  mb: 2,
                   px: 2,
                   py: 1,
                   bgcolor: p.bg,
