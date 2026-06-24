@@ -305,3 +305,15 @@ model MsBarang {
   @@index([merekCode])
   @@map("ms_barang")
 }
+
+// ── Master Bank ─────────────────────────────────────────
+model MsBank {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  kodeBank  String    @unique @map("KodeBank")
+  namaBank  String    @map("NamaBank")
+  createdAt DateTime  @default(now()) @map("Created_at")
+  modifiedAt DateTime  @updatedAt @map("Modified_at")
+  deleteAt  DateTime? @map("Delete_at")
+
+  @@map("ms_bank")
+}
