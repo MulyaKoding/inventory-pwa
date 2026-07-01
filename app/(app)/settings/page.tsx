@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   Box,
@@ -481,6 +481,257 @@ function ImageModal({
               </button>
             </Box>
           )}
+        </Box>
+      </Box>
+    </Modal>
+  )
+}
+
+// ─── ImagePreviewModal ────────────────────────────────────
+function ImagePreviewModal({
+  open,
+  onClose,
+  imageUrl,
+  title,
+  isDark,
+  p
+}: {
+  open: boolean
+  onClose: () => void
+  imageUrl: string | null
+  title: string
+  isDark: boolean
+  p: {
+    [key: string]: string
+    border: string
+    textPrimary: string
+    textMuted: string
+    bgPaper: string
+    bg: string
+    menuShadow: string
+  }
+}) {
+  const [zoom, setZoom] = useState(1)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStart = useRef({ x: 0, y: 0 })
+  const posStart = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (open) {
+      setZoom(1)
+      setPosition({ x: 0, y: 0 })
+    }
+  }, [open])
+
+  const clampZoom = (z: number) => Math.min(Math.max(z, 1), 3)
+
+  const applyZoom = (next: number) => {
+    const clamped = clampZoom(next)
+    setZoom(clamped)
+    if (clamped === 1) setPosition({ x: 0, y: 0 })
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoom <= 1) return
+    e.preventDefault()
+    setIsDragging(true)
+    dragStart.current = { x: e.clientX, y: e.clientY }
+    posStart.current = { ...position }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || zoom <= 1) return
+    const dx = e.clientX - dragStart.current.x
+    const dy = e.clientY - dragStart.current.y
+    setPosition({
+      x: posStart.current.x + dx,
+      y: posStart.current.y + dy
+    })
+  }
+
+  const handleMouseUp = () => setIsDragging(false)
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY < 0 ? 0.15 : -0.15
+    applyZoom(zoom + delta)
+  }
+
+  const handleZoomIn = () => applyZoom(zoom + 0.25)
+  const handleZoomOut = () => applyZoom(zoom - 0.25)
+
+  if (!imageUrl) return null
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "35%",
+          left: "50%",
+          transform: "translate(-50%,-50%)",
+          width: { xs: "96vw", sm: "90vw", md: "80vw", lg: 1000 },
+          height: 520,
+          maxWidth: 1200,
+          maxHeight: 520,
+          display: "flex",
+          flexDirection: "column",
+          bgcolor: p.bgPaper,
+          border: `1px solid ${p.border}`,
+          borderRadius: "10px",
+          boxShadow: p.menuShadow,
+          outline: "none",
+          overflow: "hidden"
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2,
+            borderBottom: `1px solid ${p.border}`,
+            bgcolor: p.bg,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 700,
+              color: p.textPrimary,
+              fontFamily: "'Nunito', sans-serif"
+            }}
+          >
+            {title}
+          </p>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: p.textMuted,
+              fontSize: 18,
+              padding: 4
+            }}
+          >
+            ✕
+          </button>
+        </Box>
+
+        {/* Image area */}
+        <Box
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+          sx={{
+            flex: 1,
+            position: "relative",
+            bgcolor: isDark ? "#0a0a0a" : "#f1f5f9",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            minHeight: 0,
+            p: 2,
+            cursor: zoom > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+            userSelect: "none"
+          }}
+        >
+          <Image
+            src={imageUrl}
+            alt={title}
+            width={1200}
+            height={1200}
+            draggable={false}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+              transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+              transition: isDragging ? "none" : "transform 0.15s",
+              pointerEvents: "none"
+            }}
+          />
+
+          {/* Zoom controls */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 16,
+              right: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1
+            }}
+          >
+            <button
+              onClick={handleZoomIn}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                border: `1px solid ${p.border}`,
+                background: p.bgPaper,
+                color: p.textPrimary,
+                cursor: "pointer",
+                fontSize: 18,
+                fontWeight: 700
+              }}
+            >
+              +
+            </button>
+            <button
+              onClick={handleZoomOut}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                border: `1px solid ${p.border}`,
+                background: p.bgPaper,
+                color: p.textPrimary,
+                cursor: "pointer",
+                fontSize: 18,
+                fontWeight: 700
+              }}
+            >
+              −
+            </button>
+          </Box>
+
+          {/* Zoom indicator */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 16,
+              left: 16,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: "6px",
+              bgcolor: p.bgPaper,
+              border: `1px solid ${p.border}`
+            }}
+          >
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: p.textMuted,
+                fontFamily: "'Nunito', sans-serif"
+              }}
+            >
+              {Math.round(zoom * 100)}%
+            </span>
+          </Box>
         </Box>
       </Box>
     </Modal>
@@ -1715,6 +1966,10 @@ function EditStoreModal({
 export default function SettingsPage() {
   const router = useRouter()
   const { isDark, toggleTheme } = useTheme()
+  const [previewImage, setPreviewImage] = useState<{
+    url: string
+    title: string
+  } | null>(null)
   const theme = useMemo(
     () =>
       createTheme({
@@ -2303,6 +2558,13 @@ export default function SettingsPage() {
                                   }}
                                 >
                                   <Box
+                                    onClick={() =>
+                                      store.storeImageUrl &&
+                                      setPreviewImage({
+                                        url: store.storeImageUrl,
+                                        title: store.storeName
+                                      })
+                                    }
                                     sx={{
                                       width: 32,
                                       height: 32,
@@ -2313,7 +2575,10 @@ export default function SettingsPage() {
                                       alignItems: "center",
                                       justifyContent: "center",
                                       fontSize: 14,
-                                      flexShrink: 0
+                                      flexShrink: 0,
+                                      cursor: store.storeImageUrl
+                                        ? "pointer"
+                                        : "default"
                                     }}
                                   >
                                     {store.storeImageUrl ? (
@@ -2538,6 +2803,16 @@ export default function SettingsPage() {
           setEditStore(null)
         }}
         onSaved={handleSaved}
+        isDark={isDark}
+        p={p}
+      />
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        open={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        imageUrl={previewImage?.url ?? null}
+        title={previewImage?.title ?? "Preview"}
         isDark={isDark}
         p={p}
       />

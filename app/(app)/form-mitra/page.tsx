@@ -1001,7 +1001,6 @@ export default function FormMitraPage() {
               </div>
             )}
 
-            {error && <div className="fm-error">⚠ {error}</div>}
             {success && step !== "otp" && (
               <div className="fm-success">✓ {success}</div>
             )}

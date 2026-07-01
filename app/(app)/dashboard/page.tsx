@@ -312,7 +312,7 @@ export default function DashboardPage() {
             secondary: isDark ? "#888" : "#64748b"
           }
         },
-        typography: { fontFamily: "'DM Mono', 'Courier New', monospace" },
+        typography: { fontFamily: "'Nunito', sans-serif" },
         shape: { borderRadius: 2 },
         components: {
           MuiButton: {
@@ -354,7 +354,7 @@ export default function DashboardPage() {
           display: "flex",
           minHeight: "100vh",
           bgcolor: p.bg,
-          fontFamily: "'DM Mono', monospace",
+          fontFamily: "'Nunito', sans-serif",
           transition: `background-color ${T}`
         }}
       >
