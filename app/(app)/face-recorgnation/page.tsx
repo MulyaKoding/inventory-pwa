@@ -12,7 +12,14 @@ type EmployeeData = {
   faceDescriptor: number[]
 }
 
-const MATCH_THRESHOLD = 0.5 // makin kecil makin ketat
+const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
+  inputSize: 512,
+  scoreThreshold: 0.5
+})
+
+const MATCH_THRESHOLD = 0.45 // makin kecil makin ketat
+const MIN_DETECTION_SCORE = 0.75 // minimal kualitas deteksi wajah
+const CONSECUTIVE_MATCHES_NEEDED = 3 // harus cocok 3x berturut sebelum submit
 
 export default function FaceAttendancePage() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -20,6 +27,10 @@ export default function FaceAttendancePage() {
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastMatchRef = useRef<{ id: string; time: number } | null>(null)
+  const consecutiveRef = useRef<{ label: string; count: number }>({
+    label: "",
+    count: 0
+  })
 
   const [modelsReady, setModelsReady] = useState(false)
   const [cameraOn, setCameraOn] = useState(false)
@@ -80,6 +91,7 @@ export default function FaceAttendancePage() {
       if (videoRef.current) videoRef.current.srcObject = stream
       setCameraOn(true)
       setResult(null)
+      consecutiveRef.current = { label: "", count: 0 }
     } catch (err) {
       console.error(err)
       setStatus("Tidak bisa mengakses kamera")
@@ -91,6 +103,7 @@ export default function FaceAttendancePage() {
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     setCameraOn(false)
+    consecutiveRef.current = { label: "", count: 0 }
 
     const canvas = canvasRef.current
     const ctx = canvas?.getContext("2d")
@@ -125,10 +138,7 @@ export default function FaceAttendancePage() {
       if (!videoRef.current || !canvasRef.current) return
 
       const detection = await faceapi
-        .detectSingleFace(
-          videoRef.current,
-          new faceapi.TinyFaceDetectorOptions()
-        )
+        .detectSingleFace(videoRef.current, DETECTOR_OPTIONS)
         .withFaceLandmarks()
         .withFaceDescriptor()
 
@@ -141,6 +151,14 @@ export default function FaceAttendancePage() {
 
       if (!detection) {
         setStatus("Posisikan wajah di tengah kamera")
+        consecutiveRef.current = { label: "", count: 0 }
+        return
+      }
+
+      // Tolak deteksi berkualitas rendah (blur, miring ekstrem, dsb)
+      if (detection.detection.score < MIN_DETECTION_SCORE) {
+        setStatus("Perbaiki posisi wajah / pencahayaan")
+        consecutiveRef.current = { label: "", count: 0 }
         return
       }
 
@@ -151,19 +169,34 @@ export default function FaceAttendancePage() {
 
       if (match.label === "unknown") {
         setStatus("Wajah tidak dikenali")
+        consecutiveRef.current = { label: "", count: 0 }
         return
       }
 
       const score = 1 - match.distance
-      setStatus(`Wajah dikenali (${(score * 100).toFixed(0)}% cocok)`)
 
+      // Hitung berapa kali berturut-turut wajah yang sama terdeteksi
+      if (consecutiveRef.current.label === match.label) {
+        consecutiveRef.current.count += 1
+      } else {
+        consecutiveRef.current = { label: match.label, count: 1 }
+      }
+
+      setStatus(
+        `Wajah dikenali (${(score * 100).toFixed(0)}% cocok) — memverifikasi ${consecutiveRef.current.count}/${CONSECUTIVE_MATCHES_NEEDED}`
+      )
+
+      if (consecutiveRef.current.count < CONSECUTIVE_MATCHES_NEEDED) return
+
+      // Cegah submit berulang untuk orang yang sama dalam 5 detik
       const now = Date.now()
       const last = lastMatchRef.current
       if (last && last.id === match.label && now - last.time < 5000) return
 
       lastMatchRef.current = { id: match.label, time: now }
+      consecutiveRef.current = { label: "", count: 0 }
       submitAttendance(match.label, score)
-    }, 500)
+    }, 400)
   }
 
   return (
