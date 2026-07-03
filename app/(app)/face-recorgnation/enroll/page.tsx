@@ -9,7 +9,7 @@ const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
   scoreThreshold: 0.2
 })
 
-const MIN_DETECTION_SCORE = 0.6
+const MIN_DETECTION_SCORE = 0.5
 
 const POSES = [
   { label: "Menghadap lurus ke kamera", instruction: "Lihat lurus ke kamera" },
