@@ -27,6 +27,17 @@ export default function EnrollFacePage() {
   const [status, setStatus] = useState("Memuat model...")
   const [saving, setSaving] = useState(false)
   const [liveScore, setLiveScore] = useState<number | null>(null)
+  const [toast, setToast] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(null)
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = (type: "success" | "error", message: string) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+    setToast({ type, message })
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 4000)
+  }
 
   const [form, setForm] = useState({
     name: "",
@@ -178,6 +189,10 @@ export default function EnrollFacePage() {
       setStatus(
         "Lengkapi nama dan selesaikan semua langkah wajah terlebih dahulu"
       )
+      showToast(
+        "error",
+        "Lengkapi nama dan selesaikan semua langkah wajah terlebih dahulu"
+      )
       return
     }
     setSaving(true)
@@ -216,10 +231,14 @@ export default function EnrollFacePage() {
       if (!res.ok) throw new Error(json.error)
 
       setStatus(`Karyawan "${form.name}" berhasil didaftarkan`)
+      showToast("success", `Karyawan "${form.name}" berhasil didaftarkan!`)
       resetCapture()
       setForm({ name: "", employeeCode: "", position: "", email: "" })
+      stopCamera()
     } catch (err: any) {
-      setStatus(err.message || "Gagal menyimpan")
+      const msg = err.message || "Gagal menyimpan data karyawan"
+      setStatus(msg)
+      showToast("error", msg)
     } finally {
       setSaving(false)
     }
@@ -261,16 +280,60 @@ export default function EnrollFacePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center px-4 py-6 sm:py-10">
-      <div className="w-full max-w-md text-center mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Daftar Wajah Karyawan
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          {status}
-        </p>
-      </div>
+      {/* Toast notifikasi */}
+      {toast && (
+        <div
+          className={`fixed top-4 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm sm:w-auto sm:max-w-md rounded-xl px-4 py-3 shadow-lg flex items-start gap-3 animate-[toast-in_0.25s_ease-out] ${
+            toast.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-5 w-5 flex-shrink-0 mt-0.5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-5 w-5 flex-shrink-0 mt-0.5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.938.938 0 100-1.875.938.938 0 000 1.875z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+          <p className="text-sm font-medium flex-1">{toast.message}</p>
+          <button
+            onClick={() => setToast(null)}
+            className="flex-shrink-0 text-white/80 hover:text-white"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-4 w-4"
+            >
+              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L10.94 12l-5.72 5.72a.75.75 0 101.06 1.06L12 13.06l5.72 5.72a.75.75 0 101.06-1.06L13.06 12l5.72-5.72a.75.75 0 00-1.06-1.06L12 10.94 6.28 5.22z" />
+            </svg>
+          </button>
+        </div>
+      )}
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md text-center mb-6">
         <div className="relative w-full flex flex-col items-center py-4">
           {/* Wrapper oval berisi video + ring progress mengelilinginya */}
           <div
