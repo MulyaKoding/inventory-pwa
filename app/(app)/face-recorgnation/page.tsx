@@ -13,12 +13,12 @@ type EmployeeData = {
 }
 
 const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
-  inputSize: 416,
+  inputSize: 410,
   scoreThreshold: 0.2
 })
 
 const MATCH_THRESHOLD = 0.45 // makin kecil makin ketat
-const MIN_DETECTION_SCORE = 0.5 // minimal kualitas deteksi wajah
+const MIN_DETECTION_SCORE = 0.45 // minimal kualitas deteksi wajah
 const CONSECUTIVE_MATCHES_NEEDED = 3 // harus cocok 3x berturut sebelum submit
 
 export default function FaceAttendancePage() {

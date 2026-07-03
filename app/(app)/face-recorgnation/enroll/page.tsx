@@ -5,11 +5,11 @@ import * as faceapi from "face-api.js"
 import { loadFaceApiModels } from "../faceApiLoader"
 
 const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
-  inputSize: 416,
+  inputSize: 410,
   scoreThreshold: 0.2
 })
 
-const MIN_DETECTION_SCORE = 0.5
+const MIN_DETECTION_SCORE = 0.45
 
 const POSES = [
   { label: "Menghadap lurus ke kamera", instruction: "Lihat lurus ke kamera" },
