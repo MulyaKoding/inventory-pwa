@@ -12,6 +12,12 @@ const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
 const MIN_DETECTION_SCORE = 0.35
 const TOTAL_STEPS = 3
 
+const STEP_INSTRUCTIONS = [
+  "Lihat lurus ke kamera",
+  "Tolehkan wajah sedikit ke kiri",
+  "Tolehkan wajah sedikit ke kanan"
+]
+
 export default function EnrollFacePage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const captureCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -70,7 +76,7 @@ export default function EnrollFacePage() {
     if (videoRef.current) videoRef.current.srcObject = stream
     setCameraOn(true)
     setDescriptors([])
-    setStatus("Posisikan wajah di dalam bingkai")
+    setStatus(`Langkah 1/${TOTAL_STEPS}: ${STEP_INSTRUCTIONS[0]}`)
     startLiveDetection()
   }
 
@@ -168,7 +174,7 @@ export default function EnrollFacePage() {
 
     if (newDescriptors.length < TOTAL_STEPS) {
       setStatus(
-        `Bagus! ${newDescriptors.length}/${TOTAL_STEPS} berhasil. Tetap di posisi, ambil lagi.`
+        `Bagus! Langkah ${newDescriptors.length + 1}/${TOTAL_STEPS}: ${STEP_INSTRUCTIONS[newDescriptors.length]}`
       )
     } else {
       setStatus(`Semua ${TOTAL_STEPS} langkah selesai. Lengkapi data & simpan.`)
@@ -181,7 +187,7 @@ export default function EnrollFacePage() {
     setDescriptors([])
     setPhotoPreview(null)
     setPhotoBlob(null)
-    if (cameraOn) setStatus("Posisikan wajah di dalam bingkai")
+    if (cameraOn) setStatus(`Langkah 1/${TOTAL_STEPS}: ${STEP_INSTRUCTIONS[0]}`)
   }
 
   const handleSave = async () => {
@@ -391,6 +397,14 @@ export default function EnrollFacePage() {
                 </div>
               )}
             </div>
+
+            {cameraOn && !allStepsDone && (
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {STEP_INSTRUCTIONS[descriptors.length]}
+                </p>
+              </div>
+            )}
 
             {cameraOn && liveScore !== null && (
               <div
