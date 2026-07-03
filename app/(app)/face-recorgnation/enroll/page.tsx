@@ -5,7 +5,7 @@ import * as faceapi from "face-api.js"
 import { loadFaceApiModels } from "../faceApiLoader"
 
 const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
-  inputSize: 410,
+  inputSize: 416,
   scoreThreshold: 0.2
 })
 
