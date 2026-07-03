@@ -11,7 +11,7 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
-  title: "Inventory APP",
+  title: "Inventory PWA",
   description:
     "Inventory management application built with Next.js and TypeScript"
 }
