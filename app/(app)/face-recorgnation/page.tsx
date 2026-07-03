@@ -18,12 +18,11 @@ const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
 })
 
 const MATCH_THRESHOLD = 0.45 // makin kecil makin ketat
-const MIN_DETECTION_SCORE = 0.45 // minimal kualitas deteksi wajah
+const MIN_DETECTION_SCORE = 0.35 // minimal kualitas deteksi wajah
 const CONSECUTIVE_MATCHES_NEEDED = 3 // harus cocok 3x berturut sebelum submit
 
 export default function FaceAttendancePage() {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastMatchRef = useRef<{ id: string; time: number } | null>(null)
@@ -36,6 +35,8 @@ export default function FaceAttendancePage() {
   const [cameraOn, setCameraOn] = useState(false)
   const [status, setStatus] = useState("Memuat model...")
   const [matcher, setMatcher] = useState<faceapi.FaceMatcher | null>(null)
+  const [isReady, setIsReady] = useState(false) // wajah terdeteksi & confidence cukup
+  const [progressCount, setProgressCount] = useState(0) // untuk cincin verifikasi 3x
   const [result, setResult] = useState<{
     name: string
     type: "clock_in" | "clock_out" | "already_done"
@@ -91,6 +92,7 @@ export default function FaceAttendancePage() {
       if (videoRef.current) videoRef.current.srcObject = stream
       setCameraOn(true)
       setResult(null)
+      setProgressCount(0)
       consecutiveRef.current = { label: "", count: 0 }
     } catch (err) {
       console.error(err)
@@ -103,11 +105,9 @@ export default function FaceAttendancePage() {
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     setCameraOn(false)
+    setIsReady(false)
+    setProgressCount(0)
     consecutiveRef.current = { label: "", count: 0 }
-
-    const canvas = canvasRef.current
-    const ctx = canvas?.getContext("2d")
-    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
 
   const submitAttendance = async (employeeId: string, score: number) => {
@@ -135,22 +135,17 @@ export default function FaceAttendancePage() {
     if (!modelsReady || !matcher) return
 
     intervalRef.current = setInterval(async () => {
-      if (!videoRef.current || !canvasRef.current) return
+      if (!videoRef.current) return
 
       const detection = await faceapi
         .detectSingleFace(videoRef.current, DETECTOR_OPTIONS)
         .withFaceLandmarks()
         .withFaceDescriptor()
 
-      const canvas = canvasRef.current
-      const video = videoRef.current
-      const displaySize = { width: video.videoWidth, height: video.videoHeight }
-      faceapi.matchDimensions(canvas, displaySize)
-      const ctx = canvas.getContext("2d")
-      ctx?.clearRect(0, 0, canvas.width, canvas.height)
-
       if (!detection) {
-        setStatus("Posisikan wajah di tengah kamera")
+        setStatus("Posisikan wajah di dalam bingkai")
+        setIsReady(false)
+        setProgressCount(0)
         consecutiveRef.current = { label: "", count: 0 }
         return
       }
@@ -158,17 +153,19 @@ export default function FaceAttendancePage() {
       // Tolak deteksi berkualitas rendah (blur, miring ekstrem, dsb)
       if (detection.detection.score < MIN_DETECTION_SCORE) {
         setStatus("Perbaiki posisi wajah / pencahayaan")
+        setIsReady(false)
+        setProgressCount(0)
         consecutiveRef.current = { label: "", count: 0 }
         return
       }
 
-      const resized = faceapi.resizeResults(detection, displaySize)
-      faceapi.draw.drawDetections(canvas, resized)
+      setIsReady(true)
 
       const match = matcher.findBestMatch(detection.descriptor)
 
       if (match.label === "unknown") {
         setStatus("Wajah tidak dikenali")
+        setProgressCount(0)
         consecutiveRef.current = { label: "", count: 0 }
         return
       }
@@ -182,6 +179,7 @@ export default function FaceAttendancePage() {
         consecutiveRef.current = { label: match.label, count: 1 }
       }
 
+      setProgressCount(consecutiveRef.current.count)
       setStatus(
         `Wajah dikenali (${(score * 100).toFixed(0)}% cocok) — memverifikasi ${consecutiveRef.current.count}/${CONSECUTIVE_MATCHES_NEEDED}`
       )
@@ -195,8 +193,39 @@ export default function FaceAttendancePage() {
 
       lastMatchRef.current = { id: match.label, time: now }
       consecutiveRef.current = { label: "", count: 0 }
+      setProgressCount(0)
       submitAttendance(match.label, score)
     }, 400)
+  }
+
+  // Segmen ring verifikasi (3 bagian, terisi sesuai progressCount)
+  const TOTAL_STEPS = CONSECUTIVE_MATCHES_NEEDED
+  const gap = 6
+  const segmentAngle = 360 / TOTAL_STEPS - gap
+  const segments = Array.from({ length: TOTAL_STEPS }, (_, i) => {
+    const startAngle = i * (360 / TOTAL_STEPS) - 90 + gap / 2
+    return { index: i, startAngle, sweepAngle: segmentAngle }
+  })
+
+  const describeArc = (
+    cx: number,
+    cy: number,
+    r: number,
+    startDeg: number,
+    sweepDeg: number,
+    ryFactor = 1,
+    rxFactor = 1
+  ) => {
+    const rx = r * rxFactor
+    const ry = r * ryFactor
+    const startRad = (startDeg * Math.PI) / 180
+    const endRad = ((startDeg + sweepDeg) * Math.PI) / 180
+    const x1 = cx + rx * Math.cos(startRad)
+    const y1 = cy + ry * Math.sin(startRad)
+    const x2 = cx + rx * Math.cos(endRad)
+    const y2 = cy + ry * Math.sin(endRad)
+    const largeArc = sweepDeg > 180 ? 1 : 0
+    return `M ${x1} ${y1} A ${rx} ${ry} 0 ${largeArc} 1 ${x2} ${y2}`
   }
 
   return (
@@ -212,7 +241,7 @@ export default function FaceAttendancePage() {
 
       {result && (
         <div
-          className={`w-full max-w-2xl mb-4 rounded-xl px-4 py-3 text-sm font-medium ${
+          className={`w-full max-w-md mb-4 rounded-xl px-4 py-3 text-sm font-medium ${
             result.type === "clock_in"
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
               : result.type === "clock_out"
@@ -228,25 +257,78 @@ export default function FaceAttendancePage() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl">
-        <div className="relative aspect-[4/3] sm:aspect-video w-full overflow-hidden rounded-2xl bg-slate-900 shadow-lg ring-1 ring-slate-200 dark:ring-slate-800">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            onPlay={handleVideoPlay}
-            className={`h-full w-full object-cover ${cameraOn ? "opacity-100" : "opacity-0"}`}
-          />
-          <canvas
-            ref={canvasRef}
-            className="pointer-events-none absolute inset-0 h-full w-full"
-          />
-          {!cameraOn && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
-              Kamera belum aktif
+      <div className="w-full max-w-md">
+        <div className="relative w-full flex flex-col items-center py-4">
+          {/* Wrapper oval berisi video + ring progress mengelilinginya */}
+          <div
+            className="relative w-full max-w-[400px]"
+            style={{ aspectRatio: "260 / 300" }}
+          >
+            {/* SVG ring progress, melingkar DI LUAR bentuk oval video */}
+            {cameraOn && (
+              <svg
+                viewBox="0 0 280 320"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+              >
+                {segments.map((seg) => {
+                  const done = seg.index < progressCount
+                  return (
+                    <path
+                      key={seg.index}
+                      d={describeArc(
+                        140,
+                        160,
+                        158,
+                        seg.startAngle,
+                        seg.sweepAngle,
+                        150 / 130,
+                        1
+                      )}
+                      fill="none"
+                      stroke={done ? "#22c55e" : "rgba(148,163,184,0.35)"}
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                    />
+                  )
+                })}
+              </svg>
+            )}
+
+            {/* Video dipotong jadi bentuk oval, seperti cermin */}
+            <div
+              className={`absolute inset-0 m-[7%] overflow-hidden bg-slate-900 shadow-lg ring-4 transition-colors ${
+                isReady ? "ring-emerald-500" : "ring-slate-700"
+              }`}
+              style={{ borderRadius: "50%" }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                onPlay={handleVideoPlay}
+                className={`h-full w-full object-cover ${cameraOn ? "opacity-100" : "opacity-0"}`}
+              />
+
+              {!cameraOn && (
+                <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs text-center px-6">
+                  Kamera belum aktif
+                </div>
+              )}
             </div>
-          )}
+
+            {cameraOn && (
+              <div
+                className={`absolute -top-1 left-1/2 -translate-x-1/2 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
+                  isReady
+                    ? "bg-emerald-500/90 text-white"
+                    : "bg-amber-500/90 text-white"
+                }`}
+              >
+                {isReady ? "Terdeteksi" : "Posisikan wajah"}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-5 flex gap-3">

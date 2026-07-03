@@ -9,27 +9,14 @@ const DETECTOR_OPTIONS = new faceapi.TinyFaceDetectorOptions({
   scoreThreshold: 0.2
 })
 
-const MIN_DETECTION_SCORE = 0.45
-
-const POSES = [
-  { label: "Menghadap lurus ke kamera", instruction: "Lihat lurus ke kamera" },
-  {
-    label: "Menoleh sedikit ke kiri",
-    instruction: "Tolehkan wajah sedikit ke kiri"
-  },
-  {
-    label: "Menoleh sedikit ke kanan",
-    instruction: "Tolehkan wajah sedikit ke kanan"
-  },
-  { label: "Menunduk sedikit", instruction: "Tundukkan kepala sedikit" },
-  { label: "Mendongak sedikit", instruction: "Dongakkan kepala sedikit" }
-]
+const MIN_DETECTION_SCORE = 0.35
+const TOTAL_STEPS = 3
 
 export default function EnrollFacePage() {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null) // overlay live
   const captureCanvasRef = useRef<HTMLCanvasElement>(null)
   const liveDetectRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const scoreHistoryRef = useRef<number[]>([])
 
   const [modelsReady, setModelsReady] = useState(false)
   const [cameraOn, setCameraOn] = useState(false)
@@ -37,7 +24,6 @@ export default function EnrollFacePage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null)
   const [capturing, setCapturing] = useState(false)
-  const [poseIndex, setPoseIndex] = useState(0)
   const [status, setStatus] = useState("Memuat model...")
   const [saving, setSaving] = useState(false)
   const [liveScore, setLiveScore] = useState<number | null>(null)
@@ -72,9 +58,8 @@ export default function EnrollFacePage() {
     })
     if (videoRef.current) videoRef.current.srcObject = stream
     setCameraOn(true)
-    setPoseIndex(0)
     setDescriptors([])
-    setStatus(`Pose 1/${POSES.length}: ${POSES[0].instruction}`)
+    setStatus("Posisikan wajah di dalam bingkai")
     startLiveDetection()
   }
 
@@ -84,42 +69,28 @@ export default function EnrollFacePage() {
     stream?.getTracks().forEach((t) => t.stop())
     setCameraOn(false)
     setLiveScore(null)
-    const ctx = canvasRef.current?.getContext("2d")
-    if (canvasRef.current && ctx)
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+    scoreHistoryRef.current = []
   }
 
-  // Overlay live: gambar kotak wajah + skor confidence supaya user bisa lihat posisi
+  // Live detection cuma untuk hitung skor confidence (smoothed), tidak perlu gambar kotak lagi
   const startLiveDetection = () => {
     liveDetectRef.current = setInterval(async () => {
-      if (!videoRef.current || !canvasRef.current) return
+      if (!videoRef.current) return
       const video = videoRef.current
       if (video.paused || video.ended || video.videoWidth === 0) return
 
       const detection = await faceapi.detectSingleFace(video, DETECTOR_OPTIONS)
 
-      const canvas = canvasRef.current
-      const displaySize = { width: video.videoWidth, height: video.videoHeight }
-      faceapi.matchDimensions(canvas, displaySize)
-      const ctx = canvas.getContext("2d")
-      ctx?.clearRect(0, 0, canvas.width, canvas.height)
-
       if (detection) {
-        const resized = faceapi.resizeResults(detection, displaySize)
-        const box = resized.box
-        const score = detection.score
-
-        setLiveScore(score)
-
-        if (ctx) {
-          ctx.strokeStyle = score >= MIN_DETECTION_SCORE ? "#22c55e" : "#f59e0b"
-          ctx.lineWidth = 3
-          ctx.strokeRect(box.x, box.y, box.width, box.height)
-          ctx.fillStyle = ctx.strokeStyle
-          ctx.font = "bold 14px sans-serif"
-          ctx.fillText(`${(score * 100).toFixed(0)}%`, box.x, box.y - 8)
-        }
+        const rawScore = detection.score
+        scoreHistoryRef.current.push(rawScore)
+        if (scoreHistoryRef.current.length > 4) scoreHistoryRef.current.shift()
+        const smoothedScore =
+          scoreHistoryRef.current.reduce((a, b) => a + b, 0) /
+          scoreHistoryRef.current.length
+        setLiveScore(smoothedScore)
       } else {
+        scoreHistoryRef.current = []
         setLiveScore(null)
       }
     }, 200)
@@ -139,8 +110,7 @@ export default function EnrollFacePage() {
     })
   }
 
-  // Ambil 1 sampel untuk pose saat ini, validasi kualitasnya
-  const captureCurrentPose = async () => {
+  const captureStep = async () => {
     if (!videoRef.current || !cameraOn) return
     setCapturing(true)
     setStatus("Memindai...")
@@ -150,7 +120,6 @@ export default function EnrollFacePage() {
     >
     let bestDetection: DetectionResult | null = null
 
-    // coba beberapa kali dalam 1.5 detik, ambil yang confidence-nya tertinggi
     for (let i = 0; i < 6; i++) {
       const detection = await faceapi
         .detectSingleFace(videoRef.current, DETECTOR_OPTIONS)
@@ -178,8 +147,7 @@ export default function EnrollFacePage() {
     const newDescriptors = [...descriptors, bestDetection.descriptor]
     setDescriptors(newDescriptors)
 
-    // ambil foto snapshot cuma di pose pertama (menghadap depan)
-    if (poseIndex === 0) {
+    if (newDescriptors.length === 1) {
       const blob = await snapshotPhoto()
       if (blob) {
         setPhotoBlob(blob)
@@ -187,16 +155,12 @@ export default function EnrollFacePage() {
       }
     }
 
-    const nextIndex = poseIndex + 1
-    if (nextIndex < POSES.length) {
-      setPoseIndex(nextIndex)
+    if (newDescriptors.length < TOTAL_STEPS) {
       setStatus(
-        `Pose ${nextIndex + 1}/${POSES.length}: ${POSES[nextIndex].instruction}`
+        `Bagus! ${newDescriptors.length}/${TOTAL_STEPS} berhasil. Tetap di posisi, ambil lagi.`
       )
     } else {
-      setStatus(
-        `Semua ${POSES.length} pose berhasil direkam. Lengkapi data & simpan.`
-      )
+      setStatus(`Semua ${TOTAL_STEPS} langkah selesai. Lengkapi data & simpan.`)
     }
 
     setCapturing(false)
@@ -204,15 +168,16 @@ export default function EnrollFacePage() {
 
   const resetCapture = () => {
     setDescriptors([])
-    setPoseIndex(0)
     setPhotoPreview(null)
     setPhotoBlob(null)
-    if (cameraOn) setStatus(`Pose 1/${POSES.length}: ${POSES[0].instruction}`)
+    if (cameraOn) setStatus("Posisikan wajah di dalam bingkai")
   }
 
   const handleSave = async () => {
-    if (descriptors.length < POSES.length || !form.name) {
-      setStatus("Lengkapi nama dan selesaikan semua pose wajah terlebih dahulu")
+    if (descriptors.length < TOTAL_STEPS || !form.name) {
+      setStatus(
+        "Lengkapi nama dan selesaikan semua langkah wajah terlebih dahulu"
+      )
       return
     }
     setSaving(true)
@@ -233,7 +198,6 @@ export default function EnrollFacePage() {
         photoUrl = uploadJson.url
       }
 
-      // rata-ratakan semua descriptor dari berbagai pose jadi 1 vektor final
       const avg = new Array(128).fill(0)
       descriptors.forEach((desc) => desc.forEach((val, i) => (avg[i] += val)))
       const finalDescriptor = avg.map((v) => v / descriptors.length)
@@ -261,7 +225,39 @@ export default function EnrollFacePage() {
     }
   }
 
-  const allPosesDone = descriptors.length >= POSES.length
+  const allStepsDone = descriptors.length >= TOTAL_STEPS
+  const isReady = liveScore !== null && liveScore >= MIN_DETECTION_SCORE
+
+  // Hitung 3 segmen busur lingkaran (masing-masing 120 derajat, dengan sedikit gap)
+  const radius = 90
+  const circumference = 2 * Math.PI * radius
+  const gap = 6 // gap antar segmen dalam derajat
+  const segmentAngle = 360 / TOTAL_STEPS - gap
+  const segments = Array.from({ length: TOTAL_STEPS }, (_, i) => {
+    const startAngle = i * (360 / TOTAL_STEPS) - 90 + gap / 2
+    return { index: i, startAngle, sweepAngle: segmentAngle }
+  })
+
+  const describeArc = (
+    cx: number,
+    cy: number,
+    r: number,
+    startDeg: number,
+    sweepDeg: number,
+    ryFactor = 1,
+    rxFactor = 1
+  ) => {
+    const rx = r * rxFactor
+    const ry = r * ryFactor
+    const startRad = (startDeg * Math.PI) / 180
+    const endRad = ((startDeg + sweepDeg) * Math.PI) / 180
+    const x1 = cx + rx * Math.cos(startRad)
+    const y1 = cy + ry * Math.sin(startRad)
+    const x2 = cx + rx * Math.cos(endRad)
+    const y2 = cy + ry * Math.sin(endRad)
+    const largeArc = sweepDeg > 180 ? 1 : 0
+    return `M ${x1} ${y1} A ${rx} ${ry} 0 ${largeArc} 1 ${x2} ${y2}`
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center px-4 py-6 sm:py-10">
@@ -275,61 +271,88 @@ export default function EnrollFacePage() {
       </div>
 
       <div className="w-full max-w-md">
-        {/* Progress pose */}
-        {cameraOn && (
-          <div className="mb-3 flex gap-1.5">
-            {POSES.map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 flex-1 rounded-full ${
-                  i < descriptors.length
-                    ? "bg-emerald-500"
-                    : i === poseIndex
-                      ? "bg-blue-500"
-                      : "bg-slate-200 dark:bg-slate-800"
-                }`}
-              />
-            ))}
-          </div>
-        )}
+        <div className="relative w-full flex flex-col items-center py-4">
+          {/* Wrapper oval berisi video + ring progress mengelilinginya */}
+          <div
+            className="relative w-full max-w-[400px]"
+            style={{ aspectRatio: "260 / 300" }}
+          >
+            {/* SVG ring progress, melingkar DI LUAR bentuk oval video */}
+            {cameraOn && (
+              <svg
+                viewBox="0 0 280 360"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+              >
+                {segments.map((seg) => {
+                  const done = seg.index < descriptors.length
+                  return (
+                    <path
+                      key={seg.index}
+                      d={describeArc(
+                        140,
+                        180,
+                        158,
+                        seg.startAngle,
+                        seg.sweepAngle,
+                        170 / 130,
+                        1
+                      )}
+                      fill="none"
+                      stroke={done ? "#22c55e" : "rgba(148,163,184,0.35)"}
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                    />
+                  )
+                })}
+              </svg>
+            )}
 
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-900 shadow-lg ring-1 ring-slate-200 dark:ring-slate-800">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className={`h-full w-full object-cover ${cameraOn ? "opacity-100" : "opacity-0"}`}
-          />
-          <canvas
-            ref={canvasRef}
-            className="pointer-events-none absolute inset-0 h-full w-full"
-          />
-          {!cameraOn && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
-              Kamera belum aktif
-            </div>
-          )}
-          {cameraOn && liveScore !== null && (
+            {/* Video dipotong jadi bentuk oval, seperti cermin */}
             <div
-              className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                liveScore >= MIN_DETECTION_SCORE
-                  ? "bg-emerald-500/90 text-white"
-                  : "bg-amber-500/90 text-white"
+              className={`absolute inset-0 m-[18px] overflow-hidden bg-slate-900 shadow-lg ring-4 transition-colors ${
+                isReady ? "ring-emerald-500" : "ring-slate-700"
               }`}
+              style={{ borderRadius: "50%" }}
             >
-              {liveScore >= MIN_DETECTION_SCORE
-                ? "Siap diambil"
-                : "Perbaiki posisi"}
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className={`h-full w-full object-cover ${cameraOn ? "opacity-100" : "opacity-0"}`}
+              />
+
+              {!cameraOn && (
+                <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs text-center px-6">
+                  Kamera belum aktif
+                </div>
+              )}
             </div>
-          )}
-          {photoPreview && (
-            <img
-              src={photoPreview}
-              alt="Preview wajah"
-              className="absolute bottom-3 right-3 h-16 w-16 rounded-lg object-cover ring-2 ring-emerald-500"
-            />
-          )}
+
+            {cameraOn && liveScore !== null && (
+              <div
+                className={`absolute -top-1 left-1/2 -translate-x-1/2 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
+                  isReady
+                    ? "bg-emerald-500/90 text-white"
+                    : "bg-amber-500/90 text-white"
+                }`}
+              >
+                {isReady ? "Siap diambil" : "Perbaiki posisi"}
+              </div>
+            )}
+
+            <div className="absolute top-2 right-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-900/70 text-white">
+              {descriptors.length}/{TOTAL_STEPS}
+            </div>
+
+            {photoPreview && (
+              <img
+                src={photoPreview}
+                alt="Preview wajah"
+                className="absolute bottom-2 right-2 h-14 w-14 rounded-full object-cover ring-2 ring-emerald-500"
+              />
+            )}
+          </div>
         </div>
 
         <canvas ref={captureCanvasRef} className="hidden" />
@@ -343,7 +366,7 @@ export default function EnrollFacePage() {
             >
               Nyalakan Kamera
             </button>
-          ) : allPosesDone ? (
+          ) : allStepsDone ? (
             <>
               <button
                 onClick={resetCapture}
@@ -361,11 +384,13 @@ export default function EnrollFacePage() {
           ) : (
             <>
               <button
-                onClick={captureCurrentPose}
+                onClick={captureStep}
                 disabled={capturing}
                 className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
               >
-                {capturing ? "Memindai..." : `Rekam Pose ${poseIndex + 1}`}
+                {capturing
+                  ? "Memindai..."
+                  : `Ambil (${descriptors.length}/${TOTAL_STEPS})`}
               </button>
               <button
                 onClick={stopCamera}
@@ -431,7 +456,7 @@ export default function EnrollFacePage() {
 
           <button
             onClick={handleSave}
-            disabled={!allPosesDone || saving}
+            disabled={!allStepsDone || saving}
             className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : "Simpan Karyawan"}
