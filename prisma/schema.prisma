@@ -317,3 +317,46 @@ model MsBank {
 
   @@map("ms_bank")
 }
+
+// ── Face Recognition Attendance ─────────────────────────
+
+model Employee {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeCode   String   @unique @map("Employee_Code")
+  name           String   @map("Name")
+  email          String?  @unique @map("Email")
+  phone          String?  @map("Phone")
+  position       String?  @map("Position")
+  storeId        String?  @map("Store_Id")
+  faceDescriptor Float[]  @map("Face_Descriptor") // 128 angka hasil face-api.js
+  photoUrl       String?  @map("Photo_Url")
+  status         String   @default("active") @map("Status")
+  createdAt      DateTime @default(now()) @map("Created_at")
+  updatedAt      DateTime @updatedAt @map("Modified_at")
+
+  attendances Attendance[]
+
+  @@index([storeId])
+  @@map("employees")
+}
+
+model Attendance {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId    String    @db.ObjectId @map("Employee_Id")
+  storeId       String?   @map("Store_Id")
+  date          String    @map("Date")          // "YYYY-MM-DD" biar gampang query per hari
+  clockIn       DateTime? @map("Clock_In")
+  clockOut      DateTime? @map("Clock_Out")
+  clockInScore  Float?    @map("Clock_In_Score")  // confidence match
+  clockOutScore Float?    @map("Clock_Out_Score")
+  status        String    @default("present") @map("Status") // present, late
+  createdAt     DateTime  @default(now()) @map("Created_at")
+  updatedAt     DateTime  @updatedAt @map("Modified_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date])
+  @@index([storeId])
+  @@index([date])
+  @@map("attendances")
+}
