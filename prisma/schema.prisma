@@ -308,12 +308,12 @@ model MsBarang {
 
 // ── Master Bank ─────────────────────────────────────────
 model MsBank {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  kodeBank  String    @unique @map("KodeBank")
-  namaBank  String    @map("NamaBank")
-  createdAt DateTime  @default(now()) @map("Created_at")
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  kodeBank   String    @unique @map("KodeBank")
+  namaBank   String    @map("NamaBank")
+  createdAt  DateTime  @default(now()) @map("Created_at")
   modifiedAt DateTime  @updatedAt @map("Modified_at")
-  deleteAt  DateTime? @map("Delete_at")
+  deleteAt   DateTime? @map("Delete_at")
 
   @@map("ms_bank")
 }
@@ -359,4 +359,60 @@ model Attendance {
   @@index([storeId])
   @@index([date])
   @@map("attendances")
+}
+
+// ── Inventory: Transaksi Stok ────────────────────────────
+type InventoryItem {
+  barangCode String // FK manual ke MsBarang.barangCode
+  barangNama String
+  satuanNama String?
+  qty        Int
+  keterangan String?
+}
+
+model InventoryTransaction {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  noTransaksi String          @unique @map("No_Transaksi")
+  jenis       String          @map("Jenis") // "penerimaan" | "pengeluaran" | "penyesuaian" | "retur-penerimaan" | "retur-pengeluaran"
+  arah        String          @map("Arah")  // "masuk" | "keluar"
+  tanggal     DateTime        @map("Tanggal")
+  storeId     String          @map("Store_Id")
+  partnerCode String?         @map("Partner_Code")
+  partnerNama String?         @map("Partner_Nama")
+  alasan      String?         @map("Alasan")
+  keterangan  String?         @map("Keterangan")
+  status      String          @default("selesai") @map("Status")
+  items       InventoryItem[] @map("Items")
+  createdAt   DateTime        @default(now()) @map("Created_at")
+  updatedAt   DateTime        @updatedAt @map("Modified_at")
+
+  @@index([storeId])
+  @@index([jenis])
+  @@index([tanggal])
+  @@map("inventory_transactions")
+}
+
+// ── Inventory: Stok Opname ───────────────────────────────
+type OpnameRow {
+  barangCode String
+  barangNama String
+  satuanNama String?
+  stokSistem Int
+  stokFisik  Int
+}
+
+model StokOpname {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  noOpname     String      @unique @map("No_Opname")
+  tanggal      DateTime    @map("Tanggal")
+  storeId      String      @map("Store_Id")
+  keterangan   String?     @map("Keterangan")
+  status       String      @default("selesai") @map("Status")
+  rows         OpnameRow[] @map("Rows")
+  totalSelisih Int         @default(0) @map("Total_Selisih")
+  createdAt    DateTime    @default(now()) @map("Created_at")
+  updatedAt    DateTime    @updatedAt @map("Modified_at")
+
+  @@index([storeId])
+  @@map("stok_opname")
 }
