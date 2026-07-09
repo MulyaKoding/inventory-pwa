@@ -1,30 +1,21 @@
 "use client"
 
-import {
-  Badge,
-  Box,
-  Button,
-  Divider,
-  IconButton,
-  ListItemIcon,
-  Menu,
-  MenuItem,
-  Tooltip,
-  Typography
-} from "@mui/material"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ThemeToggle } from "../ThemeToggle"
+import { cn } from "../../../lib/utils"
 
 // ── ICONS ─────────────────────────────────────────────────────────────────────
 const Icon = ({
   d,
   size = 20,
-  color = "currentColor"
+  color = "currentColor",
+  className
 }: {
   d: string
   size?: number
   color?: string
+  className?: string
 }) => (
   <svg
     width={size}
@@ -35,6 +26,7 @@ const Icon = ({
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    className={className}
   >
     <path d={d} />
   </svg>
@@ -72,11 +64,11 @@ export default function Header({
   notificationCount = 0,
   p = {}
 }: HeaderProps) {
-  const T = "0.3s ease"
   const router = useRouter()
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const menuOpen = Boolean(anchorEl)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   // Read user info from client-readable cookies set on login
   const [userName, setUserName] = useState("User")
@@ -89,15 +81,27 @@ export default function Header({
     if (role) setUserRole(role)
   }, [])
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
+      ) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [menuOpen])
+
   // Initial letter for avatar
   const avatarLetter = userName.charAt(0).toUpperCase()
 
-  const handleUserMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(e.currentTarget)
-  }
-  const handleUserMenuClose = () => {
-    setAnchorEl(null)
-  }
+  const handleUserMenuClose = () => setMenuOpen(false)
 
   const handleLogout = async () => {
     handleUserMenuClose()
@@ -123,301 +127,204 @@ export default function Header({
   }
 
   return (
-    <Box
-      sx={{
-        px: { xs: 2, md: 4 },
-        py: { xs: 1.5, md: 2 },
-        borderBottom: `1px solid ${p.border}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        bgcolor: p.sidebarBg,
-        transition: `background-color ${T}, border-color ${T}`,
-        gap: 1
-      }}
+    <div
+      className="flex items-center justify-between gap-2 border-b px-4 py-3 transition-colors duration-300 md:px-8 md:py-4"
+      style={{ borderColor: p.border, backgroundColor: p.sidebarBg }}
     >
       {/* Left — Hamburger + Title */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: { xs: 1, md: 2 },
-          minWidth: 0
-        }}
-      >
-        <IconButton
+      <div className="flex min-w-0 items-center gap-2 md:gap-4">
+        <button
           onClick={onMenuClick}
-          sx={{
-            display: { xs: "flex", md: "none" },
-            color: p.textSecondary,
-            flexShrink: 0
-          }}
+          className="flex shrink-0 items-center justify-center rounded-md p-2 md:hidden"
+          style={{ color: p.textSecondary }}
         >
           <Icon d="M3 12h18M3 6h18M3 18h18" size={20} color={p.textSecondary} />
-        </IconButton>
+        </button>
 
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            sx={{
-              color: p.textPrimary,
-              fontSize: { xs: 15, md: 20 },
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              whiteSpace: "nowrap"
-            }}
+        <div className="min-w-0">
+          <p
+            className="truncate whitespace-nowrap text-[15px] font-extrabold tracking-tight md:text-xl"
+            style={{ color: p.textPrimary }}
           >
             {title}
-          </Typography>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </div>
 
       {/* Right */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: { xs: 1, md: 2 },
-          flexShrink: 0
-        }}
-      >
+      <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
 
         {/* Notifications */}
-        <Tooltip title="Notifications">
-          <IconButton sx={{ color: p.textSecondary }}>
-            <Badge
-              badgeContent={notificationCount}
-              color="secondary"
-              sx={{ "& .MuiBadge-badge": { fontSize: 9 } }}
-            >
-              <Icon
-                d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
-                size={18}
-                color={p.textSecondary}
-              />
-            </Badge>
-          </IconButton>
-        </Tooltip>
+        <button
+          title="Notifications"
+          className="relative flex h-9 w-9 items-center justify-center rounded-md"
+          style={{ color: p.textSecondary }}
+        >
+          <Icon
+            d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+            size={18}
+            color={p.textSecondary}
+          />
+          {notificationCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-white">
+              {notificationCount}
+            </span>
+          )}
+        </button>
 
         {/* Add Product */}
         {showAddButton && onAddProduct && (
-          <Button
-            variant="contained"
-            size="small"
+          <button
             onClick={onAddProduct}
-            sx={{
-              bgcolor: "#087463",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 12,
-              px: { xs: 1.5, md: 2 },
-              py: 0.8,
-              minWidth: { xs: 36, sm: "auto" },
-              "&:hover": { bgcolor: "#065a4d" }
-            }}
-            startIcon={<Icon d="M12 5v14M5 12h14" size={14} color="#fff" />}
+            className="flex min-w-9 items-center gap-1.5 rounded-md bg-[#087463] px-1.5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#065a4d] sm:min-w-0 md:px-2"
           >
-            <Box
-              component="span"
-              sx={{ display: { xs: "none", sm: "inline" } }}
-            >
-              Add Product
-            </Box>
-          </Button>
+            <Icon d="M12 5v14M5 12h14" size={14} color="#fff" />
+            <span className="hidden sm:inline">Add Product</span>
+          </button>
         )}
 
         {/* ── USER AVATAR BUTTON ── */}
-        <Tooltip title="Account">
-          <IconButton
-            onClick={handleUserMenuOpen}
-            size="small"
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: "#FF6B35",
-              color: "#fff",
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: "'DM Mono', monospace",
-              borderRadius: "4px",
-              border: menuOpen
-                ? "1.5px solid #087463"
-                : "1.5px solid transparent",
-              transition: "border-color 0.2s",
-              "&:hover": { bgcolor: "#e55f2d" }
-            }}
+        <div className="relative">
+          <button
+            ref={triggerRef}
+            title="Account"
+            onClick={() => setMenuOpen((v) => !v)}
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded font-mono text-xs font-bold text-white transition-colors",
+              "bg-[#FF6B35] hover:bg-[#e55f2d]",
+              menuOpen
+                ? "border-[1.5px] border-[#087463]"
+                : "border-[1.5px] border-transparent"
+            )}
           >
             {avatarLetter}
-          </IconButton>
-        </Tooltip>
+          </button>
 
-        {/* ── USER DROPDOWN ── */}
-        <Menu
-          anchorEl={anchorEl}
-          open={menuOpen}
-          onClose={handleUserMenuClose}
-          transformOrigin={{ horizontal: "right", vertical: "top" }}
-          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-          slotProps={{
-            paper: {
-              elevation: 0,
-              sx: {
-                mt: 1,
-                minWidth: 200,
-                bgcolor: isDark ? "#141414" : "#fff",
-                border: `1px solid ${p.border}`,
-                borderRadius: "6px",
-                boxShadow: isDark
-                  ? "0 8px 32px rgba(0,0,0,0.7)"
-                  : "0 8px 24px rgba(0,0,0,0.1)",
-                fontFamily: "'DM Mono', monospace",
-                overflow: "visible",
-                "&::before": {
-                  content: '""',
-                  display: "block",
-                  position: "absolute",
-                  top: -6,
-                  right: 12,
-                  width: 12,
-                  height: 12,
-                  bgcolor: isDark ? "#141414" : "#fff",
-                  border: `1px solid ${p.border}`,
-                  borderRight: "none",
-                  borderBottom: "none",
-                  transform: "rotate(45deg)",
-                  zIndex: 0
-                }
-              }
-            }
-          }}
-        >
-          {/* ── User Info ── */}
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  bgcolor: "#FF6B35",
-                  borderRadius: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#fff",
-                  fontFamily: "inherit",
-                  flexShrink: 0
+          {/* ── USER DROPDOWN ── */}
+          {menuOpen && (
+            <div
+              ref={menuRef}
+              className={cn(
+                "absolute right-0 top-full z-50 mt-2 min-w-50 overflow-visible rounded-md border font-mono",
+                isDark ? "bg-[#141414]" : "bg-white",
+                isDark
+                  ? "shadow-[0_8px_32px_rgba(0,0,0,0.7)]"
+                  : "shadow-[0_8px_24px_rgba(0,0,0,0.1)]"
+              )}
+              style={{ borderColor: p.border }}
+            >
+              {/* little pointer triangle */}
+              <div
+                className="absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-l-0 border-t-0"
+                style={{
+                  backgroundColor: isDark ? "#141414" : "#fff",
+                  borderColor: p.border,
+                  borderStyle: "solid",
+                  borderWidth: 1
+                }}
+              />
+
+              {/* User info */}
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded bg-[#FF6B35] text-[13px] font-bold text-white">
+                    {avatarLetter}
+                  </div>
+                  <div>
+                    <p
+                      className="text-[13px] font-bold leading-tight"
+                      style={{ color: p.textPrimary }}
+                    >
+                      {userName.length > 18
+                        ? userName.slice(0, 18) + "…"
+                        : userName}
+                    </p>
+                    <p
+                      className="text-[10px] capitalize"
+                      style={{ color: p.textMuted }}
+                    >
+                      {userRole}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="my-0.5 h-px"
+                style={{ backgroundColor: p.border }}
+              />
+
+              {/* Profile */}
+              <button
+                onClick={handleUserMenuClose}
+                className="flex w-full items-center gap-3 px-4 py-2 text-left text-[13px] transition-colors"
+                style={{ color: p.textSecondary }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = p.hoverBg
+                  e.currentTarget.style.color = p.textPrimary
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                  e.currentTarget.style.color = p.textSecondary
                 }}
               >
-                {avatarLetter}
-              </Box>
-              <Box>
-                <Typography
-                  sx={{
-                    color: p.textPrimary,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: "'DM Mono', monospace",
-                    lineHeight: 1.2
-                  }}
-                >
-                  {/* Truncate long names */}
-                  {userName.length > 18
-                    ? userName.slice(0, 18) + "…"
-                    : userName}
-                </Typography>
-                <Typography
-                  sx={{
-                    color: p.textMuted,
-                    fontSize: 10,
-                    fontFamily: "'DM Mono', monospace",
-                    textTransform: "capitalize"
-                  }}
-                >
-                  {userRole}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+                <Icon
+                  d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+                  size={15}
+                  color={p.textMuted}
+                />
+                Profile
+              </button>
 
-          <Divider sx={{ borderColor: p.border, my: 0.5 }} />
+              {/* Settings */}
+              <button
+                onClick={handleUserMenuClose}
+                className="flex w-full items-center gap-3 px-4 py-2 text-left text-[13px] transition-colors"
+                style={{ color: p.textSecondary }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = p.hoverBg
+                  e.currentTarget.style.color = p.textPrimary
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                  e.currentTarget.style.color = p.textSecondary
+                }}
+              >
+                <Icon
+                  d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a7.1 7.1 0 0 0 .1-1v-2a7.1 7.1 0 0 0-.1-1l2.2-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.6 1a6.8 6.8 0 0 0-1.7-1l-.4-2.7A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.5.4l-.4 2.8a6.8 6.8 0 0 0-1.7 1l-2.6-1a.5.5 0 0 0-.6.2L2.2 8.9a.5.5 0 0 0 .1.6L4.5 11a7.1 7.1 0 0 0-.1 1v2a7.1 7.1 0 0 0 .1 1L2.3 16.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.6-1a6.8 6.8 0 0 0 1.7 1l.4 2.7a.5.5 0 0 0 .5.4h4a.5.5 0 0 0 .5-.4l.4-2.7a6.8 6.8 0 0 0 1.7-1l2.6 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6z"
+                  size={15}
+                  color={p.textMuted}
+                />
+                Settings
+              </button>
 
-          {/* Profile */}
-          <MenuItem
-            onClick={handleUserMenuClose}
-            sx={{
-              px: 2,
-              py: 1,
-              gap: 1.5,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 13,
-              color: p.textSecondary,
-              "&:hover": { bgcolor: p.hoverBg, color: p.textPrimary }
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: "auto" }}>
-              <Icon
-                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
-                size={15}
-                color={p.textMuted}
+              <div
+                className="my-0.5 h-px"
+                style={{ backgroundColor: p.border }}
               />
-            </ListItemIcon>
-            Profile
-          </MenuItem>
 
-          {/* Settings */}
-          <MenuItem
-            onClick={handleUserMenuClose}
-            sx={{
-              px: 2,
-              py: 1,
-              gap: 1.5,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 13,
-              color: p.textSecondary,
-              "&:hover": { bgcolor: p.hoverBg, color: p.textPrimary }
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: "auto" }}>
-              <Icon
-                d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a7.1 7.1 0 0 0 .1-1v-2a7.1 7.1 0 0 0-.1-1l2.2-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.6 1a6.8 6.8 0 0 0-1.7-1l-.4-2.7A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.5.4l-.4 2.8a6.8 6.8 0 0 0-1.7 1l-2.6-1a.5.5 0 0 0-.6.2L2.2 8.9a.5.5 0 0 0 .1.6L4.5 11a7.1 7.1 0 0 0-.1 1v2a7.1 7.1 0 0 0 .1 1L2.3 16.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.6-1a6.8 6.8 0 0 0 1.7 1l.4 2.7a.5.5 0 0 0 .5.4h4a.5.5 0 0 0 .5-.4l.4-2.7a6.8 6.8 0 0 0 1.7-1l2.6 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6z"
-                size={15}
-                color={p.textMuted}
-              />
-            </ListItemIcon>
-            Settings
-          </MenuItem>
-
-          <Divider sx={{ borderColor: p.border, my: 0.5 }} />
-
-          {/* Logout */}
-          <MenuItem
-            onClick={handleLogout}
-            sx={{
-              px: 2,
-              py: 1,
-              gap: 1.5,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 13,
-              color: "#ef4444",
-              "&:hover": {
-                bgcolor: isDark ? "#2e1010" : "#fef2f2",
-                color: "#dc2626"
-              }
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: "auto" }}>
-              <Icon
-                d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
-                size={15}
-                color="#ef4444"
-              />
-            </ListItemIcon>
-            Logout
-          </MenuItem>
-        </Menu>
-      </Box>
-    </Box>
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  "flex w-full items-center gap-3 px-4 py-2 text-left text-[13px] font-medium text-red-500 transition-colors",
+                  isDark
+                    ? "hover:bg-[#2e1010] hover:text-red-600"
+                    : "hover:bg-red-50 hover:text-red-600"
+                )}
+              >
+                <Icon
+                  d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
+                  size={15}
+                  color="#ef4444"
+                />
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

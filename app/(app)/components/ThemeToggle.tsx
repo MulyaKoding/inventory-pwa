@@ -1,6 +1,6 @@
 "use client"
 
-import { SvgIcon } from "@mui/material"
+import { cn } from "../../lib/utils"
 
 export function ThemeToggle({
   isDark,
@@ -13,33 +13,19 @@ export function ThemeToggle({
     <button
       onClick={onToggle}
       title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-      style={{
-        width: 56,
-        height: 28,
-        backgroundColor: isDark ? "#0c1733" : "#e2e8f0",
-        border: isDark ? "1px solid #1e3a8a" : "1px solid #cbd5e1",
-        borderRadius: 14,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 3px",
-        cursor: "pointer",
-        position: "relative",
-        transition: "background-color 0.3s ease",
-        outline: "none",
-        flexShrink: 0
-      }}
+      className={cn(
+        "relative flex h-7 w-14 shrink-0 items-center rounded-full border px-0.75 outline-none transition-colors duration-300",
+        isDark
+          ? "border-brand-700 bg-brand-900"
+          : "border-slate-300 bg-slate-200"
+      )}
     >
       {/* Sun kiri — muncul saat LIGHT mode */}
       <span
-        style={{
-          position: "absolute",
-          left: 7,
-          opacity: isDark ? 0 : 0.6,
-          transition: "opacity 0.3s",
-          display: "flex",
-          alignItems: "center",
-          pointerEvents: "none"
-        }}
+        className={cn(
+          "pointer-events-none absolute left-1.75 flex items-center transition-opacity duration-300",
+          isDark ? "opacity-0" : "opacity-60"
+        )}
       >
         <svg
           width={11}
@@ -65,15 +51,10 @@ export function ThemeToggle({
 
       {/* Moon kanan — muncul saat DARK mode */}
       <span
-        style={{
-          position: "absolute",
-          right: 7,
-          opacity: isDark ? 0.6 : 0,
-          transition: "opacity 0.3s",
-          display: "flex",
-          alignItems: "center",
-          pointerEvents: "none"
-        }}
+        className={cn(
+          "pointer-events-none absolute right-1.75 flex items-center transition-opacity duration-300",
+          isDark ? "opacity-60" : "opacity-0"
+        )}
       >
         <svg
           width={11}
@@ -88,24 +69,13 @@ export function ThemeToggle({
 
       {/* Knob */}
       <span
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: "50%",
-          backgroundColor: isDark ? "#3b82f6" : "#1e3a8a",
-          transform: isDark ? "translateX(28px)" : "translateX(0px)",
-          transition:
-            "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          boxShadow: isDark
-            ? "0 0 8px rgba(59,130,246,0.5)"
-            : "0 1px 4px rgba(0,0,0,0.25)",
-          pointerEvents: "none",
-          zIndex: 1
-        }}
+        className={cn(
+          "pointer-events-none relative z-1 flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full transition-transform duration-300",
+          "ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+          isDark
+            ? "translate-x-7 bg-brand-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+            : "translate-x-0 bg-brand-700 shadow-[0_1px_4px_rgba(0,0,0,0.25)]"
+        )}
       >
         {isDark ? (
           // Dark mode aktif → icon moon di knob

@@ -3,170 +3,96 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import CSChatWidget from "../components/CSChatWidget"
+import { cn } from "../../lib/utils"
 
+/* ── DATA ── */
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Product", href: "/product" },
-  { label: "About Us", href: "/about" }
+  { label: "Product", href: "product" },
+  { label: "About Us", href: "about" }
 ]
 
-const TEAM = [
-  {
-    name: "Rahmat Mulya Simanjuntak",
-    role: "Founder & CEO",
-    initials: "RM",
-    color: "#1e3a8a",
-    desc: "Berpengalaman 8 tahun di bidang supply chain dan pengembangan sistem ERP untuk UKM Indonesia."
-  },
-  {
-    name: "Siti Rahayu",
-    role: "Lead Developer",
-    initials: "SR",
-    color: "#1d4ed8",
-    desc: "Full-stack engineer dengan spesialisasi di sistem inventori real-time dan integrasi marketplace."
-  },
-  {
-    name: "Budi Santoso",
-    role: "Product Designer",
-    initials: "BS",
-    color: "#2563eb",
-    desc: "UX/UI designer yang fokus pada kemudahan penggunaan sistem manajemen untuk bisnis lokal."
-  },
-  {
-    name: "Dewi Lestari",
-    role: "Customer Success",
-    initials: "DL",
-    color: "#0c1a3a",
-    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
-  },
-  {
-    name: "Sinta Dwi",
-    role: "UI UX Designer",
-    initials: "SD",
-    color: "#1d4ed8",
-    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
-  },
-  {
-    name: "Budi Setiawan",
-    role: "Frontend Engineer",
-    initials: "BS",
-    color: "#1d4ed8",
-    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
-  },
-  {
-    name: "Setiawan Bimo",
-    role: "Backend Engineer",
-    initials: "SB",
-    color: "#2563eb",
-    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
-  },
-  {
-    name: "Nanda Pratiwi",
-    role: "Business Analyst",
-    initials: "NP",
-    color: "#0c1a3a",
-    desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
-  }
+const STATS = [
+  { value: "248", label: "Total Produk", icon: "📦" },
+  { value: "63", label: "Order Hari Ini", icon: "🛒" },
+  { value: "Rp 48.2M", label: "Revenue Bulan Ini", icon: "💰" },
+  { value: "12", label: "Kategori Aktif", icon: "🏷️" }
 ]
 
-const TIMELINE = [
-  {
-    year: "2022",
-    title: "Ide Lahir",
-    desc: "STOCKR dimulai dari frustrasi nyata: pemilik toko yang masih catat stok di buku tulis."
-  },
-  {
-    year: "2023",
-    title: "Versi Beta",
-    desc: "Diluncurkan ke 50 pengguna awal. Feedback luar biasa mendorong kami untuk terus berkembang."
-  },
-  {
-    year: "2024",
-    title: "Skalabilitas",
-    desc: "Sistem diperbarui untuk mendukung multi-gudang dan integrasi dengan marketplace populer."
-  },
-  {
-    year: "2025",
-    title: "500+ Bisnis",
-    desc: "Lebih dari 500 bisnis aktif mempercayakan manajemen inventori mereka kepada STOCKR."
-  },
-  {
-    year: "2026",
-    title: "Masa Depan",
-    desc: "AI-powered forecasting dan otomatisasi pemesanan stok hadir untuk pengguna STOCKR."
-  }
-]
-
-const VALUES = [
+const FEATURES = [
   {
     icon: (
-      <svg viewBox="0 0 48 48" width="28" height="28" fill="none">
-        <circle
-          cx="24"
-          cy="24"
-          r="18"
+      <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+        <rect
+          x="6"
+          y="10"
+          width="36"
+          height="28"
+          rx="4"
           stroke="currentColor"
           strokeWidth="2.5"
         />
+        <path d="M6 18h36" stroke="currentColor" strokeWidth="2.5" />
         <path
-          d="M16 24l6 6 10-10"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-    title: "Kepercayaan",
-    desc: "Data bisnis kamu aman dan akurat. Kami tidak pernah berkompromi soal integritas data."
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 48 48" width="28" height="28" fill="none">
-        <path
-          d="M24 8v6M24 34v6M8 24h6M34 24h6"
+          d="M16 10v8M32 10v8"
           stroke="currentColor"
           strokeWidth="2.5"
           strokeLinecap="round"
         />
-        <circle
-          cx="24"
-          cy="24"
-          r="10"
+        <rect
+          x="14"
+          y="24"
+          width="8"
+          height="7"
+          rx="1.5"
           stroke="currentColor"
-          strokeWidth="2.5"
-        />
-        <circle cx="24" cy="24" r="3" fill="currentColor" />
-      </svg>
-    ),
-    title: "Kesederhanaan",
-    desc: "Sistem powerful tidak harus rumit. Kami rancang STOCKR agar bisa dipakai siapa saja."
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 48 48" width="28" height="28" fill="none">
-        <path
-          d="M10 38V24l14-16 14 16v14"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M18 38v-8h12v8"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        <circle
-          cx="36"
-          cy="14"
-          r="6"
-          fill="#3b82f6"
-          stroke="white"
           strokeWidth="2"
         />
         <path
-          d="M33.5 14l1.5 1.5 3-3"
+          d="M28 27h6M28 31h4"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+    title: "Manajemen Produk",
+    desc: "Kelola ribuan SKU dengan mudah. Tambah, edit, dan atur kategori produk dalam satu dasbor terpadu."
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+        <path
+          d="M8 36V20l16-12 16 12v16"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
+        <rect
+          x="18"
+          y="26"
+          width="12"
+          height="10"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="M14 22h4M30 22h4"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <circle
+          cx="38"
+          cy="12"
+          r="6"
+          fill="#3b82f6"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="M35.5 12l1.5 1.5 3-3"
           stroke="white"
           strokeWidth="1.8"
           strokeLinecap="round"
@@ -174,14 +100,170 @@ const VALUES = [
         />
       </svg>
     ),
-    title: "Pertumbuhan",
-    desc: "Kami tumbuh bersama bisnis kamu. Fitur kami berkembang sesuai kebutuhan nyata pengguna."
+    title: "Stok Real-Time",
+    desc: "Pantau stok masuk dan keluar secara langsung. Dapatkan notifikasi saat stok hampir habis."
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+        <path
+          d="M8 40V14l8-6h16l8 6v26"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
+        <path d="M8 20h32" stroke="currentColor" strokeWidth="2" />
+        <path
+          d="M18 28v8M24 24v12M30 26v10"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+    title: "Laporan & Analitik",
+    desc: "Grafik penjualan, tren produk terlaris, dan laporan keuangan dalam format yang mudah dipahami."
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+        <circle
+          cx="24"
+          cy="24"
+          r="16"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        />
+        <path
+          d="M24 16v8l5 5"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M10 10l4 4M38 10l-4 4"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+    title: "Riwayat Transaksi",
+    desc: "Lacak setiap transaksi dengan log terperinci. Mudah audit dan verifikasi kapan saja."
   }
 ]
 
-export default function AboutPage() {
-  const [scrolled, setScrolled] = useState(false)
+const PRODUCTS = [
+  {
+    name: "Laptop ASUS VivoBook",
+    sku: "LPT-001",
+    stock: 24,
+    status: "Aman",
+    cat: "Elektronik"
+  },
+  {
+    name: "Mouse Logitech MX",
+    sku: "MSE-042",
+    stock: 7,
+    status: "Menipis",
+    cat: "Aksesori"
+  },
+  {
+    name: "Keyboard Mechanical",
+    sku: "KBD-018",
+    stock: 0,
+    status: "Habis",
+    cat: "Aksesori"
+  },
+  {
+    name: "Monitor LG 24 inch",
+    sku: "MNT-009",
+    stock: 15,
+    status: "Aman",
+    cat: "Elektronik"
+  },
+  {
+    name: "Headset Sony WH",
+    sku: "HST-033",
+    stock: 3,
+    status: "Menipis",
+    cat: "Audio"
+  }
+]
+
+const IMG1 =
+  "https://res.cloudinary.com/dp0dtct3v/image/upload/v1775017437/ic_sb_nra10b.jpg"
+const IMG2 =
+  "https://res.cloudinary.com/dp0dtct3v/image/upload/v1775017346/ic_bs_kh3emc.jpg"
+
+/* ── STATUS STYLE MAP ── */
+const STATUS_STYLES: Record<string, string> = {
+  Aman: "text-blue-700 bg-blue-700/10",
+  Menipis: "text-amber-500 bg-amber-500/10",
+  Habis: "text-red-500 bg-red-500/10"
+}
+
+const STOCK_COLOR = (stock: number) =>
+  stock === 0 ? "text-red-500" : stock < 8 ? "text-amber-500" : "text-brand-700"
+
+/* ── REUSABLE PIECES ── */
+function NavLinkDesktop({
+  label,
+  href,
+  active,
+  onClick
+}: {
+  label: string
+  href: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "px-4.5 py-2 rounded-lg text-sm font-bold text-white/80 transition-colors",
+        "hover:text-white hover:bg-white/10",
+        active && "text-white"
+      )}
+    >
+      {label}
+    </a>
+  )
+}
+
+function NavLinkMobile({
+  label,
+  href,
+  active,
+  onClick
+}: {
+  label: string
+  href: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "block w-full text-left px-4 py-3.25 mb-1 rounded-[10px] text-[15px] font-bold text-gray-700 transition-colors",
+        "hover:text-brand-700 hover:bg-brand-500/8",
+        active && "text-brand-700 bg-brand-500/8"
+      )}
+    >
+      {label}
+    </a>
+  )
+}
+
+export default function HomePage() {
+  const [activeNav, setActiveNav] = useState("Home")
   const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -189,465 +271,150 @@ export default function AboutPage() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: #f0f6ff; color: #0f172a; overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    @keyframes navSlide   { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }
-    @keyframes menuIn     { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes slideInLeft  { from{opacity:0;transform:translateX(-50px)} to{opacity:1;transform:translateX(0)} }
-    @keyframes slideInRight { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
-    @keyframes slideInUp    { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes gridPan      { from{background-position:0 0} to{background-position:48px 48px} }
-    @keyframes floatY       { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    @keyframes pulse-ring   { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.7);opacity:0} }
-    @keyframes border-rotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    @keyframes countUp      { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
-    /* NAV */
-    .nav {
-      position:fixed; top:0; left:0; right:0; z-index:100;
-      transition:background .3s,box-shadow .3s;
-      animation:navSlide .4s ease forwards;
-    }
-    .nav.s {
-      background:rgba(8,12,24,.96); backdrop-filter:blur(18px);
-      box-shadow:0 1px 0 rgba(255,255,255,.06),0 4px 20px rgba(0,0,0,.4);
-    }
-    .nav-in {
-      max-width:1200px; margin:0 auto;
-      display:flex; align-items:center; justify-content:space-between;
-      padding:0 32px; height:70px;
-    }
-    .logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
-    .logo-box {
-      width:40px; height:40px; border-radius:10px;
-      background:linear-gradient(135deg,#1e3a8a,#3b82f6);
-      display:flex; align-items:center; justify-content:center;
-      box-shadow:0 4px 14px rgba(59,130,246,.4);
-    }
-    .logo-lbl { color:#fff; font-weight:800; font-size:11px; letter-spacing:.05em; }
-    .logo-name { font-family:'Nunito',sans-serif; font-weight:800; font-size:20px; letter-spacing:.07em; color:#fff; }    
-    .logo-em { color:#3b82f6; font-style:normal; }
-
-    .nav-links { display:flex; align-items:center; gap:2px; }
-    .nl {
-      padding:9px 20px; border-radius:8px; font-size:15px; font-weight:600;
-      color:rgba(255,255,255,.83); text-decoration:none; transition:all .2s;
-    }
-    .nl:hover { color:#fff; background:rgba(255,255,255,.1); }
-    .nl.on { color:#fff; font-weight:700; }
-    .nav.s .nl { color:rgba(255,255,255,.75); }
-    .nav.s .nl:hover { color:#fff; background:rgba(255,255,255,.1); }
-    .nav.s .nl.on { color:#60a5fa; }
-
-    .btn-l {
-      height:42px; padding:0 22px; background:#fff; color:#1e3a8a;
-      border:none; border-radius:10px; font-size:15px; font-weight:700;
-      cursor:pointer; text-decoration:none; display:flex; align-items:center;
-      box-shadow:0 4px 12px rgba(0,0,0,.13); transition:all .2s;
-    }
-    .btn-l:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.18); }
-    .nav.s .btn-l { background:#3b82f6; color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(59,130,246,.4); }
-    .nav.s .btn-l:hover { background:#2563eb; }
-
-    .hbg { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:6px; background:none; border:none; }
-    .hbg span { display:block; width:22px; height:2px; background:#fff; border-radius:2px; transition:all .3s; }
-    .nav.s .hbg span { background:#fff; }
-    .hbg.op span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
-    .hbg.op span:nth-child(2){opacity:0}
-    .hbg.op span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
-
-    .m-menu {
-      display:none; position:absolute; top:70px; left:0; right:0;
-      background:rgba(255,255,255,.97); backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(59,130,246,.1); padding:12px 20px 20px;
-      box-shadow:0 12px 32px rgba(0,0,0,.08);
-      animation:menuIn .2s ease forwards;
-    }
-    .m-menu.op { display:block; }
-    .m-nl {
-      display:block; padding:13px 16px; border-radius:10px; font-size:15px; font-weight:600;
-      color:#374151; text-decoration:none; margin-bottom:4px; transition:all .2s;
-      border:none; background:none; width:100%; text-align:left; cursor:pointer;
-    }
-    .m-nl:hover,.m-nl.on { color:#1e3a8a; background:rgba(59,130,246,.08); }
-    .m-login {
-      margin-top:12px; width:100%; height:48px; background:#3b82f6; color:#fff;
-      border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
-      text-decoration:none; display:flex; align-items:center; justify-content:center;
-    }
-
-    /* HERO */
-    .hero {
-      min-height:80vh; position:relative; overflow:hidden;
-      background:linear-gradient(160deg,#060b1a 0%,#0c1733 30%,#0f2050 60%,#1e3a8a 100%);
-      display:flex; align-items:center; padding:120px 32px 80px;
-    }
-    .h-grid {
-      position:absolute; inset:0;
-      background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
-                       linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-      background-size:48px 48px; animation:gridPan 10s linear infinite; pointer-events:none;
-    }
-    .h-glow {
-      position:absolute; top:-80px; right:-80px; width:500px; height:500px;
-      border-radius:50%; background:radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 65%); pointer-events:none;
-    }
-    .h-glow2 {
-      position:absolute; bottom:-60px; left:-60px; width:340px; height:340px;
-      border-radius:50%; background:radial-gradient(circle,rgba(30,58,138,.15) 0%,transparent 70%); pointer-events:none;
-    }
-    .hero-in {
-      max-width:1200px; margin:0 auto; width:100%;
-      display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center;
-      position:relative; z-index:1;
-    }
-    .hero-left { animation:slideInLeft .7s ease forwards; }
-    .hero-right { animation:slideInRight .7s .1s ease both; }
-
-    .hero-tag {
-      display:inline-flex; align-items:center; gap:8px;
-      background:rgba(255,255,255,.08); backdrop-filter:blur(8px);
-      border-radius:100px; padding:7px 16px; margin-bottom:24px;
-      position:relative; overflow:hidden; isolation:isolate;
-    }
-    .hero-tag::before {
-      content:''; position:absolute; inset:-45px; border-radius:80px;
-      background:conic-gradient(from 0deg,transparent 0%,transparent 80%,#60a5fa 88%,#93c5fd 92%,#60a5fa 96%,transparent 100%);
-      animation:border-rotate 2.4s linear infinite; z-index:-2;
-    }
-    .hero-tag::after {
-      content:''; position:absolute; inset:1.5px; border-radius:100px;
-      background:rgba(8,14,36,.85); backdrop-filter:blur(8px); z-index:-1;
-    }
-    .tag-dot { width:6px; height:6px; border-radius:50%; background:#60a5fa; position:relative; flex-shrink:0; }
-    .tag-dot::after {
-      content:''; position:absolute; inset:-3px; border-radius:50%;
-      background:rgba(96,165,250,.4); animation:pulse-ring 1.5s ease-out infinite;
-    }
-    .hero-tag span { color:rgba(255,255,255,.9); font-size:12px; font-family:'Nunito',sans-serif; letter-spacing:.04em; }
-
-    .hero-h1 {
-      font-family:'Nunito',sans-serif; font-weight:800;
-      font-size:clamp(36px,5vw,56px); line-height:1.1;
-      color:#fff; letter-spacing:-.02em; margin-bottom:20px;
-    }
-    .hero-h1 em { font-style:normal; color:#60a5fa; }
-    .hero-desc { color:rgba(255,255,255,.7); font-size:17px; line-height:1.75; margin-bottom:36px; max-width:460px; }
-
-    /* Mission card floating */
-    .mission-float {
-      background:rgba(255,255,255,.05); backdrop-filter:blur(20px);
-      border:1px solid rgba(255,255,255,.12); border-radius:24px;
-      padding:36px; animation:floatY 5s ease-in-out infinite;
-      box-shadow:0 24px 64px rgba(0,0,0,.35);
-    }
-    .mission-lbl {
-      font-family:'Nunito',sans-serif; font-size:10px; font-weight:700;
-      color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px;
-    }
-    .mission-text {
-      font-size:17px; color:#fff; line-height:1.7; font-weight:600; margin-bottom:24px;
-    }
-    .mission-text em { font-style:normal; color:#60a5fa; }
-    .mission-chips { display:flex; gap:8px; flex-wrap:wrap; }
-    .m-chip {
-      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
-      border-radius:100px; padding:5px 14px;
-      color:rgba(255,255,255,.8); font-size:12px; font-weight:600;
-    }
-
-    /* STATS STRIP */
-    .stats-strip { background:#fff; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; padding:0; }
-    .stats-strip-in {
-      max-width:1200px; margin:0 auto;
-      display:grid; grid-template-columns:repeat(4,1fr);
-    }
-    .stat-block {
-      padding:36px 32px; border-right:1px solid #e2e8f0;
-      animation:countUp .6s ease both;
-    }
-    .stat-block:last-child { border-right:none; }
-    .stat-block-v {
-      font-family:'Nunito',sans-serif; font-weight:800; font-size:38px;
-      color:#1e3a8a; letter-spacing:-.03em; line-height:1;
-    }
-    .stat-block-l {
-      color:#64748b; font-size:13px; font-weight:600; margin-top:6px;
-      font-family:'Nunito',sans-serif; text-transform:uppercase; letter-spacing:.05em;
-    }
-
-    /* SECTION */
-    .sec { padding:100px 32px; }
-    .sec-in { max-width:1200px; margin:0 auto; }
-    .sec-tag {
-      display:inline-flex; align-items:center; gap:8px;
-      background:rgba(59,130,246,.1); border-radius:100px; padding:5px 14px; margin-bottom:14px; margin-top:12px;
-    }
-    .sec-tag span { color:#1e3a8a; font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; text-transform:uppercase; letter-spacing:.05em; }
-    .sec-h2 {
-      font-family:'Nunito',sans-serif; font-weight:800;
-      font-size:clamp(28px,4vw,42px); color:#0f172a;
-      letter-spacing:-.02em; line-height:1.2; margin-bottom:12px;
-    }
-    .sec-h2 em { font-style:normal; color:#1e3a8a; }
-    .sec-sub { color:#64748b; font-size:16px; line-height:1.65; max-width:500px; margin-bottom:56px; }
-
-    /* VALUES */
-    .values-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:72px; }
-    .val-card {
-      background:#fff; border:1.5px solid #e2e8f0; border-radius:18px; padding:30px;
-      transition:border-color .25s,box-shadow .25s,transform .25s;
-    }
-    .val-card:hover { border-color:#3b82f6; box-shadow:0 8px 32px rgba(59,130,246,.12); transform:translateY(-4px); }
-    .val-ico {
-      width:56px; height:56px; border-radius:12px;
-      background:linear-gradient(135deg,rgba(30,58,138,.08),rgba(59,130,246,.12));
-      display:flex; align-items:center; justify-content:center; color:#1e3a8a; margin-bottom:18px;
-    }
-    .val-title { font-family:'Nunito',sans-serif; font-weight:800; font-size:17px; color:#0f172a; margin-bottom:8px; }
-    .val-desc { color:#64748b; font-size:14px; line-height:1.65; }
-
-    /* TIMELINE */
-    .timeline-wrap { position:relative; }
-    .timeline-line {
-      position:absolute; left:80px; top:0; bottom:0; width:1.5px;
-      background:linear-gradient(180deg,#3b82f6,rgba(59,130,246,.1));
-    }
-    .tl-item {
-      display:flex; gap:32px; align-items:flex-start; margin-bottom:36px; position:relative;
-      animation:slideInLeft .6s ease both;
-    }
-    .tl-year {
-      width:80px; flex-shrink:0; text-align:right; padding-right:20px; padding-top:4px;
-      font-family:'Nunito',sans-serif; font-weight:700; font-size:14px; color:#3b82f6;
-    }
-    .tl-dot-wrap {
-      position:relative; z-index:1; flex-shrink:0;
-      display:flex; align-items:center; justify-content:center;
-      margin-top:4px;
-    }
-    .tl-dot {
-      width:12px; height:12px; border-radius:50%; background:#3b82f6;
-      box-shadow:0 0 0 4px rgba(59,130,246,.15);
-    }
-    .tl-content {
-      flex:1; background:#fff; border:1.5px solid #e2e8f0; border-radius:16px;
-      padding:20px 24px; transition:border-color .25s,box-shadow .25s;
-    }
-    .tl-content:hover { border-color:#3b82f6; box-shadow:0 4px 20px rgba(59,130,246,.1); }
-    .tl-title { font-weight:800; font-size:16px; color:#0f172a; margin-bottom:5px; font-family:'Nunito',sans-serif; }
-    .tl-desc { color:#64748b; font-size:14px; line-height:1.6; }
-
-    /* TEAM */
-    .team-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
-    .team-card {
-      background:#fff; border:1.5px solid #e2e8f0; border-radius:18px;
-      padding:28px 22px; text-align:center;
-      transition:border-color .25s,box-shadow .25s,transform .25s;
-      animation:slideInUp .6s ease both;
-    }
-    .team-card:hover { border-color:#3b82f6; box-shadow:0 8px 32px rgba(59,130,246,.12); transform:translateY(-4px); }
-    .team-avatar {
-      width:72px; height:72px; border-radius:18px; margin:0 auto 16px;
-      display:flex; align-items:center; justify-content:center;
-      font-weight:800; font-size:18px; color:#fff; font-family:'Nunito',sans-serif;
-      box-shadow:0 4px 16px rgba(0,0,0,.15);
-    }
-    .team-name { font-family:'Nunito',sans-serif; font-weight:800; font-size:15px; color:#0f172a; margin-bottom:4px; }
-    .team-role {
-      font-family:'Nunito',sans-serif; font-size:11px; font-weight:700;
-      color:#3b82f6; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px;
-    }
-    .team-desc { color:#64748b; font-size:13px; line-height:1.6; }
-
-    /* CONTACT */
-    .contact-sec { padding:0 32px 100px; }
-    .contact-in {
-      max-width:1200px; margin:0 auto;
-      background:linear-gradient(145deg,#060b1a,#0c1733,#1e3a8a);
-      border-radius:28px; padding:72px 64px;
-      display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
-      position:relative; overflow:hidden;
-    }
-    .contact-grid-bg {
-      position:absolute; inset:0;
-      background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
-                       linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
-      background-size:40px 40px; pointer-events:none;
-    }
-    .contact-left { position:relative; z-index:1; }
-    .contact-h2 {
-      font-family:'Nunito',sans-serif; font-weight:800;
-      font-size:clamp(26px,3.5vw,38px); color:#fff;
-      letter-spacing:-.02em; margin-bottom:14px;
-    }
-    .contact-h2 em { font-style:normal; color:#60a5fa; }
-    .contact-desc { color:rgba(255,255,255,.7); font-size:15px; line-height:1.75; margin-bottom:8px; }
-    .contact-right { position:relative; z-index:1; display:flex; flex-direction:column; gap:14px; }
-    .contact-item {
-      display:flex; align-items:center; gap:16px;
-      background:rgba(0,0,0,.2); backdrop-filter:blur(12px);
-      border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:20px 24px;
-      text-decoration:none; transition:background .2s,border-color .2s,transform .15s;
-    }
-    .contact-item:hover { background:rgba(0,0,0,.32); border-color:rgba(255,255,255,.22); transform:translateX(4px); }
-    .contact-ico {
-      width:48px; height:48px; border-radius:12px;
-      background:rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center;
-      flex-shrink:0;
-    }
-    .contact-label {
-      font-family:'Nunito',sans-serif; font-size:10px; font-weight:700;
-      color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px;
-    }
-    .contact-val { color:#fff; font-weight:700; font-size:16px; }
-
-    /* FOOTER */
-    .footer {
-      background:linear-gradient(135deg,#050a14 0%,#0c1733 50%,#080d1f 100%);
-      padding:40px 32px; text-align:center;
-    }
-    .f-logo { font-family:'Nunito',sans-serif; font-weight:800; font-size:22px; color:#fff; letter-spacing:.07em; margin-bottom:8px; }
-    .f-logo em { font-style:normal; color:#60a5fa; }
-    .f-sub { color:rgba(255,255,255,.3); font-size:13px; font-family:'Nunito',sans-serif; font-weight:500; }
-
-    /* RESPONSIVE */
-    @media(max-width:960px){
-      .hero-in { grid-template-columns:1fr; gap:48px; }
-      .hero-right { order:-1; }
-      .team-grid { grid-template-columns:repeat(2,1fr); }
-      .stats-strip-in { grid-template-columns:repeat(2,1fr); }
-      .stat-block:nth-child(2) { border-right:none; }
-      .contact-in { grid-template-columns:1fr; gap:40px; padding:48px 36px; }
-      .values-grid { grid-template-columns:1fr; }
-    }
-    @media(max-width:768px){
-      .nav-links { display:none; } .btn-l { display:none; } .hbg { display:flex; }
-      .hero { padding:100px 20px 60px; }
-      .sec { padding:72px 20px; }
-      .contact-sec { padding:0 20px 72px; }
-      .nav-in { padding:0 20px; }
-      .timeline-line { left:60px; }
-      .tl-year { width:60px; font-size:12px; }
-    }
-    @media(max-width:480px){
-      .team-grid { grid-template-columns:1fr; }
-      .stats-strip-in { grid-template-columns:repeat(2,1fr); }
-      .contact-in { padding:36px 24px; }
-    }
-  `
-
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-
-      {/* NAV */}
-      <nav className={`nav${scrolled ? " s" : ""}`}>
-        <div className="nav-in">
-          <Link href="/" className="logo">
-            <div className="logo-box">
-              <span className="logo-lbl">INV</span>
+      {/* ── NAVBAR ── */}
+      <nav
+        className={cn(
+          "fixed inset-x-0 top-0 z-100 transition-[background,box-shadow] duration-300 animate-nav-slide",
+          scrolled &&
+            "bg-[rgba(8,12,24,.96)] backdrop-blur-[18px] shadow-[0_1px_0_rgba(255,255,255,.06),0_4px_20px_rgba(0,0,0,.4)]"
+        )}
+      >
+        <div className="max-w-300 mx-auto flex items-center justify-between px-8 h-17">
+          <Link href="/" className="flex items-center gap-3 no-underline">
+            <div className="w-9.5 h-9.5 rounded-[9px] bg-linear-to-br from-brand-700 to-brand-500 flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,.35)]">
+              <span className="text-white font-black text-xs tracking-wide">
+                INV
+              </span>
             </div>
-            <span className="logo-name">
-              STOCK<em className="logo-em">R</em>
+            <span className="font-black text-lg tracking-wide text-white">
+              STOCK<em className="not-italic text-brand-500">R</em>
             </span>
           </Link>
-          <div className="nav-links">
+
+          <div className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map((n) => (
-              <Link
+              <NavLinkDesktop
                 key={n.label}
+                label={n.label}
                 href={n.href}
-                className={`nl${n.label === "About Us" ? " on" : ""}`}
-              >
-                {n.label}
-              </Link>
+                active={activeNav === n.label}
+                onClick={() => setActiveNav(n.label)}
+              />
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Link href="/login" className="btn-l">
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className={cn(
+                "hidden md:inline-flex items-center h-10 px-5.5 rounded-[9px] text-sm font-extrabold no-underline transition-all",
+                "shadow-[0_4px_12px_rgba(0,0,0,.15)]",
+                scrolled
+                  ? "bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.4)] hover:bg-brand-600"
+                  : "bg-white text-brand-700 hover:bg-blue-50 hover:-translate-y-px"
+              )}
+            >
               Login
             </Link>
             <button
-              className={`hbg${menuOpen ? " op" : ""}`}
+              className="md:hidden flex flex-col gap-1.25 p-1.5 bg-transparent border-0"
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="menu"
+              aria-label="Toggle menu"
             >
-              <span />
-              <span />
-              <span />
+              <span
+                className={cn(
+                  "block w-5.5 h-0.5 rounded bg-white transition-all",
+                  menuOpen && "translate-x-1.25 translate-y-1.25 rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "block w-5.5 h-0.5 rounded bg-white transition-all",
+                  menuOpen && "opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "block w-5.5 h-0.5 rounded bg-white transition-all",
+                  menuOpen && "translate-x-1.25 -translate-y-1.25 -rotate-45"
+                )}
+              />
             </button>
           </div>
         </div>
-        <div className={`m-menu${menuOpen ? " op" : ""}`}>
-          {NAV_LINKS.map((n) => (
+
+        {menuOpen && (
+          <div className="md:hidden absolute inset-x-0 top-17 bg-white/97 backdrop-blur-xl border-b border-brand-500/10 px-5 pt-3 pb-5 shadow-[0_12px_32px_rgba(0,0,0,.08)] animate-menu-in">
+            {NAV_LINKS.map((n) => (
+              <NavLinkMobile
+                key={n.label}
+                label={n.label}
+                href={n.href}
+                active={activeNav === n.label}
+                onClick={() => {
+                  setActiveNav(n.label)
+                  setMenuOpen(false)
+                }}
+              />
+            ))}
             <Link
-              key={n.label}
-              href={n.href}
-              className={`m-nl${n.label === "About Us" ? " on" : ""}`}
+              href="/login"
+              className="flex items-center justify-center mt-3 w-full h-12 bg-brand-500 text-white rounded-[10px] text-[15px] font-extrabold no-underline"
               onClick={() => setMenuOpen(false)}
             >
-              {n.label}
+              Login
             </Link>
-          ))}
-          <Link
-            href="/login"
-            className="m-login"
-            onClick={() => setMenuOpen(false)}
-          >
-            Login
-          </Link>
-        </div>
+          </div>
+        )}
       </nav>
 
-      {/* HERO */}
-      <section className="hero">
-        <div className="h-grid" />
-        <div className="h-glow" />
-        <div className="h-glow2" />
-        <div className="hero-in">
-          <div className="hero-left">
-            <div className="hero-tag">
-              <div className="tag-dot" />
-              <span>Tentang STOCKR</span>
+      {/* ── HERO ── */}
+      <section
+        id="home"
+        className="relative overflow-hidden min-h-screen flex items-center px-8 pt-25 pb-15 bg-[linear-gradient(160deg,#060b1a_0%,#0c1733_30%,#0f2050_60%,#1e3a8a_100%)]"
+      >
+        <div
+          className="absolute inset-0 pointer-events-none animate-grid-pan"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
+            backgroundSize: "48px 48px"
+          }}
+        />
+        <div className="absolute -top-30 -right-30 w-125 h-125 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.25)_0%,transparent_70%)] pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-95 h-95 rounded-full bg-[radial-gradient(circle,rgba(30,58,138,.2)_0%,transparent_70%)] pointer-events-none" />
+
+        <div className="relative z-1 max-w-300 w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+          <div className="animate-slide-in-left">
+            <div className="relative isolate inline-flex items-center gap-2 rounded-full px-4 py-1.75 mb-6 overflow-hidden bg-white/8 backdrop-blur-sm">
+              <div className="absolute -inset-11.25 rounded-[80px] -z-20 animate-border-rotate bg-[conic-gradient(from_0deg,transparent_0%,transparent_80%,#60a5fa_88%,#93c5fd_92%,#60a5fa_96%,transparent_100%)]" />
+              <div className="absolute inset-[1.5px] rounded-full -z-10 bg-[rgba(8,14,36,.85)] backdrop-blur-sm" />
+              <div className="relative w-1.5 h-1.5 rounded-full bg-brand-400">
+                <div className="absolute -inset-0.75 rounded-full bg-brand-400/40 animate-pulse-ring" />
+              </div>
+              <span className="text-white/90 text-xs font-bold tracking-wide">
+                Sistem Manajemen Inventori
+              </span>
             </div>
-            <h1 className="hero-h1">
-              Kami Hadir untuk
+
+            <h1 className="font-black text-[clamp(36px,5vw,58px)] leading-[1.1] text-white tracking-tight mb-5">
+              Kelola Stok Lebih
               <br />
-              <em>Bisnis Indonesia</em>
+              <em className="not-italic text-brand-400">
+                Cerdas &amp; Efisien
+              </em>
             </h1>
-            <p className="hero-desc">
-              STOCKR lahir dari satu misi sederhana: membantu pebisnis Indonesia
-              kelola stok dengan mudah, akurat, dan efisien — tanpa ribet, tanpa
-              buku catatan.
+            <p className="text-white/70 text-[17px] leading-[1.7] font-medium mb-9 max-w-110">
+              STOCKR membantu bisnis kamu memantau stok, mengelola produk, dan
+              melacak transaksi — semua dari satu platform yang mudah digunakan.
             </p>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+
+            <div className="flex gap-3.5 flex-wrap">
               <Link
                 href="/register"
-                style={{
-                  height: 52,
-                  padding: "0 28px",
-                  background: "#3b82f6",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 12,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  boxShadow: "0 8px 24px rgba(59,130,246,.4)",
-                  transition: "transform .2s,box-shadow .2s"
-                }}
+                className="inline-flex items-center gap-2 h-13 px-7 rounded-xl bg-brand-500 text-white text-[15px] font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.5)] hover:bg-brand-600"
               >
                 <svg
                   width="16"
@@ -663,333 +430,475 @@ export default function AboutPage() {
                 Mulai Gratis
               </Link>
               <a
-                href="#contact"
-                style={{
-                  height: 52,
-                  padding: "0 28px",
-                  background: "rgba(255,255,255,.08)",
-                  color: "#fff",
-                  border: "1.5px solid rgba(255,255,255,.2)",
-                  borderRadius: 12,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  backdropFilter: "blur(8px)"
-                }}
+                href="#product"
+                className="inline-flex items-center h-13 px-7 rounded-xl bg-white/8 text-white text-[15px] font-extrabold no-underline border-[1.5px] border-white/20 backdrop-blur-sm transition-colors hover:bg-white/16 hover:border-white/40"
               >
-                Hubungi Kami
+                Lihat Fitur
               </a>
+            </div>
+
+            <div className="flex gap-5 mt-12 flex-wrap">
+              {STATS.map((s, i) => (
+                <div
+                  key={i}
+                  className="bg-black/25 backdrop-blur-md border border-white/8 rounded-xl px-5 py-3.5 animate-fade-in"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="text-white font-black text-[22px] tracking-tight">
+                    {s.value}
+                  </div>
+                  <div className="text-white/50 text-[11px] font-semibold tracking-wide uppercase mt-0.75">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Mission floating card */}
-          <div className="hero-right">
-            <div className="mission-float">
-              <div className="mission-lbl">Misi Kami</div>
-              <p className="mission-text">
-                Menghadirkan <em>teknologi inventori kelas dunia</em> yang bisa
-                diakses oleh setiap pelaku usaha di Indonesia — dari warung
-                hingga warehouse.
-              </p>
-              <div className="mission-chips">
-                {[
-                  "Mudah Digunakan",
-                  "Cloud-Based",
-                  "Realtime Sync",
-                  "Multi Pengguna",
-                  "Data Aman"
-                ].map((c) => (
-                  <span key={c} className="m-chip">
-                    {c}
-                  </span>
-                ))}
+          {/* ── IMAGE COLLAGE ── */}
+          <div className="animate-slide-in-right">
+            <div className="relative w-full h-120">
+              <div className="absolute top-0 right-0 w-[78%] h-80 rounded-[20px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.4)] animate-img-reveal group">
+                <img
+                  src={IMG1}
+                  alt="Manajemen inventori"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+                <div className="absolute inset-0 rounded-[20px] bg-[linear-gradient(135deg,rgba(30,58,138,.25)_0%,transparent_60%)]" />
+              </div>
+
+              <div className="absolute bottom-0 left-0 w-[58%] h-60 rounded-2xl overflow-hidden border-[3px] border-white/15 shadow-[0_16px_48px_rgba(0,0,0,.35)] animate-img-reveal group">
+                <img
+                  src={IMG2}
+                  alt="Tim bisnis kolaborasi"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(8,14,60,.3)_0%,transparent_60%)]" />
+                <div className="absolute top-5 left-5 z-10 bg-white/95 backdrop-blur-md rounded-xl px-3.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,.18)] animate-float-y">
+                  <div className="font-black text-lg text-brand-700">+48%</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
+                    Efisiensi
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="absolute bottom-14 -right-4 z-10 rounded-xl px-4 py-2.5 shadow-[0_8px_24px_rgba(59,130,246,.45)] bg-linear-to-br from-brand-700 to-brand-500 animate-float-y"
+                style={{ animationDelay: "0.8s" }}
+              >
+                <div className="font-black text-base text-white">500+</div>
+                <div className="text-[10px] text-white/75 font-bold uppercase tracking-wide mt-0.5">
+                  Bisnis Aktif
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* STATS STRIP */}
-      <div className="stats-strip">
-        <div className="stats-strip-in">
-          {[
-            { v: "500+", l: "Bisnis Aktif" },
-            { v: "2M+", l: "Produk Dikelola" },
-            { v: "99.9%", l: "Uptime" },
-            { v: "2022", l: "Tahun Berdiri" }
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="stat-block"
-              style={{ animationDelay: `${i * 0.1}s` }}
-            >
-              <div className="stat-block-v">{s.v}</div>
-              <div className="stat-block-l">{s.l}</div>
+      {/* ── SOCIAL PROOF STRIP ── */}
+      <div className="bg-white px-8 py-7 border-b border-slate-200">
+        <div className="max-w-300 mx-auto flex items-center justify-between flex-wrap gap-6">
+          <span className="text-xs font-bold text-slate-400 tracking-wide uppercase">
+            Dipercaya oleh
+          </span>
+          <div className="flex items-center">
+            <div className="flex items-center">
+              {["A", "B", "C", "D", "E"].map((l, i) => (
+                <div
+                  key={i}
+                  className="w-9 h-9 rounded-full border-2 border-white overflow-hidden -ml-2 first:ml-0 flex items-center justify-center text-xs font-extrabold text-white"
+                  style={{
+                    background: `linear-gradient(135deg, #1e3a8a ${i * 20}%, #3b82f6)`
+                  }}
+                >
+                  {l}
+                </div>
+              ))}
             </div>
-          ))}
+            <span className="text-sm font-bold text-gray-700 ml-3">
+              <em className="not-italic text-brand-700">500+</em> bisnis aktif
+            </span>
+          </div>
+          <div className="hidden sm:block w-px h-8 bg-slate-200" />
+          <div className="text-center">
+            <div className="font-black text-xl text-slate-900">2M+</div>
+            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+              Produk Dikelola
+            </div>
+          </div>
+          <div className="hidden sm:block w-px h-8 bg-slate-200" />
+          <div className="text-center">
+            <div className="font-black text-xl text-slate-900">99.9%</div>
+            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+              Uptime
+            </div>
+          </div>
+          <div className="hidden sm:block w-px h-8 bg-slate-200" />
+          <div className="text-center">
+            <div className="font-black text-xl text-slate-900">4.9★</div>
+            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+              Rating Pengguna
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* VALUES & STORY */}
-      <section className="sec" style={{ background: "#f0f6ff" }}>
-        <div className="sec-in">
-          <div className="sec-tag">
-            <span>Nilai Kami</span>
-          </div>
-          <h2 className="sec-h2">
-            Prinsip yang Membentuk <em>STOCKR</em>
-          </h2>
-          <p className="sec-sub">
-            Setiap keputusan produk kami berakar dari tiga nilai utama ini.
-          </p>
-          <div className="values-grid">
-            {VALUES.map((v, i) => (
-              <div
-                key={i}
-                className="val-card"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div className="val-ico">{v.icon}</div>
-                <h3 className="val-title">{v.title}</h3>
-                <p className="val-desc">{v.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Timeline */}
-          <div className="sec-tag">
-            <span>Perjalanan Kami</span>
-          </div>
-          <h2 className="sec-h2" style={{ marginBottom: 12 }}>
-            Dari Ide ke <em>Kenyataan</em>
-          </h2>
-          <p className="sec-sub">
-            Perjalanan STOCKR membangun solusi inventori terpercaya untuk
-            Indonesia.
-          </p>
-          <div className="timeline-wrap">
-            <div className="timeline-line" />
-            {TIMELINE.map((t, i) => (
-              <div
-                key={i}
-                className="tl-item"
-                style={{ animationDelay: `${i * 0.12}s` }}
-              >
-                <div className="tl-year">{t.year}</div>
-                <div className="tl-dot-wrap">
-                  <div className="tl-dot" />
-                </div>
-                <div className="tl-content">
-                  <div className="tl-title">{t.title}</div>
-                  <div className="tl-desc">{t.desc}</div>
+      {/* ── PHOTO SECTION 1 ── */}
+      <section className="px-8 py-25 bg-white">
+        <div className="max-w-300 mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 items-center">
+            <div className="relative rounded-3xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.12)] animate-slide-in-up group">
+              <img
+                src={IMG1}
+                alt="Manajemen inventori"
+                className="w-full h-95 object-cover block transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(30,58,138,.15)_0%,transparent_50%)]" />
+              <div className="absolute bottom-5 left-5 bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,.1)]">
+                <div className="font-black text-xl text-brand-700">10x</div>
+                <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
+                  Lebih Cepat
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* TEAM */}
-      <section
-        className="sec"
-        style={{ background: "#fff", paddingTop: 0, paddingBottom: 100 }}
-      >
-        <div className="sec-in">
-          <div className="sec-tag">
-            <span>Tim Kami</span>
-          </div>
-          <h2 className="sec-h2">
-            Orang-Orang di Balik <em>STOCKR</em>
-          </h2>
-          <p className="sec-sub">
-            Tim kecil dengan semangat besar untuk transformasi digital bisnis
-            Indonesia.
-          </p>
-          <div className="team-grid">
-            {TEAM.map((m, i) => (
-              <div
-                key={i}
-                className="team-card"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div
-                  className="team-avatar"
-                  style={{
-                    background: `linear-gradient(135deg, ${m.color}, #3b82f6)`
-                  }}
-                >
-                  {m.initials}
-                </div>
-                <div className="team-name">{m.name}</div>
-                <div className="team-role">{m.role}</div>
-                <p className="team-desc">{m.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CONTACT */}
-      <section id="contact" className="contact-sec">
-        <div className="contact-in">
-          <div className="contact-grid-bg" />
-          <div className="contact-left">
-            <div
-              className="sec-tag"
-              style={{ background: "rgba(255,255,255,.12)", marginBottom: 16 }}
-            >
-              <span style={{ color: "#93c5fd" }}>Hubungi Kami</span>
             </div>
-            <h2 className="contact-h2">
-              Ada Pertanyaan?
-              <br />
-              Kami Siap <em>Membantu</em>
-            </h2>
-            <p className="contact-desc">
-              Tim kami siap membantu kamu memulai atau menjawab pertanyaan
-              seputar STOCKR. Jangan ragu untuk menghubungi kami.
-            </p>
-            <p
-              className="contact-desc"
-              style={{
-                color: "rgba(255,255,255,.45)",
-                fontSize: 13,
-                marginTop: 8
-              }}
-            >
-              Jam operasional: Senin – Jumat, 08.00 – 17.00 WIB
-            </p>
-          </div>
-          <div className="contact-right">
-            {/* WhatsApp */}
-            <a
-              href="https://wa.me/6285218789439"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="contact-item"
-            >
-              <div className="contact-ico">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
-                    fill="#60a5fa"
-                  />
-                  <path
-                    d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.656 1.435 5.163L2 22l4.978-1.405A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"
-                    stroke="rgba(255,255,255,.35)"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </svg>
+            <div className="md:pl-4">
+              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+                <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+                  Kolaborasi Tim
+                </span>
               </div>
-              <div>
-                <div className="contact-label">WhatsApp</div>
-                <div className="contact-val">+62 852-1878-9439</div>
-              </div>
-              <div
-                style={{ marginLeft: "auto", color: "rgba(255,255,255,.3)" }}
+              <h2 className="font-black text-[clamp(26px,3.5vw,38px)] text-slate-900 tracking-tight leading-tight mb-4">
+                Kerja Bareng Tim{" "}
+                <em className="not-italic text-brand-700">Lebih Mudah</em>
+              </h2>
+              <p className="text-slate-500 text-[15px] leading-[1.75] font-medium mb-7">
+                STOCKR dirancang untuk tim yang berkembang. Multi-user,
+                permission berbasis peran, dan aktivitas log real-time agar
+                semua anggota tim tetap sinkron.
+              </p>
+              <ul className="flex flex-col gap-3 mb-8 list-none">
+                {[
+                  "Akses multi-pengguna dengan level permission",
+                  "Notifikasi real-time untuk setiap perubahan stok",
+                  "Log aktivitas lengkap untuk audit trail",
+                  "Dashboard personal per departemen"
+                ].map((li) => (
+                  <li
+                    key={li}
+                    className="flex items-start gap-3 text-sm text-gray-700 leading-normal font-semibold"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-full shrink-0 mt-0.5 bg-linear-to-br from-brand-700 to-brand-500 bg-no-repeat bg-center"
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l2.5 2.5L10 3' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E'), linear-gradient(135deg, #1e3a8a, #3b82f6)"
+                      }}
+                    />
+                    {li}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-brand-500 text-white text-sm font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.45)] hover:bg-brand-600"
               >
+                Coba Sekarang
                 <svg
-                  width="18"
-                  height="18"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                 >
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-              </div>
-            </a>
-
-            {/* Phone */}
-            <a href="tel:+6285218789439" className="contact-item">
-              <div className="contact-ico">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#60a5fa"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.16 6.16l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
-                </svg>
-              </div>
-              <div>
-                <div className="contact-label">Telepon</div>
-                <div className="contact-val">+62 852-1878-9439</div>
-              </div>
-              <div
-                style={{ marginLeft: "auto", color: "rgba(255,255,255,.3)" }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </div>
-            </a>
-
-            {/* Email */}
-            <a href="mailto:hello@stockr.id" className="contact-item">
-              <div className="contact-ico">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#60a5fa"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </div>
-              <div>
-                <div className="contact-label">Email</div>
-                <div className="contact-val">hello@stockr.id</div>
-              </div>
-              <div
-                style={{ marginLeft: "auto", color: "rgba(255,255,255,.3)" }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </div>
-            </a>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="f-logo">
-          STOCK<em>R</em>
+      {/* ── FEATURES ── */}
+      <section id="product" className="px-8 py-25 bg-bg-app">
+        <div className="max-w-300 mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+            <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+              Fitur Unggulan
+            </span>
+          </div>
+          <h2 className="font-black text-[clamp(28px,4vw,42px)] text-slate-900 tracking-tight leading-tight mb-3">
+            Semua yang Kamu
+            <br />
+            <em className="not-italic text-brand-700">Butuhkan</em> Ada di Sini
+          </h2>
+          <p className="text-slate-500 text-base leading-relaxed max-w-125 mb-14 font-medium">
+            Platform lengkap untuk manajemen inventori bisnis kecil hingga
+            menengah.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {FEATURES.map((f, i) => (
+              <div
+                key={i}
+                className="bg-white border-[1.5px] border-slate-200 rounded-[18px] p-8 cursor-default transition-all duration-250 animate-slide-in-up hover:border-brand-500 hover:shadow-[0_8px_32px_rgba(59,130,246,.12)] hover:-translate-y-1 group"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                <div className="w-16 h-16 rounded-[14px] flex items-center justify-center text-brand-700 mb-5 transition-colors bg-linear-to-br from-brand-700/8 to-brand-500/12 group-hover:from-brand-700/15 group-hover:to-brand-500/20">
+                  {f.icon}
+                </div>
+                <h3 className="font-black text-[17px] text-slate-900 mb-2">
+                  {f.title}
+                </h3>
+                <p className="text-slate-500 text-sm leading-[1.65] font-medium">
+                  {f.desc}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="f-sub">© 2026 STOCKR · Inventory Management System</div>
+      </section>
+
+      {/* ── PHOTO SECTION 2 ── */}
+      <section className="px-8 py-25 bg-bg-app">
+        <div className="max-w-300 mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 items-center [direction:ltr]">
+            <div className="md:order-2 md:pl-4">
+              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+                <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+                  Smart Analytics
+                </span>
+              </div>
+              <h2 className="font-black text-[clamp(26px,3.5vw,38px)] text-slate-900 tracking-tight leading-tight mb-4">
+                Data Driven,{" "}
+                <em className="not-italic text-brand-700">
+                  Keputusan Lebih Tepat
+                </em>
+              </h2>
+              <p className="text-slate-500 text-[15px] leading-[1.75] font-medium mb-7">
+                Laporan otomatis, grafik tren stok, dan insight produk terlaris
+                membantu kamu mengambil keputusan bisnis berdasarkan data nyata,
+                bukan intuisi.
+              </p>
+              <ul className="flex flex-col gap-3 mb-8 list-none">
+                {[
+                  "Laporan stok harian, mingguan, dan bulanan",
+                  "Analisis produk terlaris & slow-moving",
+                  "Forecast kebutuhan stok otomatis",
+                  "Export laporan ke Excel & PDF"
+                ].map((li) => (
+                  <li
+                    key={li}
+                    className="flex items-start gap-3 text-sm text-gray-700 leading-normal font-semibold"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-full shrink-0 mt-0.5 bg-no-repeat bg-center"
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l2.5 2.5L10 3' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E'), linear-gradient(135deg, #1e3a8a, #3b82f6)"
+                      }}
+                    />
+                    {li}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-brand-500 text-white text-sm font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.45)] hover:bg-brand-600"
+              >
+                Lihat Demo
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="md:order-1 relative rounded-3xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.12)] animate-slide-in-up group">
+              <img
+                src={IMG2}
+                alt="Analytics dashboard inventori"
+                className="w-full h-95 object-cover block transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(30,58,138,.15)_0%,transparent_50%)]" />
+              <div className="absolute bottom-5 left-5 bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,.1)]">
+                <div className="font-black text-xl text-brand-700">
+                  Real-Time
+                </div>
+                <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
+                  Analytics
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRODUCT TABLE ── */}
+      <div className="px-8 pb-25">
+        <div className="max-w-300 mx-auto">
+          <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+                <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+                  Produk
+                </span>
+              </div>
+              <h2 className="font-black text-[clamp(28px,4vw,42px)] text-slate-900 tracking-tight leading-tight">
+                Contoh Data{" "}
+                <em className="not-italic text-brand-700">Inventori</em>
+              </h2>
+            </div>
+            <Link
+              href="/login"
+              className="inline-flex items-center h-11 px-6 rounded-[10px] text-sm font-extrabold no-underline bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.35)]"
+            >
+              Kelola Sekarang →
+            </Link>
+          </div>
+
+          <div className="bg-white border-[1.5px] border-slate-200 rounded-[18px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,.04)] animate-slide-in-up">
+            <table className="w-full border-collapse">
+              <thead className="bg-linear-to-br from-brand-900 to-brand-700">
+                <tr>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Nama Produk
+                  </th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Kategori
+                  </th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Stok
+                  </th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {PRODUCTS.map((p, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-slate-100 last:border-none transition-colors hover:bg-[#f8faff]"
+                  >
+                    <td className="px-5 py-4 text-sm">
+                      <div className="font-extrabold text-slate-900">
+                        {p.name}
+                      </div>
+                      <div className="text-xs text-slate-400 font-semibold mt-0.5">
+                        {p.sku}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-[13px] text-slate-500 font-medium">
+                      {p.cat}
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      <span
+                        className={cn(
+                          "font-black text-[15px]",
+                          STOCK_COLOR(p.stock)
+                        )}
+                      >
+                        {p.stock}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      <span
+                        className={cn(
+                          "inline-block text-[11px] font-extrabold px-3 py-1 rounded-full",
+                          STATUS_STYLES[p.status]
+                        )}
+                      >
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ABOUT ── */}
+      <section id="about" className="px-8 pb-25">
+        <div className="relative overflow-hidden max-w-300 mx-auto rounded-[28px] px-9 md:px-16 py-14 md:py-18 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center bg-[linear-gradient(145deg,#060b1a,#0c1733,#1e3a8a)]">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px)",
+              backgroundSize: "40px 40px"
+            }}
+          />
+          <div className="relative z-1">
+            <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-white/12">
+              <span className="text-brand-300 text-xs font-extrabold tracking-wide uppercase">
+                Tentang Kami
+              </span>
+            </div>
+            <h2 className="font-black text-[clamp(26px,3.5vw,38px)] text-white tracking-tight mb-4">
+              Dibangun untuk Bisnis yang Terus Berkembang
+            </h2>
+            <p className="text-white/70 text-[15px] leading-[1.8] font-medium mb-8">
+              STOCKR lahir dari kebutuhan nyata para pebisnis Indonesia yang
+              kesulitan memantau stok secara akurat. Kami menghadirkan solusi
+              yang sederhana, cepat, dan dapat diandalkan.
+            </p>
+            <div className="flex gap-2.5 flex-wrap">
+              {[
+                "Mudah Digunakan",
+                "Cloud-Based",
+                "Realtime Sync",
+                "Multi Pengguna"
+              ].map((c) => (
+                <span
+                  key={c}
+                  className="bg-white/10 border border-white/18 rounded-full px-4 py-1.5 text-white/85 text-[13px] font-bold"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="relative z-1 grid grid-cols-2 gap-4">
+            {[
+              { v: "500+", l: "Bisnis Aktif" },
+              { v: "2M+", l: "Produk Dikelola" },
+              { v: "99.9%", l: "Uptime" },
+              { v: "24/7", l: "Support" }
+            ].map((c) => (
+              <div
+                key={c.l}
+                className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-6"
+              >
+                <div className="font-black text-[28px] text-white tracking-tight">
+                  {c.v}
+                </div>
+                <div className="text-white/50 text-xs font-bold mt-1.5 tracking-wide uppercase">
+                  {c.l}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="px-8 py-10 text-center bg-[linear-gradient(135deg,#050a14_0%,#0c1733_50%,#080d1f_100%)]">
+        <div className="font-black text-[22px] text-white tracking-wide mb-2">
+          STOCK<em className="not-italic text-brand-400">R</em>
+        </div>
+        <div className="text-white/35 text-[13px] font-semibold">
+          © 2026 STOCKR · Inventory Management System
+        </div>
       </footer>
       <CSChatWidget />
     </>

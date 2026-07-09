@@ -1,18 +1,8 @@
 "use client"
 
-import {
-  Avatar,
-  Box,
-  Divider,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography
-} from "@mui/material"
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { cn } from "../../../lib/utils"
 
 const Icon = ({
   d,
@@ -75,7 +65,7 @@ interface SidebarProps {
   T?: string
 }
 
-export default function Sidebar({ isDark, T = "0.3s ease" }: SidebarProps) {
+export default function Sidebar({ T = "0.3s ease" }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -99,216 +89,89 @@ export default function Sidebar({ isDark, T = "0.3s ease" }: SidebarProps) {
   const avatarLetter = userName.charAt(0).toUpperCase()
 
   return (
-    <Box
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background:
-          "linear-gradient(160deg, #060b1a 0%, #0c1733 40%, #0f2050 70%, #1e3a8a 100%)",
-        borderRight: "1px solid rgba(255,255,255,.08)",
-        position: "relative",
-        overflow: "hidden",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-          pointerEvents: "none",
-          zIndex: 0
-        },
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          top: -60,
-          right: -60,
-          width: 220,
-          height: 220,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(59,130,246,.25) 0%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0
-        }
-      }}
-    >
-      {/* ── LOGO ── */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          position: "relative",
-          zIndex: 1
-        }}
-      >
-        <Box
-          sx={{
-            width: 34,
-            height: 34,
-            background: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
-            borderRadius: "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 4px 12px rgba(59,130,246,.4)"
-          }}
-        >
-          <Typography
-            sx={{
-              color: "#fff",
-              fontWeight: 900,
-              fontSize: 11,
-              fontFamily: "'Nunito', sans-serif",
-              letterSpacing: "0.05em"
-            }}
-          >
-            INV
-          </Typography>
-        </Box>
-        <Box>
-          <Typography
-            sx={{
-              color: "#fff",
-              fontWeight: 900,
-              fontSize: 15,
-              letterSpacing: "0.06em",
-              fontFamily: "'Nunito', sans-serif",
-              lineHeight: 1.2
-            }}
-          >
-            STOCKR
-          </Typography>
-          <Typography
-            sx={{
-              color: "rgba(255,255,255,.4)",
-              fontSize: 10,
-              fontFamily: "'Nunito', sans-serif",
-              fontWeight: 600
-            }}
-          >
-            Inventory Management
-          </Typography>
-        </Box>
-      </Box>
+    <div className="relative flex h-full flex-col overflow-hidden border-r border-white/8 bg-[linear-gradient(160deg,var(--color-brand-950)_0%,var(--color-brand-900)_40%,var(--color-brand-800)_70%,var(--color-brand-700)_100%)]">
+      {/* faint grid overlay */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,.025)_1px,transparent_1px),linear-gradient (90deg,rgba(255,255,255,.025)_1px,transparent_1px)] bg-size-[40px_40px]" />
+      {/* glow blob */}
+      <div className="pointer-events-none absolute -right-15 -top-15 z-0 h-55 w-55 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.25)_0%,transparent_70%)]" />
 
-      <Divider sx={{ borderColor: "rgba(255,255,255,.08)", mb: 1 }} />
+      {/* ── LOGO ── */}
+      <div className="relative z-10 flex items-center gap-3 px-6 py-5">
+        <div className="flex h-0.5 w-0.5 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-brand-700 to-brand-500 shadow-[0_4px_12px_rgba(59,130,246,.4)]">
+          <span className="font-nunito text-[11px] font-black tracking-wide text-white">
+            INV
+          </span>
+        </div>
+        <div>
+          <p className="font-nunito text-[15px] font-black leading-tight tracking-wide text-white">
+            STOCKR
+          </p>
+          <p className="font-nunito text-[10px] font-semibold text-white/40">
+            Inventory Management
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-1 h-px bg-white/8" />
 
       {/* ── NAV ── */}
-      <List dense sx={{ px: 1, flex: 1, position: "relative", zIndex: 1 }}>
+      <nav className="relative z-10 flex-1 space-y-1 px-2">
         {NAV_ITEMS.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/")
           return (
-            <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => router.push(item.href)}
-                sx={{
-                  borderRadius: "8px",
-                  px: 1.5,
-                  py: 1,
-                  bgcolor: isActive ? "rgba(59,130,246,.2)" : "transparent",
-                  border: `1px solid ${isActive ? "rgba(59,130,246,.4)" : "transparent"}`,
-                  cursor: "pointer",
-                  transition: `all ${T}`,
-                  "&:hover": {
-                    bgcolor: isActive
-                      ? "rgba(59,130,246,.25)"
-                      : "rgba(255,255,255,.07)",
-                    border: `1px solid ${isActive ? "rgba(59,130,246,.4)" : "rgba(255,255,255,.1)"}`
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <Icon
-                    d={item.icon}
-                    size={16}
-                    color={isActive ? "#60a5fa" : "rgba(255,255,255,.4)"}
-                  />
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: 13,
-                    fontWeight: isActive ? 800 : 600,
-                    color: isActive ? "#fff" : "rgba(255,255,255,.55)",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
+            <button
+              key={item.label}
+              onClick={() => router.push(item.href)}
+              className={cn(
+                "flex w-full items-center gap-0 rounded-lg border px-3 py-2 text-left",
+                isActive
+                  ? "border-brand-500/40 bg-brand-500/20 hover:bg-brand-500/25"
+                  : "border-transparent hover:border-white/10 hover:bg-white/[.07]"
+              )}
+              style={{ transition: `all ${T}` }}
+            >
+              <span className="flex w-8 shrink-0 items-center justify-center">
+                <Icon
+                  d={item.icon}
+                  size={16}
+                  color={isActive ? "#60a5fa" : "rgba(255,255,255,.4)"}
                 />
-                {isActive && (
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "#60a5fa",
-                      flexShrink: 0
-                    }}
-                  />
+              </span>
+              <span
+                className={cn(
+                  "font-nunito flex-1 text-[13px]",
+                  isActive
+                    ? "font-extrabold text-white"
+                    : "font-semibold text-white/55"
                 )}
-              </ListItemButton>
-            </ListItem>
+              >
+                {item.label}
+              </span>
+              {isActive && (
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
+              )}
+            </button>
           )
         })}
-      </List>
+      </nav>
 
       {/* ── USER ── */}
-      <Box
-        sx={{
-          px: 2,
-          py: 2.5,
-          borderTop: "1px solid rgba(255,255,255,.08)",
-          position: "relative",
-          zIndex: 1
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: "#FF6B35",
-              fontSize: 12,
-              fontFamily: "'Nunito', sans-serif",
-              fontWeight: 800,
-              boxShadow: "0 2px 8px rgba(255,107,53,.4)"
-            }}
-          >
+      <div className="relative z-10 border-t border-white/8 px-4 py-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF6B35] text-xs font-extrabold text-white shadow-[0_2px_8px_rgba(255,107,53,.4)]">
             {avatarLetter}
-          </Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              sx={{
-                color: "#fff",
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
-            >
+          </div>
+          <div className="min-w-0">
+            <p className="font-nunito truncate text-xs font-bold text-white">
               {userName.length > 14 ? userName.slice(0, 14) + "…" : userName}
-            </Typography>
-            <Typography
-              sx={{
-                color: "rgba(255,255,255,.35)",
-                fontSize: 10,
-                textTransform: "capitalize",
-                fontFamily: "'Nunito', sans-serif",
-                fontWeight: 600
-              }}
-            >
+            </p>
+            <p className="font-nunito text-[10px] font-semibold capitalize text-white/35">
               {userRole}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

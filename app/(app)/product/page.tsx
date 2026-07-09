@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import CSChatWidget from "../components/CSChatWidget"
+import { cn } from "../../lib/utils"
 
 /* ── DATA ── */
 const NAV_LINKS = [
@@ -204,28 +205,18 @@ const FEATURES_MINI = [
 /* ── VISUALS ── */
 function VisualGrid() {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4,1fr)",
-        gap: 8,
-        width: "100%"
-      }}
-    >
+    <div className="grid w-full grid-cols-4 gap-2">
       {Array.from({ length: 12 }).map((_, i) => (
         <div
           key={i}
-          style={{
-            height: 48,
-            borderRadius: 10,
-            background:
-              i % 3 === 0
-                ? "rgba(56,189,248,.25)"
-                : i % 5 === 0
-                  ? "rgba(30,58,95,.45)"
-                  : "rgba(255,255,255,.07)",
-            border: "1px solid rgba(255,255,255,.1)"
-          }}
+          className={cn(
+            "h-12 rounded-[10px] border border-white/10",
+            i % 3 === 0
+              ? "bg-[#38bdf8]/25"
+              : i % 5 === 0
+                ? "bg-[#1e3a5f]/45"
+                : "bg-white/7"
+          )}
         />
       ))}
     </div>
@@ -234,42 +225,19 @@ function VisualGrid() {
 
 function VisualPulse() {
   return (
-    <div
-      style={{
-        position: "relative",
-        width: 160,
-        height: 160,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-      }}
-    >
+    <div className="relative flex h-40 w-40 items-center justify-center">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
+          className="absolute rounded-full border-[1.5px] border-brand-400/35 animate-[expandRing_2.5s_ease-out_infinite]"
           style={{
-            position: "absolute",
             width: i * 50,
             height: i * 50,
-            borderRadius: "50%",
-            border: "1.5px solid rgba(96,165,250,.35)",
-            animation: `expandRing 2.5s ease-out infinite`,
             animationDelay: `${(i - 1) * 0.75}s`
           }}
         />
       ))}
-      <div
-        style={{
-          width: 50,
-          height: 50,
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 0 28px rgba(59,130,246,.5)"
-        }}
-      >
+      <div className="flex h-12.5 w-12.5 items-center justify-center rounded-full bg-linear-to-br from-brand-700 to-brand-500 shadow-[0_0_28px_rgba(59,130,246,.5)]">
         <svg
           width="22"
           height="22"
@@ -288,39 +256,20 @@ function VisualPulse() {
 function VisualBars() {
   const heights = [40, 70, 55, 85, 65, 90, 75]
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-end",
-        gap: 7,
-        height: 100,
-        width: "100%"
-      }}
-    >
+    <div className="flex h-25 w-full items-end gap-1.75">
       {heights.map((h, i) => (
         <div
           key={i}
-          style={{
-            flex: 1,
-            borderRadius: "5px 5px 0 0",
-            background:
-              i === 5
-                ? "linear-gradient(180deg, #60a5fa, #1d4ed8)"
-                : "rgba(255,255,255,.14)",
-            height: `${h}%`,
-            position: "relative",
-            overflow: "hidden"
-          }}
+          className={cn(
+            "relative flex-1 overflow-hidden rounded-t-[5px]",
+            i === 5
+              ? "bg-linear-to-b from-brand-400 to-[#1d4ed8]"
+              : "bg-white/14"
+          )}
+          style={{ height: `${h}%` }}
         >
           {i === 5 && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,.2), transparent)"
-              }}
-            />
+            <div className="absolute inset-0 bg-linear-to-b from-white/20 to-transparent" />
           )}
         </div>
       ))}
@@ -336,56 +285,32 @@ function VisualTimeline() {
     "Order #1039 · Masuk 100 pcs"
   ]
   return (
-    <div style={{ width: "100%" }}>
+    <div className="w-full">
       {items.map((item, i) => (
-        <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center"
-            }}
-          >
+        <div key={i} className="mb-2 flex gap-2.5">
+          <div className="flex flex-col items-center">
             <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: i === 0 ? "#60a5fa" : "rgba(255,255,255,.2)",
-                flexShrink: 0,
-                marginTop: 5
-              }}
+              className={cn(
+                "mt-1.25 h-2 w-2 shrink-0 rounded-full",
+                i === 0 ? "bg-brand-400" : "bg-white/20"
+              )}
             />
             {i < items.length - 1 && (
-              <div
-                style={{
-                  width: 1,
-                  flex: 1,
-                  background: "rgba(255,255,255,.08)",
-                  marginTop: 3
-                }}
-              />
+              <div className="mt-0.75 w-px flex-1 bg-white/8" />
             )}
           </div>
           <div
-            style={{
-              flex: 1,
-              background: "rgba(255,255,255,.06)",
-              borderRadius: 8,
-              padding: "7px 11px",
-              border:
-                i === 0
-                  ? "1px solid rgba(96,165,250,.35)"
-                  : "1px solid rgba(255,255,255,.06)",
-              marginBottom: i < items.length - 1 ? 4 : 0
-            }}
+            className={cn(
+              "flex-1 rounded-lg border bg-white/6 px-2.75 py-1.75",
+              i === 0 ? "border-brand-400/35" : "border-white/6",
+              i < items.length - 1 && "mb-1"
+            )}
           >
             <span
-              style={{
-                fontSize: 11,
-                color: i === 0 ? "#60a5fa" : "rgba(255,255,255,.6)",
-                fontFamily: "'Nunito', sans-serif"
-              }}
+              className={cn(
+                "text-[11px]",
+                i === 0 ? "text-brand-400" : "text-white/60"
+              )}
             >
               {item}
             </span>
@@ -402,7 +327,6 @@ export default function ProductPage() {
   const [dir, setDir] = useState<"right" | "left">("right")
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [imgLoaded, setImgLoaded] = useState([false, false])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const goTo = (idx: number, direction?: "left" | "right") => {
@@ -430,7 +354,10 @@ export default function ProductPage() {
   }, [])
 
   const cur = PRODUCTS[active]
-  const anim = dir === "right" ? "slideR" : "slideL"
+  const slideAnim =
+    dir === "right"
+      ? "animate-[slideR_.5s_cubic-bezier(.22,.68,0,1.15)_both]"
+      : "animate-[slideL_.5s_cubic-bezier(.22,.68,0,1.15)_both]"
 
   const renderVisual = (type: string) => {
     if (type === "grid") return <VisualGrid />
@@ -439,450 +366,141 @@ export default function ProductPage() {
     return <VisualTimeline />
   }
 
-  const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: #f0faf7; color: #0f172a; overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    @keyframes navSlide   { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }
-    @keyframes menuIn     { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes slideR     { from{opacity:0;transform:translateX(55px) scale(.97)} to{opacity:1;transform:translateX(0) scale(1)} }
-    @keyframes slideL     { from{opacity:0;transform:translateX(-55px) scale(.97)} to{opacity:1;transform:translateX(0) scale(1)} }
-    @keyframes expandRing { 0%{transform:scale(.3);opacity:.7} 100%{transform:scale(1);opacity:0} }
-    @keyframes floatY     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    @keyframes gridPan    { from{background-position:0 0} to{background-position:48px 48px} }
-    @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:.2} }
-    @keyframes fillProg   { from{width:0%} to{width:100%} }
-    @keyframes fadeUp     { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes kenBurns   {
-      0%   { transform: scale(1.0) translate(0, 0); }
-      50%  { transform: scale(1.08) translate(-1%, 1%); }
-      100% { transform: scale(1.0) translate(0, 0); }
-    }
-    @keyframes imgFade { from{opacity:0} to{opacity:1} }
-
-    .anim-slideR { animation: slideR .5s cubic-bezier(.22,.68,0,1.15) both; }
-    .anim-slideL { animation: slideL .5s cubic-bezier(.22,.68,0,1.15) both; }
-    .anim-fadeUp { animation: fadeUp .6s ease both; }
-
-    /* NAV */
-    .nav {
-      position:fixed; top:0; left:0; right:0; z-index:100;
-      transition: background .3s, box-shadow .3s;
-      animation: navSlide .4s ease forwards;
-    }
-    .nav.s {
-      background: rgba(8,12,24,.96);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 4px 20px rgba(0,0,0,.4);
-    }
-    .nav-in {
-      max-width:1200px; margin:0 auto;
-      display:flex; align-items:center; justify-content:space-between;
-      padding:0 32px; height:70px;
-    }
-    .logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
-    .logo-box {
-      width:40px; height:40px; border-radius:10px;
-      background:linear-gradient(135deg,#1e3a8a,#3b82f6);
-      display:flex; align-items:center; justify-content:center;
-      box-shadow: 0 4px 14px rgba(59,130,246,.4);
-    }
-    .logo-lbl { color:#fff; font-family:'Nunito',sans-serif; font-weight:900; font-size:11px; letter-spacing:.05em; }
-    .logo-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; letter-spacing:.07em; color:#fff; }
-    .logo-em { color:#60a5fa; font-style:normal; }
-    .nav.s .logo-name { color: #f1f5f9; }
-
-    .nav-links { display:flex; align-items:center; gap:2px; }
-    .nl {
-      padding:9px 20px; border-radius:8px; font-size:15px; font-weight:700;
-      color:rgba(255,255,255,.75); text-decoration:none;
-      font-family:'Nunito',sans-serif;
-      transition:color .2s, background .2s;
-    }
-    .nl:hover { color:#fff; background:rgba(255,255,255,.1); }
-    .nl.on { color:#fff; font-weight:800; }
-    .nav.s .nl { color:rgba(255,255,255,.65); }
-    .nav.s .nl:hover { color:#fff; background:rgba(255,255,255,.1); }
-    .nav.s .nl.on { color:#60a5fa; }
-
-    .btn-l {
-      height:42px; padding:0 22px;
-      background:rgba(255,255,255,.12); color:#fff;
-      border:1px solid rgba(255,255,255,.2); border-radius:10px;
-      font-size:15px; font-weight:800;
-      font-family:'Nunito',sans-serif;
-      cursor:pointer; text-decoration:none; display:flex; align-items:center;
-      backdrop-filter:blur(8px); transition:all .2s;
-    }
-    .btn-l:hover { background:rgba(255,255,255,.2); transform:translateY(-1px); }
-    .nav.s .btn-l { background:#3b82f6; color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(59,130,246,.4); }
-    .nav.s .btn-l:hover { background:#2563eb; }
-
-    .hbg { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:6px; background:none; border:none; }
-    .hbg span { display:block; width:22px; height:2px; background:#fff; border-radius:2px; transition:all .3s; }
-    .hbg.op span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
-    .hbg.op span:nth-child(2){opacity:0}
-    .hbg.op span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
-
-    .m-menu {
-      display:none; position:absolute; top:70px; left:0; right:0;
-      background:rgba(8,12,24,.97); backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(255,255,255,.08); padding:12px 20px 20px;
-      box-shadow:0 12px 32px rgba(0,0,0,.4);
-      animation: menuIn .2s ease forwards;
-    }
-    .m-menu.op { display:block; }
-    .m-nl {
-      display:block; padding:13px 16px; border-radius:10px; font-size:15px; font-weight:700;
-      color:rgba(255,255,255,.7); text-decoration:none; margin-bottom:4px;
-      font-family:'Nunito',sans-serif;
-      transition:all .2s; border:none; background:none; width:100%; text-align:left; cursor:pointer;
-    }
-    .m-nl:hover,.m-nl.on { color:#60a5fa; background:rgba(59,130,246,.1); }
-    .m-login {
-      margin-top:12px; width:100%; height:48px; background:#3b82f6; color:#fff;
-      border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer;
-      font-family:'Nunito',sans-serif;
-      text-decoration:none; display:flex; align-items:center; justify-content:center;
-    }
-
-    /* HERO */
-    .hero {
-      min-height: 100vh;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      padding: 100px 32px 72px;
-    }
-
-    /* Background image collage */
-    .hero-bg {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-    }
-    .hero-bg-img1 {
-      position: absolute;
-      top: 0; right: 0;
-      width: 55%; height: 60%;
-      object-fit: cover;
-      opacity: .22;
-      animation: kenBurns 18s ease-in-out infinite;
-    }
-    .hero-bg-img2 {
-      position: absolute;
-      bottom: 0; left: 0;
-      width: 50%; height: 55%;
-      object-fit: cover;
-      opacity: .16;
-      animation: kenBurns 22s ease-in-out infinite reverse;
-    }
-
-    /* dark gradient overlay on top of images */
-    .hero-bg-overlay {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 70% 20%, rgba(30,58,138,.18) 0%, transparent 60%),
-        radial-gradient(ellipse 70% 60% at 20% 80%, rgba(15,23,42,.3) 0%, transparent 60%),
-        linear-gradient(160deg,
-          #060b1a 0%,
-          #0c1733 25%,
-          #0f2050 50%,
-          #0c1a3a 75%,
-          #080d1f 100%
-        );
-    }
-
-    .h-grid {
-      position:absolute; inset:0; z-index:1;
-      background-image:
-        linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-      background-size:52px 52px; animation:gridPan 12s linear infinite; pointer-events:none;
-    }
-    .h-glow {
-      position:absolute; z-index:1; top:-80px; right:-80px; width:520px; height:520px;
-      border-radius:50%; background:radial-gradient(circle,rgba(59,130,246,.15) 0%,transparent 65%); pointer-events:none;
-    }
-    .h-glow2 {
-      position:absolute; z-index:1; bottom:-60px; left:-60px; width:400px; height:400px;
-      border-radius:50%; background:radial-gradient(circle,rgba(30,58,138,.12) 0%,transparent 65%); pointer-events:none;
-    }
-    .h-in {
-      max-width:1200px; margin:0 auto; width:100%;
-      display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center;
-      position:relative; z-index:2;
-    }
-
-    .s-badge {
-      display:inline-flex; align-items:center; gap:9px;
-      background:rgba(255,255,255,.08); backdrop-filter:blur(8px);
-      border:1px solid rgba(255,255,255,.15); border-radius:100px;
-      padding:8px 20px; margin-bottom:20px;
-    }
-    .s-dot { width:7px; height:7px; border-radius:50%; background:#60a5fa; animation:blink 1.4s ease-in-out infinite; flex-shrink:0; }
-    .s-badge-txt { font-family:'Nunito',sans-serif; font-size:12px; font-weight:800; color:rgba(255,255,255,.85); letter-spacing:.08em; text-transform:uppercase; }
-
-    .s-tag { font-family:'Nunito',sans-serif; font-size:12px; font-weight:700; color:rgba(255,255,255,.45); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
-
-    .s-title {
-      font-family:'Nunito',sans-serif; font-weight:900; font-size:64px; line-height:1.04;
-      color:#fff; letter-spacing:-.02em; margin-bottom:20px;
-    }
-    .s-title em { font-style:normal; color:#60a5fa; }
-
-    .s-desc { color:rgba(255,255,255,.65); font-size:17px; line-height:1.75; margin-bottom:34px; max-width:440px; font-family:'Nunito',sans-serif; font-weight:500; }
-
-    .s-stats { display:flex; gap:12px; margin-bottom:34px; flex-wrap:wrap; }
-    .s-stat {
-      background:rgba(0,0,0,.35); backdrop-filter:blur(12px);
-      border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px 20px;
-    }
-    .s-stat-v { font-family:'Nunito',sans-serif; font-weight:900; font-size:26px; color:#fff; line-height:1; }
-    .s-stat-l { font-family:'Nunito',sans-serif; font-size:10px; font-weight:700; color:rgba(255,255,255,.38); text-transform:uppercase; letter-spacing:.07em; margin-top:5px; }
-
-    .s-cta { display:flex; gap:12px; flex-wrap:wrap; }
-    .btn-p {
-      height:52px; padding:0 30px; background:#3b82f6; color:#fff;
-      border:none; border-radius:12px; font-size:16px; font-weight:800; cursor:pointer;
-      font-family:'Nunito',sans-serif; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
-      box-shadow:0 8px 28px rgba(59,130,246,.4); transition:transform .2s, box-shadow .2s, background .2s;
-    }
-    .btn-p:hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(59,130,246,.5); background:#2563eb; }
-    .btn-g {
-      height:52px; padding:0 26px; background:rgba(255,255,255,.08); color:#fff;
-      border:1.5px solid rgba(255,255,255,.2); border-radius:12px;
-      font-size:16px; font-weight:700; cursor:pointer;
-      font-family:'Nunito',sans-serif; text-decoration:none; display:inline-flex; align-items:center;
-      backdrop-filter:blur(8px); transition:background .2s;
-    }
-    .btn-g:hover { background:rgba(255,255,255,.16); }
-
-    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-top:40px; }
-    .tab {
-      display:flex; align-items:center; gap:8px; padding:11px 22px; border-radius:100px;
-      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-      color:rgba(255,255,255,.55); font-size:14px; font-weight:700; cursor:pointer;
-      font-family:'Nunito',sans-serif; transition:all .22s;
-    }
-    .tab:hover { background:rgba(255,255,255,.12); color:rgba(255,255,255,.85); }
-    .tab.on { background:rgba(59,130,246,.2); color:#93c5fd; border-color:rgba(59,130,246,.35); }
-    .tab-n { font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; opacity:.5; }
-
-    .prog-wrap { display:flex; gap:6px; margin-top:14px; }
-    .prog-bar { height:2px; border-radius:2px; flex:1; background:rgba(255,255,255,.1); overflow:hidden; }
-    .prog-fill { height:100%; border-radius:2px; background:#3b82f6; width:0%; }
-    .prog-fill.go { animation:fillProg 4.5s linear forwards; }
-
-    .dots { display:flex; align-items:center; gap:12px; margin-top:14px; }
-    .dot-btn {
-      width:8px; height:8px; border-radius:100px; background:rgba(255,255,255,.2);
-      cursor:pointer; border:none; transition:width .4s cubic-bezier(.34,1.56,.64,1), background .3s;
-    }
-    .dot-btn.on { width:30px; background:#60a5fa; }
-    .next-b {
-      background:rgba(255,255,255,.08); border:none; border-radius:8px; padding:8px 16px;
-      color:rgba(255,255,255,.5); font-size:13px; font-weight:700; cursor:pointer;
-      font-family:'Nunito',sans-serif; transition:all .2s;
-    }
-    .next-b:hover { background:rgba(255,255,255,.15); color:#fff; }
-
-    /* Right card */
-    .v-card {
-      background:rgba(255,255,255,.05); backdrop-filter:blur(20px);
-      border:1px solid rgba(255,255,255,.1); border-radius:24px;
-      padding:36px; width:100%; max-width:380px;
-      display:flex; flex-direction:column; align-items:center; gap:26px;
-      box-shadow:0 24px 64px rgba(0,0,0,.5);
-      animation: floatY 5s ease-in-out infinite;
-    }
-    .v-icon {
-      width:96px; height:96px; border-radius:20px;
-      background:rgba(59,130,246,.12);
-      display:flex; align-items:center; justify-content:center; color:#93c5fd;
-    }
-    .v-stat {
-      width:100%; padding:14px 16px; background:rgba(0,0,0,.3);
-      border-radius:12px; border:1px solid rgba(255,255,255,.07);
-    }
-    .v-stat-lbl { font-family:'Nunito',sans-serif; font-size:10px; font-weight:800; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
-    .v-stat-row { display:flex; gap:10px; }
-    .v-stat-v { font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; color:#60a5fa; }
-    .v-stat-l { font-family:'Nunito',sans-serif; font-size:9px; font-weight:700; color:rgba(255,255,255,.28); text-transform:uppercase; letter-spacing:.05em; margin-top:3px; }
-
-    /* STRIP */
-    .strip { background:#fff; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; padding:26px 32px; }
-    .strip-in {
-      max-width:1200px; margin:0 auto;
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
-    }
-    .s-item {
-      display:flex; align-items:center; gap:7px; padding:8px 18px; border-radius:100px;
-      background:#f0faf7; border:1px solid rgba(8,116,99,.15);
-      font-size:14px; font-weight:700; color:#087463;
-      font-family:'Nunito',sans-serif;
-    }
-
-    /* DETAIL SECTION */
-    .det-sec { padding:100px 32px; background:#f0faf7; }
-    .det-in { max-width:1200px; margin:0 auto; }
-    .det-head { text-align:center; margin-bottom:60px; }
-    .det-tag {
-      display:inline-flex; align-items:center;
-      background:rgba(8,116,99,.1); border-radius:100px; padding:5px 16px; margin-bottom:16px;
-    }
-    .det-tag span { color:#087463; font-size:12px; font-weight:800; font-family:'Nunito',sans-serif; text-transform:uppercase; letter-spacing:.07em; }
-    .det-h2 { font-family:'Nunito',sans-serif; font-weight:900; font-size:42px; color:#0f172a; letter-spacing:-.02em; line-height:1.2; margin-bottom:14px; }
-    .det-h2 em { font-style:normal; color:#087463; }
-    .det-sub { color:#64748b; font-size:17px; line-height:1.65; max-width:520px; margin:0 auto; font-family:'Nunito',sans-serif; font-weight:500; }
-    .det-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:24px; }
-    .det-card {
-      background:#fff; border:1.5px solid #e2e8f0; border-radius:20px; padding:36px;
-      transition:border-color .25s, box-shadow .25s, transform .25s;
-    }
-    .det-card:hover { border-color:#087463; box-shadow:0 8px 32px rgba(8,116,99,.12); transform:translateY(-4px); }
-    .det-ico {
-      width:64px; height:64px; border-radius:16px; margin-bottom:20px;
-      background:linear-gradient(135deg,rgba(8,116,99,.1),rgba(15,191,159,.1));
-      display:flex; align-items:center; justify-content:center; color:#087463;
-    }
-    .det-badge {
-      display:inline-block; font-size:11px; font-weight:800;
-      font-family:'Nunito',sans-serif; letter-spacing:.06em; text-transform:uppercase;
-      color:#087463; background:rgba(8,116,99,.08); border-radius:100px; padding:4px 12px; margin-bottom:12px;
-    }
-    .det-title { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; color:#0f172a; margin-bottom:10px; }
-    .det-desc { color:#64748b; font-size:15px; line-height:1.7; margin-bottom:22px; font-family:'Nunito',sans-serif; font-weight:500; }
-    .det-stats { display:flex; gap:20px; flex-wrap:wrap; }
-    .det-sv { font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; color:#087463; }
-    .det-sl { font-size:10px; color:#94a3b8; font-family:'Nunito',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
-
-    /* CTA */
-    .cta-sec { padding:0 32px 100px; }
-    .cta-in {
-      max-width:1200px; margin:0 auto;
-      background:linear-gradient(145deg,#060b1a,#0c1a3a,#1e3a8a);
-      border-radius:28px; padding:80px 64px; text-align:center; position:relative; overflow:hidden;
-    }
-    .cta-grid {
-      position:absolute; inset:0;
-      background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
-      background-size:40px 40px; pointer-events:none;
-    }
-    .cta-glow {
-      position:absolute; top:-80px; right:-80px; width:400px; height:400px; border-radius:50%;
-      background:radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 65%); pointer-events:none;
-    }
-    .cta-h2 { font-family:'Nunito',sans-serif; font-weight:900; font-size:44px; color:#fff; letter-spacing:-.025em; margin-bottom:16px; position:relative; z-index:1; }
-    .cta-h2 em { font-style:normal; color:#60a5fa; }
-    .cta-p { color:rgba(255,255,255,.65); font-size:17px; line-height:1.7; max-width:480px; margin:0 auto 36px; position:relative; z-index:1; font-family:'Nunito',sans-serif; font-weight:500; }
-    .cta-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; position:relative; z-index:1; }
-    .btn-cta-w {
-      height:52px; padding:0 30px; background:#fff; color:#1e3a8a;
-      border:none; border-radius:12px; font-size:16px; font-weight:900; cursor:pointer;
-      font-family:'Nunito',sans-serif; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
-      box-shadow:0 8px 28px rgba(0,0,0,.3); transition:transform .2s, box-shadow .2s;
-    }
-    .btn-cta-w:hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(0,0,0,.4); }
-
-    /* FOOTER */
-    .footer { background:linear-gradient(135deg,#050a14 0%,#0c1733 50%,#080d1f 100%); padding:40px 32px; text-align:center; }
-    .f-logo { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; color:#fff; letter-spacing:.07em; margin-bottom:8px; }
-    .f-logo em { font-style:normal; color:#60a5fa; }
-    .f-sub { color:rgba(255,255,255,.3); font-size:13px; font-family:'Nunito',sans-serif; font-weight:600; }
-
-    /* RESPONSIVE */
-    @media(max-width:960px){
-      .h-in{grid-template-columns:1fr;gap:48px}
-      .right-wrap{order:-1;display:flex;justify-content:center}
-      .det-grid{grid-template-columns:1fr}
-      .cta-in{padding:56px 36px}
-      .s-title{font-size:48px}
-      .det-h2{font-size:34px}
-      .cta-h2{font-size:34px}
-    }
-    @media(max-width:768px){
-      .nav-links{display:none} .btn-l{display:none} .hbg{display:flex}
-      .hero{padding:88px 20px 60px}
-      .det-sec{padding:72px 20px}
-      .cta-sec{padding:0 20px 72px}
-      .strip{padding:20px}
-      .nav-in{padding:0 20px}
-      .tabs{display:none}
-      .s-title{font-size:40px}
-    }
-    @media(max-width:480px){
-      .s-cta{flex-direction:column}
-      .btn-p,.btn-g{width:100%;justify-content:center}
-      .cta-in{padding:40px 24px}
-      .s-title{font-size:32px}
-      .det-h2,.cta-h2{font-size:26px}
-    }
-  `
-
   return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+    <div className="font-['Nunito',sans-serif] text-[#0f172a]">
+      {/* Keyframes only — Tailwind utility classes can't declare @keyframes on their own */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+        /* navSlide, menuIn, floatY already exist as animate-nav-slide / animate-menu-in / animate-float-y in the Tailwind theme, so they're not redeclared here */
+        @keyframes slideR     { from{opacity:0;transform:translateX(55px) scale(.97)} to{opacity:1;transform:translateX(0) scale(1)} }
+        @keyframes slideL     { from{opacity:0;transform:translateX(-55px) scale(.97)} to{opacity:1;transform:translateX(0) scale(1)} }
+        @keyframes expandRing { 0%{transform:scale(.3);opacity:.7} 100%{transform:scale(1);opacity:0} }
+        @keyframes gridPan    { from{background-position:0 0} to{background-position:48px 48px} }
+        @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:.2} }
+        @keyframes fillProg   { from{width:0%} to{width:100%} }
+        @keyframes fadeUp     { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes kenBurns   { 0%{transform:scale(1) translate(0,0)} 50%{transform:scale(1.08) translate(-1%,1%)} 100%{transform:scale(1) translate(0,0)} }
+      `
+        }}
+      />
 
       {/* NAV */}
-      <nav className={`nav${scrolled ? " s" : ""}`}>
-        <div className="nav-in">
-          <Link href="/" className="logo">
-            <div className="logo-box">
-              <span className="logo-lbl">INV</span>
+      <nav
+        className={cn(
+          "fixed left-0 right-0 top-0 z-100 transition-all duration-300 animate-nav-slide",
+          scrolled &&
+            "bg-[rgba(8,12,24,.96)] shadow-[0_1px_0_rgba(255,255,255,.06),0_4px_20px_rgba(0,0,0,.4)] backdrop-blur-[18px]"
+        )}
+      >
+        <div className="mx-auto flex h-17.5 max-w-300 items-center justify-between px-5 md:px-8">
+          <Link href="/" className="flex items-center gap-3 no-underline">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-linear-to-br from-brand-700 to-brand-500 shadow-[0_4px_14px_rgba(59,130,246,.4)]">
+              <span className="text-[11px] font-black tracking-[.05em] text-white">
+                INV
+              </span>
             </div>
-            <span className="logo-name">
-              STOCK<em className="logo-em">R</em>
+            <span
+              className={cn(
+                "text-xl font-black tracking-[.07em]",
+                scrolled ? "text-slate-100" : "text-white"
+              )}
+            >
+              STOCK<em className="not-italic text-brand-400">R</em>
             </span>
           </Link>
-          <div className="nav-links">
-            {NAV_LINKS.map((n) => (
-              <Link
-                key={n.label}
-                href={n.href}
-                className={`nl${n.label === "Product" ? " on" : ""}`}
-              >
-                {n.label}
-              </Link>
-            ))}
+
+          <div className="hidden items-center gap-0.5 md:flex">
+            {NAV_LINKS.map((n) => {
+              const isActive = n.label === "Product"
+              return (
+                <Link
+                  key={n.label}
+                  href={n.href}
+                  className={cn(
+                    "rounded-lg px-5 py-2.25 text-[15px] font-bold no-underline transition-colors duration-200",
+                    scrolled
+                      ? "text-white/65 hover:bg-white/10 hover:text-white"
+                      : "text-white/75 hover:bg-white/10 hover:text-white",
+                    isActive &&
+                      (scrolled
+                        ? "text-brand-400 font-extrabold"
+                        : "font-extrabold text-white")
+                  )}
+                >
+                  {n.label}
+                </Link>
+              )
+            })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Link href="/login" className="btn-l">
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className={cn(
+                "hidden h-10.5 items-center rounded-[10px] px-5.5 text-[15px] font-extrabold no-underline backdrop-blur-sm transition-all duration-200 md:flex",
+                scrolled
+                  ? "border border-transparent bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.4)] hover:bg-[#2563eb]"
+                  : "border border-white/20 bg-white/12 text-white hover:-translate-y-px hover:bg-white/20"
+              )}
+            >
               Login
             </Link>
             <button
-              className={`hbg${menuOpen ? " op" : ""}`}
+              className="flex flex-col gap-1.25 border-none bg-transparent p-1.5 md:hidden"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="menu"
             >
-              <span />
-              <span />
-              <span />
+              <span
+                className={cn(
+                  "block h-0.5 w-5.5 rounded-sm bg-white transition-all duration-300",
+                  menuOpen && "translate-x-1.25 translate-y-1.25 rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-0.5 w-5.5 rounded-sm bg-white transition-all duration-300",
+                  menuOpen && "opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-0.5 w-5.5 rounded-sm bg-white transition-all duration-300",
+                  menuOpen && "translate-x-1.25 -translate-y-1.25 -rotate-45"
+                )}
+              />
             </button>
           </div>
         </div>
-        <div className={`m-menu${menuOpen ? " op" : ""}`}>
-          {NAV_LINKS.map((n) => (
-            <Link
-              key={n.label}
-              href={n.href}
-              className={`m-nl${n.label === "Product" ? " on" : ""}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {n.label}
-            </Link>
-          ))}
+
+        <div
+          className={cn(
+            "absolute inset-x-0 top-17.5 hidden border-b border-white/8 bg-[rgba(8,12,24,.97)] px-5 pb-5 pt-3 shadow-[0_12px_32px_rgba(0,0,0,.4)] backdrop-blur-[20px]",
+            menuOpen && "block animate-menu-in"
+          )}
+        >
+          {NAV_LINKS.map((n) => {
+            const isActive = n.label === "Product"
+            return (
+              <Link
+                key={n.label}
+                href={n.href}
+                className={cn(
+                  "mb-1 block rounded-[10px] px-4 py-3.25 text-[15px] font-bold no-underline transition-all duration-200",
+                  isActive
+                    ? "bg-brand-500/10 text-brand-400"
+                    : "text-white/70 hover:bg-brand-500/10 hover:text-brand-400"
+                )}
+                onClick={() => setMenuOpen(false)}
+              >
+                {n.label}
+              </Link>
+            )
+          })}
           <Link
             href="/login"
-            className="m-login"
+            className="mt-3 flex h-12 w-full items-center justify-center rounded-[10px] bg-brand-500 text-[15px] font-extrabold text-white no-underline"
             onClick={() => setMenuOpen(false)}
           >
             Login
@@ -891,58 +509,68 @@ export default function ProductPage() {
       </nav>
 
       {/* HERO */}
-      <section className="hero">
+      <section className="relative flex min-h-screen items-center overflow-hidden px-5 pb-15 pt-22 md:px-8 md:pb-18 md:pt-25">
         {/* Background: 2 images + overlay */}
-        <div className="hero-bg">
+        <div className="absolute inset-0 z-0">
           <img
             src={IMG_BG1}
             alt=""
-            className="hero-bg-img1"
             aria-hidden="true"
+            className="absolute right-0 top-0 h-[60%] w-[55%] object-cover opacity-[.22] animate-[kenBurns_18s_ease-in-out_infinite]"
           />
           <img
             src={IMG_BG2}
             alt=""
-            className="hero-bg-img2"
             aria-hidden="true"
+            className="absolute bottom-0 left-0 h-[55%] w-1/2 object-cover opacity-[.16] animate-[kenBurns_22s_ease-in-out_infinite_reverse]"
           />
-          <div className="hero-bg-overlay" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 80% 60% at 70% 20%, rgba(30,58,138,.18) 0%, transparent 60%), radial-gradient(ellipse 70% 60% at 20% 80%, rgba(15,23,42,.3) 0%, transparent 60%), linear-gradient(160deg, #060b1a 0%, #0c1733 25%, #0f2050 50%, #0c1a3a 75%, #080d1f 100%)"
+            }}
+          />
         </div>
 
         {/* Grid texture & glows */}
-        <div className="h-grid" />
-        <div className="h-glow" />
-        <div className="h-glow2" />
+        <div
+          className="absolute inset-0 z-1 pointer-events-none animate-[gridPan_12s_linear_infinite] bg-size-[52px_52px]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px)"
+          }}
+        />
+        <div className="pointer-events-none absolute -right-20 -top-20 z-1 h-130 w-130 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.15)_0%,transparent_65%)]" />
+        <div className="pointer-events-none absolute -bottom-15 -left-15 z-1 h-100 w-100 rounded-full bg-[radial-gradient(circle,rgba(30,58,138,.12)_0%,transparent_65%)]" />
 
-        <div className="h-in">
+        <div className="relative z-2 mx-auto grid w-full max-w-300 grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-18">
           {/* Left */}
           <div>
-            <div
-              key={`b-${active}`}
-              className={`anim-${anim}`}
-              style={{ animationDelay: "0s" }}
-            >
-              <div className="s-badge">
-                <div className="s-dot" />
-                <span className="s-badge-txt">{cur.badge}</span>
+            <div key={`b-${active}`} className={slideAnim}>
+              <div className="mb-5 inline-flex items-center gap-2.25 rounded-full border border-white/15 bg-white/8 px-5 py-2 backdrop-blur-sm">
+                <div className="h-1.75 w-1.75 shrink-0 rounded-full bg-brand-400 animate-[blink_1.4s_ease-in-out_infinite]" />
+                <span className="text-[12px] font-extrabold uppercase tracking-[.08em] text-white/85">
+                  {cur.badge}
+                </span>
               </div>
             </div>
             <div
               key={`t-${active}`}
-              className={`anim-${anim}`}
-              style={{ animationDelay: ".07s" }}
+              className={cn(slideAnim, "[animation-delay:.07s]")}
             >
-              <p className="s-tag">{cur.tagline}</p>
+              <p className="mb-3 text-[12px] font-bold uppercase tracking-widest text-white/45">
+                {cur.tagline}
+              </p>
             </div>
             <div
               key={`h-${active}`}
-              className={`anim-${anim}`}
-              style={{ animationDelay: ".13s" }}
+              className={cn(slideAnim, "[animation-delay:.13s]")}
             >
-              <h1 className="s-title">
+              <h1 className="mb-5 text-[32px] font-black leading-[1.04] tracking-[-.02em] text-white sm:text-[40px] md:text-[48px] lg:text-[64px]">
                 {cur.name.split(" ").map((w, i) =>
                   i === 0 ? (
-                    <em key={i}>
+                    <em key={i} className="not-italic text-brand-400">
                       {w}
                       <br />
                     </em>
@@ -954,32 +582,41 @@ export default function ProductPage() {
             </div>
             <div
               key={`d-${active}`}
-              className={`anim-${anim}`}
-              style={{ animationDelay: ".19s" }}
+              className={cn(slideAnim, "[animation-delay:.19s]")}
             >
-              <p className="s-desc">{cur.desc}</p>
+              <p className="mb-8.5 max-w-110 text-[17px] font-medium leading-[1.75] text-white/65">
+                {cur.desc}
+              </p>
             </div>
             <div
               key={`s-${active}`}
-              className={`anim-${anim}`}
-              style={{ animationDelay: ".25s" }}
+              className={cn(slideAnim, "[animation-delay:.25s]")}
             >
-              <div className="s-stats">
+              <div className="mb-8.5 flex flex-wrap gap-3">
                 {cur.stat.map((s, i) => (
-                  <div key={i} className="s-stat">
-                    <div className="s-stat-v">{s.v}</div>
-                    <div className="s-stat-l">{s.l}</div>
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-white/8 bg-black/35 px-5 py-4 backdrop-blur-md"
+                  >
+                    <div className="text-2xl font-black leading-none text-white sm:text-[26px]">
+                      {s.v}
+                    </div>
+                    <div className="mt-1.25 text-[10px] font-bold uppercase tracking-[.07em] text-white/38">
+                      {s.l}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
             <div
               key={`c-${active}`}
-              className={`anim-${anim}`}
-              style={{ animationDelay: ".31s" }}
+              className={cn(slideAnim, "[animation-delay:.31s]")}
             >
-              <div className="s-cta">
-                <Link href="/register" className="btn-p">
+              <div className="flex flex-wrap gap-3 sm:flex-row">
+                <Link
+                  href="/register"
+                  className="inline-flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-7.5 text-base font-extrabold text-white no-underline shadow-[0_8px_28px_rgba(59,130,246,.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2563eb] hover:shadow-[0_12px_36px_rgba(59,130,246,.5)] sm:w-auto"
+                >
                   <svg
                     width="16"
                     height="16"
@@ -993,44 +630,64 @@ export default function ProductPage() {
                   </svg>
                   Coba Sekarang
                 </Link>
-                <Link href="/login" className="btn-g">
+                <Link
+                  href="/login"
+                  className="inline-flex h-13 w-full items-center justify-center rounded-xl border-[1.5px] border-white/20 bg-white/8 px-6.5 text-base font-bold text-white no-underline backdrop-blur-sm transition-colors duration-200 hover:bg-white/16 sm:w-auto"
+                >
                   Lihat Demo
                 </Link>
               </div>
             </div>
 
-            <div className="tabs">
+            <div className="mt-10 hidden flex-wrap gap-2 md:flex">
               {PRODUCTS.map((p, i) => (
                 <button
                   key={i}
-                  className={`tab${active === i ? " on" : ""}`}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full border px-5.5 py-2.75 text-sm font-bold transition-all duration-220",
+                    active === i
+                      ? "border-brand-500/35 bg-brand-500/20 text-brand-300"
+                      : "border-white/10 bg-white/6 text-white/55 hover:bg-white/12 hover:text-white/85"
+                  )}
                   onClick={() => {
                     goTo(i)
                     startTimer()
                   }}
                 >
-                  <span className="tab-n">0{i + 1}</span>
+                  <span className="text-[11px] font-bold opacity-50">
+                    0{i + 1}
+                  </span>
                   {p.name}
                 </button>
               ))}
             </div>
 
-            <div className="prog-wrap">
+            <div className="mt-3.5 flex gap-1.5">
               {PRODUCTS.map((_, i) => (
-                <div key={i} className="prog-bar">
+                <div
+                  key={i}
+                  className="h-0.5 flex-1 overflow-hidden rounded-sm bg-white/10"
+                >
                   <div
-                    className={`prog-fill${active === i ? " go" : ""}`}
-                    style={{ width: active === i ? undefined : "0%" }}
+                    className={cn(
+                      "h-full rounded-sm bg-brand-500",
+                      active === i
+                        ? "w-0 animate-[fillProg_4.5s_linear_forwards]"
+                        : "w-0"
+                    )}
                   />
                 </div>
               ))}
             </div>
 
-            <div className="dots">
+            <div className="mt-3.5 flex items-center gap-3">
               {PRODUCTS.map((_, i) => (
                 <button
                   key={i}
-                  className={`dot-btn${active === i ? " on" : ""}`}
+                  className={cn(
+                    "h-2 rounded-full bg-white/20 transition-all duration-400 ease-[cubic-bezier(.34,1.56,.64,1)]",
+                    active === i ? "w-7.5 bg-brand-400" : "w-2"
+                  )}
                   onClick={() => {
                     goTo(i)
                     startTimer()
@@ -1039,7 +696,7 @@ export default function ProductPage() {
                 />
               ))}
               <button
-                className="next-b"
+                className="rounded-lg bg-white/8 px-4 py-2 text-[13px] font-bold text-white/50 transition-all duration-200 hover:bg-white/15 hover:text-white"
                 onClick={() => {
                   goTo((active + 1) % PRODUCTS.length, "right")
                   startTimer()
@@ -1051,17 +708,31 @@ export default function ProductPage() {
           </div>
 
           {/* Right */}
-          <div className="right-wrap">
-            <div key={`card-${active}`} className={`v-card anim-${anim}`}>
-              <div className="v-icon">{cur.icon}</div>
+          <div className="order-first flex justify-center lg:order-0">
+            <div
+              key={`card-${active}`}
+              className={cn(
+                slideAnim,
+                "flex w-full max-w-95 flex-col items-center gap-6.5 rounded-3xl border border-white/10 bg-white/5 p-9 shadow-[0_24px_64px_rgba(0,0,0,.5)] backdrop-blur-[20px] animate-float-y"
+              )}
+            >
+              <div className="flex h-24 w-24 items-center justify-center rounded-[20px] bg-brand-500/12 text-brand-300">
+                {cur.icon}
+              </div>
               {renderVisual(cur.visual)}
-              <div className="v-stat">
-                <div className="v-stat-lbl">Statistik Fitur</div>
-                <div className="v-stat-row">
+              <div className="w-full rounded-xl border border-white/7 bg-black/30 px-4 py-3.5">
+                <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[.07em] text-white/30">
+                  Statistik Fitur
+                </div>
+                <div className="flex gap-2.5">
                   {cur.stat.map((s, i) => (
-                    <div key={i} style={{ flex: 1 }}>
-                      <div className="v-stat-v">{s.v}</div>
-                      <div className="v-stat-l">{s.l}</div>
+                    <div key={i} className="flex-1">
+                      <div className="text-[17px] font-black text-brand-400">
+                        {s.v}
+                      </div>
+                      <div className="mt-0.75 text-[9px] font-bold uppercase tracking-[.05em] text-white/28">
+                        {s.l}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1072,10 +743,13 @@ export default function ProductPage() {
       </section>
 
       {/* STRIP */}
-      <div className="strip">
-        <div className="strip-in">
+      <div className="border-y border-slate-200 bg-white px-5 py-6.5 md:px-8">
+        <div className="mx-auto flex max-w-300 flex-wrap items-center justify-center gap-2.5">
           {FEATURES_MINI.map((f, i) => (
-            <div key={i} className="s-item">
+            <div
+              key={i}
+              className="flex items-center gap-1.75 rounded-full border border-[#087463]/15 bg-[#f0faf7] px-4.5 py-2 text-sm font-bold text-[#087463]"
+            >
               <span>{f.icon}</span>
               <span>{f.label}</span>
             </div>
@@ -1084,32 +758,50 @@ export default function ProductPage() {
       </div>
 
       {/* DETAIL */}
-      <section className="det-sec">
-        <div className="det-in">
-          <div className="det-head">
-            <div className="det-tag">
-              <span>Semua Fitur</span>
+      <section className="bg-[#f0faf7] px-5 py-18 md:px-8 md:py-25">
+        <div className="mx-auto max-w-300">
+          <div className="mb-15 text-center">
+            <div className="mb-4 inline-flex items-center rounded-full bg-[#087463]/10 px-4 py-1.25">
+              <span className="text-[12px] font-extrabold uppercase tracking-[.07em] text-[#087463]">
+                Semua Fitur
+              </span>
             </div>
-            <h2 className="det-h2">
-              Platform Lengkap untuk <em>Inventori</em> Kamu
+            <h2 className="mb-3.5 text-[26px] font-black leading-[1.2] tracking-[-.02em] text-[#0f172a] sm:text-[34px] md:text-[42px]">
+              Platform Lengkap untuk{" "}
+              <em className="not-italic text-[#087463]">Inventori</em> Kamu
             </h2>
-            <p className="det-sub">
+            <p className="mx-auto max-w-130 text-[17px] font-medium leading-[1.65] text-slate-500">
               Dari manajemen produk hingga laporan keuangan — semuanya ada dalam
               satu sistem terintegrasi.
             </p>
           </div>
-          <div className="det-grid">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {PRODUCTS.map((p, i) => (
-              <div key={i} className="det-card">
-                <div className="det-ico">{p.icon}</div>
-                <span className="det-badge">{p.badge}</span>
-                <h3 className="det-title">{p.name}</h3>
-                <p className="det-desc">{p.desc}</p>
-                <div className="det-stats">
+              <div
+                key={i}
+                className="rounded-[20px] border-[1.5px] border-slate-200 bg-white p-9 transition-all duration-250 hover:-translate-y-1 hover:border-[#087463] hover:shadow-[0_8px_32px_rgba(8,116,99,.12)]"
+              >
+                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-[#087463]/10 to-[#0fbf9f]/10 text-[#087463]">
+                  {p.icon}
+                </div>
+                <span className="mb-3 inline-block rounded-full bg-[#087463]/8 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[.06em] text-[#087463]">
+                  {p.badge}
+                </span>
+                <h3 className="mb-2.5 text-[22px] font-black text-[#0f172a]">
+                  {p.name}
+                </h3>
+                <p className="mb-5.5 text-[15px] font-medium leading-[1.7] text-slate-500">
+                  {p.desc}
+                </p>
+                <div className="flex flex-wrap gap-5">
                   {p.stat.map((s, j) => (
                     <div key={j}>
-                      <div className="det-sv">{s.v}</div>
-                      <div className="det-sl">{s.l}</div>
+                      <div className="text-xl font-black text-[#087463]">
+                        {s.v}
+                      </div>
+                      <div className="mt-0.75 text-[10px] font-bold uppercase tracking-[.06em] text-slate-400">
+                        {s.l}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1120,19 +812,29 @@ export default function ProductPage() {
       </section>
 
       {/* CTA */}
-      <div className="cta-sec">
-        <div className="cta-in">
-          <div className="cta-grid" />
-          <div className="cta-glow" />
-          <h2 className="cta-h2">
-            Siap Mulai Kelola Inventori <em>Lebih Cerdas?</em>
+      <div className="px-5 pb-18 md:px-8 md:pb-25">
+        <div className="relative mx-auto max-w-300 overflow-hidden rounded-[28px] bg-linear-to-br from-brand-950 via-brand-900 to-brand-700 px-6 py-10 text-center sm:px-9 md:px-16 md:py-20">
+          <div
+            className="pointer-events-none absolute inset-0 bg-size-[40px_40px]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px)"
+            }}
+          />
+          <div className="pointer-events-none absolute -right-20 -top-20 h-100 w-100 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.2)_0%,transparent_65%)]" />
+          <h2 className="relative z-1 mb-4 text-[26px] font-black tracking-[-.025em] text-white sm:text-[34px] md:text-[44px]">
+            Siap Mulai Kelola Inventori{" "}
+            <em className="not-italic text-brand-400">Lebih Cerdas?</em>
           </h2>
-          <p className="cta-p">
+          <p className="relative z-1 mx-auto mb-9 max-w-[480px] text-[17px] font-medium leading-[1.7] text-white/65">
             Bergabung dengan 500+ bisnis yang sudah menggunakan STOCKR untuk
             memantau stok dan meningkatkan efisiensi operasional.
           </p>
-          <div className="cta-btns">
-            <Link href="/register" className="btn-cta-w">
+          <div className="relative z-1 flex flex-wrap justify-center gap-3.5">
+            <Link
+              href="/register"
+              className="inline-flex h-13 items-center gap-2 rounded-xl bg-white px-7.5 text-base font-black text-[#1e3a8a] no-underline shadow-[0_8px_28px_rgba(0,0,0,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,0,0,.4)]"
+            >
               <svg
                 width="16"
                 height="16"
@@ -1146,7 +848,10 @@ export default function ProductPage() {
               </svg>
               Mulai Gratis Sekarang
             </Link>
-            <Link href="/login" className="btn-g" style={{ color: "#fff" }}>
+            <Link
+              href="/login"
+              className="inline-flex h-13 items-center rounded-xl border-[1.5px] border-white/20 bg-white/8 px-6.5 text-base font-bold text-white no-underline backdrop-blur-sm transition-colors duration-200 hover:bg-white/16"
+            >
               Masuk ke Akun
             </Link>
           </div>
@@ -1154,13 +859,15 @@ export default function ProductPage() {
       </div>
 
       {/* FOOTER */}
-      <footer className="footer">
-        <div className="f-logo">
-          STOCK<em>R</em>
+      <footer className="bg-linear-to-br from-[#050a14] via-brand-900 to-[#080d1f] px-5 py-10 text-center md:px-8">
+        <div className="mb-2 text-xl font-black tracking-[.07em] text-white">
+          STOCK<em className="not-italic text-brand-400">R</em>
         </div>
-        <div className="f-sub">© 2026 STOCKR · Inventory Management System</div>
+        <div className="text-[13px] font-semibold text-white/30">
+          © 2026 STOCKR · Inventory Management System
+        </div>
       </footer>
       <CSChatWidget />
-    </>
+    </div>
   )
 }

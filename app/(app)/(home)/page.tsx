@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import CSChatWidget from "../components/CSChatWidget"
+import { cn } from "../../lib/utils"
 
+/* ── DATA ── */
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Product", href: "product" },
@@ -195,643 +197,225 @@ const IMG1 =
 const IMG2 =
   "https://res.cloudinary.com/dp0dtct3v/image/upload/v1775017346/ic_bs_kh3emc.jpg"
 
+/* ── STATUS STYLE MAP ── */
+const STATUS_STYLES: Record<string, string> = {
+  Aman: "text-blue-700 bg-blue-700/10",
+  Menipis: "text-amber-500 bg-amber-500/10",
+  Habis: "text-red-500 bg-red-500/10"
+}
+
+const STOCK_COLOR = (stock: number) =>
+  stock === 0 ? "text-red-500" : stock < 8 ? "text-amber-500" : "text-brand-700"
+
+/* ── REUSABLE PIECES ── */
+function NavLinkDesktop({
+  label,
+  href,
+  active,
+  onClick
+}: {
+  label: string
+  href: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "px-4.5 py-2 rounded-lg text-sm font-bold text-white/80 transition-colors",
+        "hover:text-white hover:bg-white/10",
+        active && "text-white"
+      )}
+    >
+      {label}
+    </a>
+  )
+}
+
+function NavLinkMobile({
+  label,
+  href,
+  active,
+  onClick
+}: {
+  label: string
+  href: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "block w-full text-left px-4 py-3.25 mb-1 rounded-[10px] text-[15px] font-bold text-gray-700 transition-colors",
+        "hover:text-brand-700 hover:bg-brand-500/8",
+        active && "text-brand-700 bg-brand-500/8"
+      )}
+    >
+      {label}
+    </a>
+  )
+}
+
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false)
   const [activeNav, setActiveNav] = useState("Home")
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
     const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener("scroll", onScroll)
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  const statusColor = (s: string) =>
-    s === "Aman" ? "#1d4ed8" : s === "Menipis" ? "#f59e0b" : "#ef4444"
-  const statusBg = (s: string) =>
-    s === "Aman"
-      ? "rgba(29,78,216,.1)"
-      : s === "Menipis"
-        ? "rgba(245,158,11,.1)"
-        : "rgba(239,68,68,.1)"
-
   return (
     <>
-      <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
-          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          html { scroll-behavior: smooth; }
-          body { font-family: 'Nunito', sans-serif; background: #f0f6ff; color: #0f172a; overflow-x: hidden; }
-
-          @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-60px); }
-            to   { opacity: 1; transform: translateX(0); }
-          }
-          @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(60px); }
-            to   { opacity: 1; transform: translateX(0); }
-          }
-          @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-          }
-          @keyframes floatY {
-            0%,100% { transform: translateY(0); }
-            50%      { transform: translateY(-10px); }
-          }
-          @keyframes pulse-ring {
-            0%   { transform: scale(1); opacity: .6; }
-            100% { transform: scale(1.6); opacity: 0; }
-          }
-          @keyframes gridPan {
-            from { background-position: 0 0; }
-            to   { background-position: 48px 48px; }
-          }
-          @keyframes navSlide {
-            from { opacity: 0; transform: translateY(-100%); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes mobileMenuIn {
-            from { opacity: 0; transform: translateY(-12px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes border-rotate {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
-          }
-          @keyframes imgReveal {
-            from { opacity: 0; transform: scale(1.06); }
-            to   { opacity: 1; transform: scale(1); }
-          }
-          @keyframes shimmerSlide {
-            0%   { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-          }
-
-          /* ── NAVBAR ── */
-          .hm-nav {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-            transition: background .3s, box-shadow .3s, backdrop-filter .3s;
-            animation: navSlide .5s ease forwards;
-          }
-         .hm-nav.scrolled {
-            background: rgba(8,12,24,.96);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 4px 20px rgba(0,0,0,.4);
-          }
-          .hm-nav-inner {
-            max-width: 1200px; margin: 0 auto;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 32px; height: 68px;
-          }
-          .hm-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-          .hm-logo-box {
-            width: 38px; height: 38px;
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            border-radius: 9px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(59,130,246,.35);
-          }
-          .hm-logo-box span { color: #fff; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 12px; letter-spacing: .05em; }
-          .hm-logo-name { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 18px; letter-spacing: .06em; color: #fff; }
-          .hm-logo-dot { color: #3b82f6; }
-
-          .hm-nav-links { display: flex; align-items: center; gap: 4px; }
-          .hm-nav-link {
-            padding: 8px 18px; border-radius: 8px;
-            font-size: 14px; font-weight: 700; color: rgba(255,255,255,.8);
-            text-decoration: none; cursor: pointer;
-            transition: color .2s, background .2s;
-            border: none; background: none;
-            font-family: 'Nunito', sans-serif;
-          }
-          .hm-nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
-          .hm-nav-link.active { color: #fff; }
-          .hm-nav.scrolled .hm-nav-link { color: rgba(255,255,255,.75); }
-          .hm-nav.scrolled .hm-nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
-          .hm-nav.scrolled .hm-nav-link.active { color: #fff; }
-          .hm-nav-cta { display: flex; align-items: center; gap: 12px; }
-          .hm-btn-login {
-            height: 40px; padding: 0 22px;
-            background: #fff; color: #1e3a8a;
-            border: none; border-radius: 9px;
-            font-size: 14px; font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            cursor: pointer; text-decoration: none;
-            display: flex; align-items: center;
-            transition: background .2s, transform .15s, box-shadow .2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,.15);
-          }
-          .hm-btn-login:hover { background: #eff6ff; transform: translateY(-1px); }
-          .hm-nav.scrolled .hm-btn-login:hover { background: #2563eb; }
-          .hm-nav.scrolled .hm-btn-login { background: #3b82f6; color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,.4); border-color: transparent; }
-
-          .hm-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; }
-          .hm-hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; transition: all .3s; }
-          .hm-hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-          .hm-hamburger.open span:nth-child(2) { opacity: 0; }
-          .hm-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
-          .hm-nav.scrolled .hm-hamburger span { background: #fff; }
-
-          .hm-mobile-menu {
-            display: none; position: absolute; top: 68px; left: 0; right: 0;
-            background: rgba(255,255,255,.97); backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(59,130,246,.1);
-            padding: 12px 20px 20px;
-            animation: mobileMenuIn .25s ease forwards;
-            box-shadow: 0 12px 32px rgba(0,0,0,.08);
-          }
-          .hm-mobile-menu.open { display: block; }
-          .hm-mobile-link {
-            display: block; padding: 13px 16px; border-radius: 10px;
-            font-size: 15px; font-weight: 700; color: #374151;
-            text-decoration: none; margin-bottom: 4px;
-            transition: color .2s, background .2s;
-            border: none; background: none; width: 100%; text-align: left; cursor: pointer;
-            font-family: 'Nunito', sans-serif;
-          }
-          .hm-mobile-link:hover, .hm-mobile-link.active { color: #1e3a8a; background: rgba(59,130,246,.08); }
-          .hm-mobile-login {
-            display: flex; margin-top: 12px; width: 100%; height: 48px;
-            background: #3b82f6; color: #fff; border: none; border-radius: 10px;
-            font-size: 15px; font-weight: 800; cursor: pointer;
-            font-family: 'Nunito', sans-serif; text-decoration: none;
-            align-items: center; justify-content: center;
-          }
-
-          /* ── HERO ── */
-          .hm-hero {
-            min-height: 100vh; position: relative; overflow: hidden;
-            background: linear-gradient(160deg, #060b1a 0%, #0c1733 30%, #0f2050 60%, #1e3a8a 100%);
-            display: flex; align-items: center; padding: 100px 32px 60px;
-          }
-          .hm-hero-grid {
-            position: absolute; inset: 0;
-            background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-            background-size: 48px 48px;
-            animation: gridPan 8s linear infinite;
-            pointer-events: none;
-          }
-          .hm-hero-glow {
-            position: absolute; top: -120px; right: -120px;
-            width: 500px; height: 500px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(59,130,246,.25) 0%, transparent 70%);
-            pointer-events: none;
-          }
-          .hm-hero-glow2 {
-            position: absolute; bottom: -80px; left: -80px;
-            width: 380px; height: 380px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(30,58,138,.2) 0%, transparent 70%);
-            pointer-events: none;
-          }
-          .hm-hero-inner {
-            max-width: 1200px; margin: 0 auto; width: 100%;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
-            position: relative; z-index: 1;
-          }
-          .hm-hero-left { animation: slideInLeft .7s ease forwards; }
-
-          .hm-hero-tag {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(255,255,255,.08); backdrop-filter: blur(8px);
-            border-radius: 100px; padding: 7px 16px; margin-bottom: 24px;
-            position: relative; overflow: hidden; isolation: isolate;
-          }
-          .hm-hero-tag::before {
-            content: ''; position: absolute; inset: -45px; border-radius: 80px;
-            background: conic-gradient(from 0deg, transparent 0%, transparent 80%, #60a5fa 88%, #93c5fd 92%, #60a5fa 96%, transparent 100%);
-            animation: border-rotate 2.4s linear infinite; z-index: -2;
-          }
-          .hm-hero-tag::after {
-            content: ''; position: absolute; inset: 1.5px; border-radius: 100px;
-            background: rgba(8,14,36,.85); backdrop-filter: blur(8px); z-index: -1;
-          }
-          .hm-hero-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; position: relative; }
-          .hm-hero-tag-dot::after {
-            content: ''; position: absolute; inset: -3px; border-radius: 50%;
-            background: rgba(96,165,250,.4); animation: pulse-ring 1.5s ease-out infinite;
-          }
-          .hm-hero-tag span { color: rgba(255,255,255,.9); font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 700; letter-spacing: .04em; }
-
-          .hm-hero-h1 {
-            font-family: 'Nunito', sans-serif; font-weight: 900;
-            font-size: clamp(36px, 5vw, 58px); line-height: 1.1;
-            color: #fff; letter-spacing: -.02em; margin-bottom: 20px;
-          }
-          .hm-hero-h1 em { font-style: normal; color: #60a5fa; }
-          .hm-hero-desc { color: rgba(255,255,255,.7); font-size: 17px; line-height: 1.7; margin-bottom: 36px; max-width: 440px; font-family: 'Nunito', sans-serif; font-weight: 500; }
-          .hm-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
-          .hm-btn-primary {
-            height: 52px; padding: 0 28px;
-            background: #3b82f6; color: #fff;
-            border: none; border-radius: 12px;
-            font-size: 15px; font-weight: 800; cursor: pointer;
-            font-family: 'Nunito', sans-serif; text-decoration: none;
-            display: inline-flex; align-items: center; gap: 8px;
-            box-shadow: 0 8px 24px rgba(59,130,246,.4);
-            transition: transform .2s, box-shadow .2s, background .2s;
-          }
-          .hm-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(59,130,246,.5); background: #2563eb; }
-          .hm-btn-ghost {
-            height: 52px; padding: 0 28px;
-            background: rgba(255,255,255,.08); color: #fff;
-            border: 1.5px solid rgba(255,255,255,.2); border-radius: 12px;
-            font-size: 15px; font-weight: 800; cursor: pointer;
-            font-family: 'Nunito', sans-serif; text-decoration: none;
-            display: inline-flex; align-items: center;
-            backdrop-filter: blur(8px);
-            transition: background .2s, border-color .2s;
-          }
-          .hm-btn-ghost:hover { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.4); }
-
-          .hm-hero-stats { display: flex; gap: 20px; margin-top: 48px; flex-wrap: wrap; }
-          .hm-hero-stat {
-            background: rgba(0,0,0,.25); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 14px 20px;
-          }
-          .hm-hero-stat-val { color: #fff; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: -.02em; }
-          .hm-hero-stat-lbl { color: rgba(255,255,255,.5); font-size: 11px; font-family: 'Nunito', sans-serif; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; margin-top: 3px; }
-
-          /* ── HERO RIGHT — IMAGE COLLAGE ── */
-          .hm-hero-right {
-            animation: slideInRight .7s .15s ease both;
-            position: relative;
-          }
-          .hm-hero-img-collage {
-            position: relative; width: 100%; height: 480px;
-          }
-          .hm-hero-img-main {
-            position: absolute; top: 0; right: 0;
-            width: 78%; height: 320px; border-radius: 20px; overflow: hidden;
-            box-shadow: 0 24px 64px rgba(0,0,0,.4);
-            animation: imgReveal .8s .2s ease both;
-          }
-          .hm-hero-img-main img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform .6s ease;
-          }
-          .hm-hero-img-main:hover img { transform: scale(1.04); }
-          .hm-hero-img-main::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(30,58,138,.25) 0%, transparent 60%);
-            border-radius: 20px;
-          }
-
-          .hm-hero-img-secondary {
-            position: absolute; bottom: 0; left: 0;
-            width: 58%; height: 240px; border-radius: 16px; overflow: hidden;
-            box-shadow: 0 16px 48px rgba(0,0,0,.35);
-            border: 3px solid rgba(255,255,255,.15);
-            animation: imgReveal .8s .4s ease both;
-          }
-          .hm-hero-img-secondary img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform .6s ease;
-          }
-          .hm-hero-img-secondary:hover img { transform: scale(1.04); }
-          .hm-hero-img-secondary::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(8,14,60,.3) 0%, transparent 60%);
-          }
-
-          .hm-hero-img-badge {
-            position: absolute; top: 20px; left: 20px; z-index: 10;
-            background: rgba(255,255,255,.95); backdrop-filter: blur(12px);
-            border-radius: 12px; padding: 10px 14px;
-            box-shadow: 0 8px 24px rgba(0,0,0,.18);
-            animation: floatY 4s ease-in-out infinite;
-          }
-          .hm-hero-img-badge-val { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 18px; color: #1e3a8a; }
-          .hm-hero-img-badge-lbl { font-size: 10px; color: #64748b; font-family: 'Nunito', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
-
-          .hm-hero-img-badge2 {
-            position: absolute; bottom: 56px; right: -16px; z-index: 10;
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            border-radius: 12px; padding: 10px 16px;
-            box-shadow: 0 8px 24px rgba(59,130,246,.45);
-            animation: floatY 4s .8s ease-in-out infinite;
-          }
-          .hm-hero-img-badge2-val { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 16px; color: #fff; }
-          .hm-hero-img-badge2-lbl { font-size: 10px; color: rgba(255,255,255,.75); font-family: 'Nunito', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
-
-          /* ── SOCIAL PROOF STRIP ── */
-          .hm-proof-strip {
-            background: #fff; padding: 28px 32px;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          .hm-proof-inner {
-            max-width: 1200px; margin: 0 auto;
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;
-          }
-          .hm-proof-label { font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 700; color: #94a3b8; letter-spacing: .06em; text-transform: uppercase; }
-          .hm-proof-avatars { display: flex; align-items: center; gap: -8px; }
-          .hm-proof-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 2px solid #fff; overflow: hidden; margin-left: -8px;
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 800; color: #fff;
-            font-family: 'Nunito', sans-serif;
-          }
-          .hm-proof-avatar:first-child { margin-left: 0; }
-          .hm-proof-text { font-size: 13px; font-weight: 700; color: #374151; margin-left: 12px; font-family: 'Nunito', sans-serif; }
-          .hm-proof-text em { font-style: normal; color: #1e3a8a; }
-          .hm-proof-divider { width: 1px; height: 32px; background: #e2e8f0; }
-          .hm-proof-stat { text-align: center; }
-          .hm-proof-stat-val { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 20px; color: #0f172a; }
-          .hm-proof-stat-lbl { font-size: 11px; color: #94a3b8; font-family: 'Nunito', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-
-          /* ── PHOTO SECTION ── */
-          .hm-photo-section { padding: 100px 32px; background: #fff; }
-          .hm-photo-inner { max-width: 1200px; margin: 0 auto; }
-          .hm-photo-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;
-          }
-          .hm-photo-grid.reverse { direction: rtl; }
-          .hm-photo-grid.reverse > * { direction: ltr; }
-          .hm-photo-content { }
-          .hm-photo-img-wrap {
-            position: relative; border-radius: 24px; overflow: hidden;
-            box-shadow: 0 24px 64px rgba(0,0,0,.12);
-            animation: slideInUp .6s ease both;
-          }
-          .hm-photo-img-wrap img {
-            width: 100%; height: 380px; object-fit: cover; display: block;
-            transition: transform .6s ease;
-          }
-          .hm-photo-img-wrap:hover img { transform: scale(1.03); }
-          .hm-photo-img-overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(30,58,138,.15) 0%, transparent 50%);
-          }
-          .hm-photo-img-corner {
-            position: absolute; bottom: 20px; left: 20px;
-            background: rgba(255,255,255,.95); backdrop-filter: blur(12px);
-            border-radius: 12px; padding: 12px 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,.1);
-          }
-          .hm-photo-img-corner-val { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 20px; color: #1e3a8a; }
-          .hm-photo-img-corner-lbl { font-size: 11px; color: #64748b; font-family: 'Nunito', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
-
-          .hm-photo-tag {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(59,130,246,.1); border-radius: 100px;
-            padding: 5px 14px; margin-bottom: 16px;
-          }
-          .hm-photo-tag span { color: #1e3a8a; font-size: 12px; font-weight: 800; font-family: 'Nunito', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
-          .hm-photo-title {
-            font-family: 'Nunito', sans-serif; font-weight: 900;
-            font-size: clamp(26px, 3.5vw, 38px); color: #0f172a;
-            letter-spacing: -.02em; line-height: 1.2; margin-bottom: 16px;
-          }
-          .hm-photo-title em { font-style: normal; color: #1e3a8a; }
-          .hm-photo-desc { color: #64748b; font-size: 15px; line-height: 1.75; margin-bottom: 28px; font-family: 'Nunito', sans-serif; font-weight: 500; }
-          .hm-photo-list { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
-          .hm-photo-list li {
-            display: flex; align-items: flex-start; gap: 12px;
-            font-size: 14px; color: #374151; line-height: 1.5;
-            font-family: 'Nunito', sans-serif; font-weight: 600;
-          }
-          .hm-photo-list li::before {
-            content: ''; width: 20px; height: 20px; border-radius: 50%;
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; margin-top: 2px;
-            background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l2.5 2.5L10 3' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: center;
-            background-size: 20px, 12px;
-          }
-
-          .hm-photo-btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            height: 48px; padding: 0 24px;
-            background: #3b82f6; color: #fff;
-            border: none; border-radius: 12px;
-            font-size: 14px; font-weight: 800; cursor: pointer;
-            font-family: 'Nunito', sans-serif; text-decoration: none;
-            box-shadow: 0 8px 24px rgba(59,130,246,.35);
-            transition: transform .2s, box-shadow .2s, background .2s;
-          }
-          .hm-photo-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(59,130,246,.45); background: #2563eb; }
-
-          /* ── FEATURES SECTION ── */
-          .hm-section { padding: 100px 32px; }
-          .hm-section-inner { max-width: 1200px; margin: 0 auto; }
-          .hm-section-tag {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(59,130,246,.1); border-radius: 100px;
-            padding: 5px 14px; margin-bottom: 16px;
-          }
-          .hm-section-tag span { color: #1e3a8a; font-size: 12px; font-weight: 800; font-family: 'Nunito', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
-          .hm-section-title {
-            font-family: 'Nunito', sans-serif; font-weight: 900;
-            font-size: clamp(28px, 4vw, 42px); color: #0f172a;
-            letter-spacing: -.02em; line-height: 1.2; margin-bottom: 12px;
-          }
-          .hm-section-title em { font-style: normal; color: #1e3a8a; }
-          .hm-section-sub { color: #64748b; font-size: 16px; line-height: 1.6; max-width: 500px; margin-bottom: 56px; font-family: 'Nunito', sans-serif; font-weight: 500; }
-
-          .hm-features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
-          .hm-feat-card {
-            background: #fff; border: 1.5px solid #e2e8f0; border-radius: 18px;
-            padding: 32px; cursor: default;
-            transition: border-color .25s, box-shadow .25s, transform .25s;
-            animation: slideInUp .6s ease both;
-          }
-          .hm-feat-card:hover { border-color: #3b82f6; box-shadow: 0 8px 32px rgba(59,130,246,.12); transform: translateY(-4px); }
-          .hm-feat-icon {
-            width: 64px; height: 64px; border-radius: 14px;
-            background: linear-gradient(135deg, rgba(30,58,138,.08), rgba(59,130,246,.12));
-            display: flex; align-items: center; justify-content: center;
-            color: #1e3a8a; margin-bottom: 20px; transition: background .25s;
-          }
-          .hm-feat-card:hover .hm-feat-icon { background: linear-gradient(135deg, rgba(30,58,138,.15), rgba(59,130,246,.2)); }
-          .hm-feat-title { font-weight: 900; font-size: 17px; color: #0f172a; margin-bottom: 8px; font-family: 'Nunito', sans-serif; }
-          .hm-feat-desc { color: #64748b; font-size: 14px; line-height: 1.65; font-family: 'Nunito', sans-serif; font-weight: 500; }
-
-          /* ── PRODUCT TABLE SECTION ── */
-          .hm-product-section { padding: 0 32px 100px; }
-          .hm-product-inner { max-width: 1200px; margin: 0 auto; }
-          .hm-product-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
-          .hm-table-wrap {
-            background: #fff; border: 1.5px solid #e2e8f0; border-radius: 18px; overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,.04); animation: slideInUp .7s ease both;
-          }
-          .hm-table { width: 100%; border-collapse: collapse; }
-          .hm-table thead { background: linear-gradient(135deg, #0c1733, #1e3a8a); }
-          .hm-table thead th {
-            padding: 16px 20px; text-align: left;
-            font-size: 11px; font-weight: 800; color: rgba(255,255,255,.8);
-            font-family: 'Nunito', sans-serif; letter-spacing: .07em; text-transform: uppercase;
-          }
-          .hm-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .15s; }
-          .hm-table tbody tr:last-child { border-bottom: none; }
-          .hm-table tbody tr:hover { background: #f8faff; }
-          .hm-table tbody td { padding: 16px 20px; font-size: 14px; font-family: 'Nunito', sans-serif; }
-          .hm-td-name { font-weight: 800; color: #0f172a; }
-          .hm-td-sku { font-size: 12px; color: #94a3b8; font-family: 'Nunito', sans-serif; font-weight: 600; margin-top: 2px; }
-          .hm-td-stock { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 15px; color: #0f172a; }
-          .hm-td-badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 100px; font-family: 'Nunito', sans-serif; }
-
-          /* ── ABOUT ── */
-          .hm-about-section { padding: 0 32px 100px; }
-          .hm-about-inner {
-            max-width: 1200px; margin: 0 auto;
-            background: linear-gradient(145deg, #060b1a, #0c1733, #1e3a8a);
-            border-radius: 28px; padding: 72px 64px;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
-            position: relative; overflow: hidden;
-          }
-          .hm-about-grid-bg {
-            position: absolute; inset: 0;
-            background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-            background-size: 40px 40px; pointer-events: none;
-          }
-          .hm-about-left { position: relative; z-index: 1; }
-          .hm-about-title { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: clamp(26px,3.5vw,38px); color: #fff; letter-spacing: -.02em; margin-bottom: 16px; }
-          .hm-about-desc { color: rgba(255,255,255,.7); font-size: 15px; line-height: 1.8; margin-bottom: 32px; font-family: 'Nunito', sans-serif; font-weight: 500; }
-          .hm-about-chips { display: flex; gap: 10px; flex-wrap: wrap; }
-          .hm-about-chip { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 100px; padding: 6px 16px; color: rgba(255,255,255,.85); font-size: 13px; font-weight: 700; font-family: 'Nunito', sans-serif; }
-          .hm-about-right { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-          .hm-about-card { background: rgba(0,0,0,.2); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 24px; }
-          .hm-about-card-val { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 28px; color: #fff; letter-spacing: -.03em; }
-          .hm-about-card-lbl { color: rgba(255,255,255,.5); font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 700; margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
-
-          /* ── FOOTER ── */
-          .hm-footer { background: linear-gradient(135deg, #050a14 0%, #0c1733 50%, #080d1f 100%); padding: 40px 32px; text-align: center; }
-          .hm-footer-logo { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 22px; color: #fff; letter-spacing: .06em; margin-bottom: 8px; }
-          .hm-footer-logo em { font-style: normal; color: #60a5fa; }
-          .hm-footer-sub { color: rgba(255,255,255,.35); font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 600; }
-
-          /* ── RESPONSIVE ── */
-          @media (max-width: 900px) {
-            .hm-hero-inner { grid-template-columns: 1fr; gap: 48px; }
-            .hm-hero-right { order: -1; }
-            .hm-hero-img-collage { height: 320px; }
-            .hm-hero-img-main { width: 72%; height: 220px; }
-            .hm-hero-img-secondary { width: 52%; height: 180px; }
-            .hm-features-grid { grid-template-columns: 1fr; }
-            .hm-about-inner { grid-template-columns: 1fr; gap: 40px; padding: 48px 36px; }
-            .hm-photo-grid { grid-template-columns: 1fr; gap: 40px; }
-            .hm-photo-grid.reverse { direction: ltr; }
-          }
-          @media (max-width: 768px) {
-            .hm-nav-links { display: none; }
-            .hm-btn-login { display: none; }
-            .hm-hamburger { display: flex; }
-            .hm-hero { padding: 90px 20px 60px; }
-            .hm-hero-stats { gap: 12px; }
-            .hm-proof-strip { padding: 20px; }
-            .hm-proof-divider { display: none; }
-            .hm-section { padding: 72px 20px; }
-            .hm-product-section { padding: 0 20px 72px; }
-            .hm-about-section { padding: 0 20px 72px; }
-            .hm-about-inner { padding: 40px 28px; }
-            .hm-photo-section { padding: 72px 20px; }
-            .hm-nav-inner { padding: 0 20px; }
-          }
-          @media (max-width: 480px) {
-            .hm-hero-btns { flex-direction: column; }
-            .hm-btn-primary, .hm-btn-ghost { width: 100%; justify-content: center; }
-            .hm-hero-stats { flex-direction: column; }
-            .hm-hero-stat { width: 100%; }
-            .hm-about-right { grid-template-columns: 1fr; }
-            .hm-table thead th:nth-child(3), .hm-table tbody td:nth-child(3) { display: none; }
-            .hm-section-title { font-size: 26px; }
-          }
-        `}</style>
-
       {/* ── NAVBAR ── */}
-      <nav className={`hm-nav${scrolled ? " scrolled" : ""}`}>
-        <div className="hm-nav-inner">
-          <Link href="/" className="hm-logo">
-            <div className="hm-logo-box">
-              <span>INV</span>
+      <nav
+        className={cn(
+          "fixed inset-x-0 top-0 z-100 transition-[background,box-shadow] duration-300 animate-nav-slide",
+          scrolled &&
+            "bg-[rgba(8,12,24,.96)] backdrop-blur-[18px] shadow-[0_1px_0_rgba(255,255,255,.06),0_4px_20px_rgba(0,0,0,.4)]"
+        )}
+      >
+        <div className="max-w-300 mx-auto flex items-center justify-between px-8 h-17">
+          <Link href="/" className="flex items-center gap-3 no-underline">
+            <div className="w-9.5 h-9.5 rounded-[9px] bg-linear-to-br from-brand-700 to-brand-500 flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,.35)]">
+              <span className="text-white font-black text-xs tracking-wide">
+                INV
+              </span>
             </div>
-            <span className="hm-logo-name">
-              STOCK<em className="hm-logo-dot">R</em>
+            <span className="font-black text-lg tracking-wide text-white">
+              STOCK<em className="not-italic text-brand-500">R</em>
             </span>
           </Link>
-          <div className="hm-nav-links">
+
+          <div className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map((n) => (
-              <a
+              <NavLinkDesktop
                 key={n.label}
+                label={n.label}
                 href={n.href}
-                className={`hm-nav-link${activeNav === n.label ? " active" : ""}`}
+                active={activeNav === n.label}
                 onClick={() => setActiveNav(n.label)}
-              >
-                {n.label}
-              </a>
+              />
             ))}
           </div>
-          <div className="hm-nav-cta">
-            <Link href="/login" className="hm-btn-login">
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className={cn(
+                "hidden md:inline-flex items-center h-10 px-5.5 rounded-[9px] text-sm font-extrabold no-underline transition-all",
+                "shadow-[0_4px_12px_rgba(0,0,0,.15)]",
+                scrolled
+                  ? "bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.4)] hover:bg-brand-600"
+                  : "bg-white text-brand-700 hover:bg-blue-50 hover:-translate-y-px"
+              )}
+            >
               Login
             </Link>
             <button
-              className={`hm-hamburger${menuOpen ? " open" : ""}`}
+              className="md:hidden flex flex-col gap-1.25 p-1.5 bg-transparent border-0"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >
-              <span />
-              <span />
-              <span />
+              <span
+                className={cn(
+                  "block w-5.5 h-0.5 rounded bg-white transition-all",
+                  menuOpen && "translate-x-1.25 translate-y-1.25 rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "block w-5.5 h-0.5 rounded bg-white transition-all",
+                  menuOpen && "opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "block w-5.5 h-0.5 rounded bg-white transition-all",
+                  menuOpen && "translate-x-1.25 -translate-y-1.25 -rotate-45"
+                )}
+              />
             </button>
           </div>
         </div>
-        <div className={`hm-mobile-menu${menuOpen ? " open" : ""}`}>
-          {NAV_LINKS.map((n) => (
-            <a
-              key={n.label}
-              href={n.href}
-              className={`hm-mobile-link${activeNav === n.label ? " active" : ""}`}
-              onClick={() => {
-                setActiveNav(n.label)
-                setMenuOpen(false)
-              }}
+
+        {menuOpen && (
+          <div className="md:hidden absolute inset-x-0 top-17 bg-white/97 backdrop-blur-xl border-b border-brand-500/10 px-5 pt-3 pb-5 shadow-[0_12px_32px_rgba(0,0,0,.08)] animate-menu-in">
+            {NAV_LINKS.map((n) => (
+              <NavLinkMobile
+                key={n.label}
+                label={n.label}
+                href={n.href}
+                active={activeNav === n.label}
+                onClick={() => {
+                  setActiveNav(n.label)
+                  setMenuOpen(false)
+                }}
+              />
+            ))}
+            <Link
+              href="/login"
+              className="flex items-center justify-center mt-3 w-full h-12 bg-brand-500 text-white rounded-[10px] text-[15px] font-extrabold no-underline"
+              onClick={() => setMenuOpen(false)}
             >
-              {n.label}
-            </a>
-          ))}
-          <Link
-            href="/login"
-            className="hm-mobile-login"
-            onClick={() => setMenuOpen(false)}
-          >
-            Login
-          </Link>
-        </div>
+              Login
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* ── HERO ── */}
-      <section id="home" className="hm-hero">
-        <div className="hm-hero-grid" />
-        <div className="hm-hero-glow" />
-        <div className="hm-hero-glow2" />
-        <div className="hm-hero-inner">
-          <div className="hm-hero-left">
-            <div className="hm-hero-tag">
-              <div className="hm-hero-tag-dot" />
-              <span>Sistem Manajemen Inventori</span>
+      <section
+        id="home"
+        className="relative overflow-hidden min-h-screen flex items-center px-8 pt-25 pb-15 bg-[linear-gradient(160deg,#060b1a_0%,#0c1733_30%,#0f2050_60%,#1e3a8a_100%)]"
+      >
+        <div
+          className="absolute inset-0 pointer-events-none animate-grid-pan"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
+            backgroundSize: "48px 48px"
+          }}
+        />
+        <div className="absolute -top-30 -right-30 w-125 h-125 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.25)_0%,transparent_70%)] pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-95 h-95 rounded-full bg-[radial-gradient(circle,rgba(30,58,138,.2)_0%,transparent_70%)] pointer-events-none" />
+
+        <div className="relative z-1 max-w-300 w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+          <div className="animate-slide-in-left">
+            <div className="relative isolate inline-flex items-center gap-2 rounded-full px-4 py-1.75 mb-6 overflow-hidden bg-white/8 backdrop-blur-sm">
+              <div className="absolute -inset-11.25 rounded-[80px] -z-20 animate-border-rotate bg-[conic-gradient(from_0deg,transparent_0%,transparent_80%,#60a5fa_88%,#93c5fd_92%,#60a5fa_96%,transparent_100%)]" />
+              <div className="absolute inset-[1.5px] rounded-full -z-10 bg-[rgba(8,14,36,.85)] backdrop-blur-sm" />
+              <div className="relative w-1.5 h-1.5 rounded-full bg-brand-400">
+                <div className="absolute -inset-0.75 rounded-full bg-brand-400/40 animate-pulse-ring" />
+              </div>
+              <span className="text-white/90 text-xs font-bold tracking-wide">
+                Sistem Manajemen Inventori
+              </span>
             </div>
-            <h1 className="hm-hero-h1">
+
+            <h1 className="font-black text-[clamp(36px,5vw,58px)] leading-[1.1] text-white tracking-tight mb-5">
               Kelola Stok Lebih
               <br />
-              <em>Cerdas & Efisien</em>
+              <em className="not-italic text-brand-400">
+                Cerdas &amp; Efisien
+              </em>
             </h1>
-            <p className="hm-hero-desc">
+            <p className="text-white/70 text-[17px] leading-[1.7] font-medium mb-9 max-w-110">
               STOCKR membantu bisnis kamu memantau stok, mengelola produk, dan
               melacak transaksi — semua dari satu platform yang mudah digunakan.
             </p>
-            <div className="hm-hero-btns">
-              <Link href="/register" className="hm-btn-primary">
+
+            <div className="flex gap-3.5 flex-wrap">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 h-13 px-7 rounded-xl bg-brand-500 text-white text-[15px] font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.5)] hover:bg-brand-600"
+              >
                 <svg
                   width="16"
                   height="16"
@@ -845,40 +429,67 @@ export default function HomePage() {
                 </svg>
                 Mulai Gratis
               </Link>
-              <a href="#product" className="hm-btn-ghost">
+              <a
+                href="#product"
+                className="inline-flex items-center h-13 px-7 rounded-xl bg-white/8 text-white text-[15px] font-extrabold no-underline border-[1.5px] border-white/20 backdrop-blur-sm transition-colors hover:bg-white/16 hover:border-white/40"
+              >
                 Lihat Fitur
               </a>
             </div>
-            <div className="hm-hero-stats">
+
+            <div className="flex gap-5 mt-12 flex-wrap">
               {STATS.map((s, i) => (
                 <div
                   key={i}
-                  className="hm-hero-stat"
+                  className="bg-black/25 backdrop-blur-md border border-white/8 rounded-xl px-5 py-3.5 animate-fade-in"
                   style={{ animationDelay: `${i * 0.1}s` }}
                 >
-                  <div className="hm-hero-stat-val">{s.value}</div>
-                  <div className="hm-hero-stat-lbl">{s.label}</div>
+                  <div className="text-white font-black text-[22px] tracking-tight">
+                    {s.value}
+                  </div>
+                  <div className="text-white/50 text-[11px] font-semibold tracking-wide uppercase mt-0.75">
+                    {s.label}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* ── IMAGE COLLAGE ── */}
-          <div className="hm-hero-right">
-            <div className="hm-hero-img-collage">
-              <div className="hm-hero-img-main">
-                <img src={IMG1} alt="Manajemen inventori" />
+          <div className="animate-slide-in-right">
+            <div className="relative w-full h-120">
+              <div className="absolute top-0 right-0 w-[78%] h-80 rounded-[20px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.4)] animate-img-reveal group">
+                <img
+                  src={IMG1}
+                  alt="Manajemen inventori"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+                <div className="absolute inset-0 rounded-[20px] bg-[linear-gradient(135deg,rgba(30,58,138,.25)_0%,transparent_60%)]" />
               </div>
-              <div className="hm-hero-img-secondary">
-                <img src={IMG2} alt="Tim bisnis kolaborasi" />
-                <div className="hm-hero-img-badge">
-                  <div className="hm-hero-img-badge-val">+48%</div>
-                  <div className="hm-hero-img-badge-lbl">Efisiensi</div>
+
+              <div className="absolute bottom-0 left-0 w-[58%] h-60 rounded-2xl overflow-hidden border-[3px] border-white/15 shadow-[0_16px_48px_rgba(0,0,0,.35)] animate-img-reveal group">
+                <img
+                  src={IMG2}
+                  alt="Tim bisnis kolaborasi"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(8,14,60,.3)_0%,transparent_60%)]" />
+                <div className="absolute top-5 left-5 z-10 bg-white/95 backdrop-blur-md rounded-xl px-3.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,.18)] animate-float-y">
+                  <div className="font-black text-lg text-brand-700">+48%</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
+                    Efisiensi
+                  </div>
                 </div>
               </div>
-              <div className="hm-hero-img-badge2">
-                <div className="hm-hero-img-badge2-val">500+</div>
-                <div className="hm-hero-img-badge2-lbl">Bisnis Aktif</div>
+
+              <div
+                className="absolute bottom-14 -right-4 z-10 rounded-xl px-4 py-2.5 shadow-[0_8px_24px_rgba(59,130,246,.45)] bg-linear-to-br from-brand-700 to-brand-500 animate-float-y"
+                style={{ animationDelay: "0.8s" }}
+              >
+                <div className="font-black text-base text-white">500+</div>
+                <div className="text-[10px] text-white/75 font-bold uppercase tracking-wide mt-0.5">
+                  Bisnis Aktif
+                </div>
               </div>
             </div>
           </div>
@@ -886,15 +497,17 @@ export default function HomePage() {
       </section>
 
       {/* ── SOCIAL PROOF STRIP ── */}
-      <div className="hm-proof-strip">
-        <div className="hm-proof-inner">
-          <span className="hm-proof-label">Dipercaya oleh</span>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div className="hm-proof-avatars">
+      <div className="bg-white px-8 py-7 border-b border-slate-200">
+        <div className="max-w-300 mx-auto flex items-center justify-between flex-wrap gap-6">
+          <span className="text-xs font-bold text-slate-400 tracking-wide uppercase">
+            Dipercaya oleh
+          </span>
+          <div className="flex items-center">
+            <div className="flex items-center">
               {["A", "B", "C", "D", "E"].map((l, i) => (
                 <div
                   key={i}
-                  className="hm-proof-avatar"
+                  className="w-9 h-9 rounded-full border-2 border-white overflow-hidden -ml-2 first:ml-0 flex items-center justify-center text-xs font-extrabold text-white"
                   style={{
                     background: `linear-gradient(135deg, #1e3a8a ${i * 20}%, #3b82f6)`
                   }}
@@ -903,59 +516,93 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            <span className="hm-proof-text">
-              <em>500+</em> bisnis aktif
+            <span className="text-sm font-bold text-gray-700 ml-3">
+              <em className="not-italic text-brand-700">500+</em> bisnis aktif
             </span>
           </div>
-          <div className="hm-proof-divider" />
-          <div className="hm-proof-stat">
-            <div className="hm-proof-stat-val">2M+</div>
-            <div className="hm-proof-stat-lbl">Produk Dikelola</div>
+          <div className="hidden sm:block w-px h-8 bg-slate-200" />
+          <div className="text-center">
+            <div className="font-black text-xl text-slate-900">2M+</div>
+            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+              Produk Dikelola
+            </div>
           </div>
-          <div className="hm-proof-divider" />
-          <div className="hm-proof-stat">
-            <div className="hm-proof-stat-val">99.9%</div>
-            <div className="hm-proof-stat-lbl">Uptime</div>
+          <div className="hidden sm:block w-px h-8 bg-slate-200" />
+          <div className="text-center">
+            <div className="font-black text-xl text-slate-900">99.9%</div>
+            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+              Uptime
+            </div>
           </div>
-          <div className="hm-proof-divider" />
-          <div className="hm-proof-stat">
-            <div className="hm-proof-stat-val">4.9★</div>
-            <div className="hm-proof-stat-lbl">Rating Pengguna</div>
+          <div className="hidden sm:block w-px h-8 bg-slate-200" />
+          <div className="text-center">
+            <div className="font-black text-xl text-slate-900">4.9★</div>
+            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+              Rating Pengguna
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── PHOTO SECTION 1 ── */}
-      <section className="hm-photo-section">
-        <div className="hm-photo-inner">
-          <div className="hm-photo-grid">
-            <div className="hm-photo-img-wrap">
-              <img src={IMG1} alt="Manajemen inventori" />
-              <div className="hm-photo-img-overlay" />
-              <div className="hm-photo-img-corner">
-                <div className="hm-photo-img-corner-val">10x</div>
-                <div className="hm-photo-img-corner-lbl">Lebih Cepat</div>
+      <section className="px-8 py-25 bg-white">
+        <div className="max-w-300 mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 items-center">
+            <div className="relative rounded-3xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.12)] animate-slide-in-up group">
+              <img
+                src={IMG1}
+                alt="Manajemen inventori"
+                className="w-full h-95 object-cover block transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(30,58,138,.15)_0%,transparent_50%)]" />
+              <div className="absolute bottom-5 left-5 bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,.1)]">
+                <div className="font-black text-xl text-brand-700">10x</div>
+                <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
+                  Lebih Cepat
+                </div>
               </div>
             </div>
-            <div className="hm-photo-content" style={{ paddingLeft: 16 }}>
-              <div className="hm-photo-tag">
-                <span>Kolaborasi Tim</span>
+            <div className="md:pl-4">
+              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+                <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+                  Kolaborasi Tim
+                </span>
               </div>
-              <h2 className="hm-photo-title">
-                Kerja Bareng Tim <em>Lebih Mudah</em>
+              <h2 className="font-black text-[clamp(26px,3.5vw,38px)] text-slate-900 tracking-tight leading-tight mb-4">
+                Kerja Bareng Tim{" "}
+                <em className="not-italic text-brand-700">Lebih Mudah</em>
               </h2>
-              <p className="hm-photo-desc">
+              <p className="text-slate-500 text-[15px] leading-[1.75] font-medium mb-7">
                 STOCKR dirancang untuk tim yang berkembang. Multi-user,
                 permission berbasis peran, dan aktivitas log real-time agar
                 semua anggota tim tetap sinkron.
               </p>
-              <ul className="hm-photo-list">
-                <li>Akses multi-pengguna dengan level permission</li>
-                <li>Notifikasi real-time untuk setiap perubahan stok</li>
-                <li>Log aktivitas lengkap untuk audit trail</li>
-                <li>Dashboard personal per departemen</li>
+              <ul className="flex flex-col gap-3 mb-8 list-none">
+                {[
+                  "Akses multi-pengguna dengan level permission",
+                  "Notifikasi real-time untuk setiap perubahan stok",
+                  "Log aktivitas lengkap untuk audit trail",
+                  "Dashboard personal per departemen"
+                ].map((li) => (
+                  <li
+                    key={li}
+                    className="flex items-start gap-3 text-sm text-gray-700 leading-normal font-semibold"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-full shrink-0 mt-0.5 bg-linear-to-br from-brand-700 to-brand-500 bg-no-repeat bg-center"
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l2.5 2.5L10 3' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E'), linear-gradient(135deg, #1e3a8a, #3b82f6)"
+                      }}
+                    />
+                    {li}
+                  </li>
+                ))}
               </ul>
-              <Link href="/register" className="hm-photo-btn">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-brand-500 text-white text-sm font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.45)] hover:bg-brand-600"
+              >
                 Coba Sekarang
                 <svg
                   width="16"
@@ -975,34 +622,38 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section
-        id="product"
-        className="hm-section"
-        style={{ background: "#f0f6ff" }}
-      >
-        <div className="hm-section-inner">
-          <div className="hm-section-tag">
-            <span>Fitur Unggulan</span>
+      <section id="product" className="px-8 py-25 bg-bg-app">
+        <div className="max-w-300 mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+            <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+              Fitur Unggulan
+            </span>
           </div>
-          <h2 className="hm-section-title">
+          <h2 className="font-black text-[clamp(28px,4vw,42px)] text-slate-900 tracking-tight leading-tight mb-3">
             Semua yang Kamu
             <br />
-            <em>Butuhkan</em> Ada di Sini
+            <em className="not-italic text-brand-700">Butuhkan</em> Ada di Sini
           </h2>
-          <p className="hm-section-sub">
+          <p className="text-slate-500 text-base leading-relaxed max-w-125 mb-14 font-medium">
             Platform lengkap untuk manajemen inventori bisnis kecil hingga
             menengah.
           </p>
-          <div className="hm-features-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {FEATURES.map((f, i) => (
               <div
                 key={i}
-                className="hm-feat-card"
+                className="bg-white border-[1.5px] border-slate-200 rounded-[18px] p-8 cursor-default transition-all duration-250 animate-slide-in-up hover:border-brand-500 hover:shadow-[0_8px_32px_rgba(59,130,246,.12)] hover:-translate-y-1 group"
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
-                <div className="hm-feat-icon">{f.icon}</div>
-                <h3 className="hm-feat-title">{f.title}</h3>
-                <p className="hm-feat-desc">{f.desc}</p>
+                <div className="w-16 h-16 rounded-[14px] flex items-center justify-center text-brand-700 mb-5 transition-colors bg-linear-to-br from-brand-700/8 to-brand-500/12 group-hover:from-brand-700/15 group-hover:to-brand-500/20">
+                  {f.icon}
+                </div>
+                <h3 className="font-black text-[17px] text-slate-900 mb-2">
+                  {f.title}
+                </h3>
+                <p className="text-slate-500 text-sm leading-[1.65] font-medium">
+                  {f.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -1010,28 +661,52 @@ export default function HomePage() {
       </section>
 
       {/* ── PHOTO SECTION 2 ── */}
-      <section className="hm-photo-section" style={{ background: "#f0f6ff" }}>
-        <div className="hm-photo-inner">
-          <div className="hm-photo-grid reverse">
-            <div className="hm-photo-content" style={{ paddingRight: 16 }}>
-              <div className="hm-photo-tag">
-                <span>Smart Analytics</span>
+      <section className="px-8 py-25 bg-bg-app">
+        <div className="max-w-300 mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 items-center [direction:ltr]">
+            <div className="md:order-2 md:pl-4">
+              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+                <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+                  Smart Analytics
+                </span>
               </div>
-              <h2 className="hm-photo-title">
-                Data Driven, <em>Keputusan Lebih Tepat</em>
+              <h2 className="font-black text-[clamp(26px,3.5vw,38px)] text-slate-900 tracking-tight leading-tight mb-4">
+                Data Driven,{" "}
+                <em className="not-italic text-brand-700">
+                  Keputusan Lebih Tepat
+                </em>
               </h2>
-              <p className="hm-photo-desc">
+              <p className="text-slate-500 text-[15px] leading-[1.75] font-medium mb-7">
                 Laporan otomatis, grafik tren stok, dan insight produk terlaris
                 membantu kamu mengambil keputusan bisnis berdasarkan data nyata,
                 bukan intuisi.
               </p>
-              <ul className="hm-photo-list">
-                <li>Laporan stok harian, mingguan, dan bulanan</li>
-                <li>Analisis produk terlaris & slow-moving</li>
-                <li>Forecast kebutuhan stok otomatis</li>
-                <li>Export laporan ke Excel & PDF</li>
+              <ul className="flex flex-col gap-3 mb-8 list-none">
+                {[
+                  "Laporan stok harian, mingguan, dan bulanan",
+                  "Analisis produk terlaris & slow-moving",
+                  "Forecast kebutuhan stok otomatis",
+                  "Export laporan ke Excel & PDF"
+                ].map((li) => (
+                  <li
+                    key={li}
+                    className="flex items-start gap-3 text-sm text-gray-700 leading-normal font-semibold"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-full shrink-0 mt-0.5 bg-no-repeat bg-center"
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l2.5 2.5L10 3' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E'), linear-gradient(135deg, #1e3a8a, #3b82f6)"
+                      }}
+                    />
+                    {li}
+                  </li>
+                ))}
               </ul>
-              <Link href="/register" className="hm-photo-btn">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-brand-500 text-white text-sm font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.45)] hover:bg-brand-600"
+              >
                 Lihat Demo
                 <svg
                   width="16"
@@ -1046,12 +721,20 @@ export default function HomePage() {
                 </svg>
               </Link>
             </div>
-            <div className="hm-photo-img-wrap">
-              <img src={IMG2} alt="Analytics dashboard inventori" />
-              <div className="hm-photo-img-overlay" />
-              <div className="hm-photo-img-corner">
-                <div className="hm-photo-img-corner-val">Real-Time</div>
-                <div className="hm-photo-img-corner-lbl">Analytics</div>
+            <div className="md:order-1 relative rounded-3xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.12)] animate-slide-in-up group">
+              <img
+                src={IMG2}
+                alt="Analytics dashboard inventori"
+                className="w-full h-95 object-cover block transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(30,58,138,.15)_0%,transparent_50%)]" />
+              <div className="absolute bottom-5 left-5 bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,.1)]">
+                <div className="font-black text-xl text-brand-700">
+                  Real-Time
+                </div>
+                <div className="text-[11px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
+                  Analytics
+                </div>
               </div>
             </div>
           </div>
@@ -1059,81 +742,79 @@ export default function HomePage() {
       </section>
 
       {/* ── PRODUCT TABLE ── */}
-      <div className="hm-product-section">
-        <div className="hm-product-inner">
-          <div className="hm-product-header">
+      <div className="px-8 pb-25">
+        <div className="max-w-300 mx-auto">
+          <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
             <div>
-              <div className="hm-section-tag">
-                <span>Produk</span>
+              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
+                <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+                  Produk
+                </span>
               </div>
-              <h2 className="hm-section-title" style={{ marginBottom: 0 }}>
-                Contoh Data <em>Inventori</em>
+              <h2 className="font-black text-[clamp(28px,4vw,42px)] text-slate-900 tracking-tight leading-tight">
+                Contoh Data{" "}
+                <em className="not-italic text-brand-700">Inventori</em>
               </h2>
             </div>
             <Link
               href="/login"
-              className="hm-btn-login"
-              style={{
-                height: 44,
-                padding: "0 24px",
-                fontSize: 14,
-                borderRadius: 10,
-                background: "#3b82f6",
-                color: "#fff",
-                boxShadow: "0 4px 12px rgba(59,130,246,.35)"
-              }}
+              className="inline-flex items-center h-11 px-6 rounded-[10px] text-sm font-extrabold no-underline bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.35)]"
             >
               Kelola Sekarang →
             </Link>
           </div>
-          <div className="hm-table-wrap">
-            <table className="hm-table">
-              <thead>
+
+          <div className="bg-white border-[1.5px] border-slate-200 rounded-[18px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,.04)] animate-slide-in-up">
+            <table className="w-full border-collapse">
+              <thead className="bg-linear-to-br from-brand-900 to-brand-700">
                 <tr>
-                  <th>Nama Produk</th>
-                  <th>Kategori</th>
-                  <th>Stok</th>
-                  <th>Status</th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Nama Produk
+                  </th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Kategori
+                  </th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Stok
+                  </th>
+                  <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/80 tracking-widest uppercase">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {PRODUCTS.map((p, i) => (
-                  <tr key={i}>
-                    <td>
-                      <div className="hm-td-name">{p.name}</div>
-                      <div className="hm-td-sku">{p.sku}</div>
+                  <tr
+                    key={i}
+                    className="border-b border-slate-100 last:border-none transition-colors hover:bg-[#f8faff]"
+                  >
+                    <td className="px-5 py-4 text-sm">
+                      <div className="font-extrabold text-slate-900">
+                        {p.name}
+                      </div>
+                      <div className="text-xs text-slate-400 font-semibold mt-0.5">
+                        {p.sku}
+                      </div>
                     </td>
-                    <td
-                      style={{
-                        color: "#64748b",
-                        fontSize: 13,
-                        fontWeight: 500
-                      }}
-                    >
+                    <td className="px-5 py-4 text-[13px] text-slate-500 font-medium">
                       {p.cat}
                     </td>
-                    <td>
+                    <td className="px-5 py-4 text-sm">
                       <span
-                        className="hm-td-stock"
-                        style={{
-                          color:
-                            p.stock === 0
-                              ? "#ef4444"
-                              : p.stock < 8
-                                ? "#f59e0b"
-                                : "#1e3a8a"
-                        }}
+                        className={cn(
+                          "font-black text-[15px]",
+                          STOCK_COLOR(p.stock)
+                        )}
                       >
                         {p.stock}
                       </span>
                     </td>
-                    <td>
+                    <td className="px-5 py-4 text-sm">
                       <span
-                        className="hm-td-badge"
-                        style={{
-                          color: statusColor(p.status),
-                          background: statusBg(p.status)
-                        }}
+                        className={cn(
+                          "inline-block text-[11px] font-extrabold px-3 py-1 rounded-full",
+                          STATUS_STYLES[p.status]
+                        )}
                       >
                         {p.status}
                       </span>
@@ -1147,47 +828,63 @@ export default function HomePage() {
       </div>
 
       {/* ── ABOUT ── */}
-      <section id="about" className="hm-about-section">
-        <div className="hm-about-inner">
-          <div className="hm-about-grid-bg" />
-          <div className="hm-about-left">
-            <div
-              className="hm-section-tag"
-              style={{ background: "rgba(255,255,255,.12)", marginBottom: 16 }}
-            >
-              <span style={{ color: "#93c5fd" }}>Tentang Kami</span>
+      <section id="about" className="px-8 pb-25">
+        <div className="relative overflow-hidden max-w-300 mx-auto rounded-[28px] px-9 md:px-16 py-14 md:py-18 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center bg-[linear-gradient(145deg,#060b1a,#0c1733,#1e3a8a)]">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px)",
+              backgroundSize: "40px 40px"
+            }}
+          />
+          <div className="relative z-1">
+            <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-white/12">
+              <span className="text-brand-300 text-xs font-extrabold tracking-wide uppercase">
+                Tentang Kami
+              </span>
             </div>
-            <h2 className="hm-about-title">
+            <h2 className="font-black text-[clamp(26px,3.5vw,38px)] text-white tracking-tight mb-4">
               Dibangun untuk Bisnis yang Terus Berkembang
             </h2>
-            <p className="hm-about-desc">
+            <p className="text-white/70 text-[15px] leading-[1.8] font-medium mb-8">
               STOCKR lahir dari kebutuhan nyata para pebisnis Indonesia yang
               kesulitan memantau stok secara akurat. Kami menghadirkan solusi
               yang sederhana, cepat, dan dapat diandalkan.
             </p>
-            <div className="hm-about-chips">
+            <div className="flex gap-2.5 flex-wrap">
               {[
                 "Mudah Digunakan",
                 "Cloud-Based",
                 "Realtime Sync",
                 "Multi Pengguna"
               ].map((c) => (
-                <span key={c} className="hm-about-chip">
+                <span
+                  key={c}
+                  className="bg-white/10 border border-white/18 rounded-full px-4 py-1.5 text-white/85 text-[13px] font-bold"
+                >
                   {c}
                 </span>
               ))}
             </div>
           </div>
-          <div className="hm-about-right">
+          <div className="relative z-1 grid grid-cols-2 gap-4">
             {[
               { v: "500+", l: "Bisnis Aktif" },
               { v: "2M+", l: "Produk Dikelola" },
               { v: "99.9%", l: "Uptime" },
               { v: "24/7", l: "Support" }
             ].map((c) => (
-              <div key={c.l} className="hm-about-card">
-                <div className="hm-about-card-val">{c.v}</div>
-                <div className="hm-about-card-lbl">{c.l}</div>
+              <div
+                key={c.l}
+                className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-6"
+              >
+                <div className="font-black text-[28px] text-white tracking-tight">
+                  {c.v}
+                </div>
+                <div className="text-white/50 text-xs font-bold mt-1.5 tracking-wide uppercase">
+                  {c.l}
+                </div>
               </div>
             ))}
           </div>
@@ -1195,11 +892,11 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="hm-footer">
-        <div className="hm-footer-logo">
-          STOCK<em>R</em>
+      <footer className="px-8 py-10 text-center bg-[linear-gradient(135deg,#050a14_0%,#0c1733_50%,#080d1f_100%)]">
+        <div className="font-black text-[22px] text-white tracking-wide mb-2">
+          STOCK<em className="not-italic text-brand-400">R</em>
         </div>
-        <div className="hm-footer-sub">
+        <div className="text-white/35 text-[13px] font-semibold">
           © 2026 STOCKR · Inventory Management System
         </div>
       </footer>

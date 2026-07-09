@@ -9,5 +9,6 @@
   "prettier.trailingComma": "none",
   "prettier.semi": false, //tidak menggunakan semicolon
   "liveServer.settings.port": 5501,
-  "prettier.endOfLine": "auto"
+  "prettier.endOfLine": "auto",
+  "css.lint.unknownAtRules": "ignore"
 }

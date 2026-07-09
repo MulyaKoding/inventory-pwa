@@ -1,9 +1,11 @@
 "use client"
+
 import { useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { useForm } from "react-hook-form"
+import { cn } from "../../lib/utils"
 
 type Step = "request" | "otp" | "newpass" | "done"
 type RequestForm = { phone: string }
@@ -12,118 +14,32 @@ type NewPassForm = { password: string; confirm: string }
 const imageWa =
   "https://res.cloudinary.com/dp0dtct3v/image/upload/v1775458567/whatsapp_objiub.png"
 
-// ── Styles ──────────────────────────────────────────────────────
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+const KEYFRAMES = `
   @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes dotBounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-5px); opacity: 1; } }
-  @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.7); opacity: 0; } }
-  @keyframes gridPan { from { background-position: 0 0; } to { background-position: 48px 48px; } }
   @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
   @keyframes checkPop { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 70% { transform: scale(1.15) rotate(3deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
-
-  .rp-root { display: flex; min-height: 100vh; font-family: 'Nunito', sans-serif; }
-
-  /* LEFT */
-  .rp-left { position: relative; width: 52%; min-height: 100vh; background: linear-gradient(160deg, #060b1a 0%, #0c1733 30%, #0f2050 60%, #1e3a8a 100%); display: flex; flex-direction: column; overflow: hidden; }
-  .rp-left-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 48px 48px; animation: gridPan 8s linear infinite; }
-  .rp-left-glow { position: absolute; top: -120px; right: -120px; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,.22) 0%, transparent 70%); pointer-events: none; }
-  .rp-left-glow2 { position: absolute; bottom: -80px; left: -80px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(30,58,138,.18) 0%, transparent 70%); pointer-events: none; }
-  .rp-ticker-wrap { position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,.25); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,.08); height: 36px; overflow: hidden; display: flex; align-items: center; }
-  .rp-ticker-track { display: flex; animation: ticker 28s linear infinite; white-space: nowrap; }
-  .rp-ticker-item { display: inline-flex; align-items: center; gap: 14px; padding: 0 36px; font-weight: 700; font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .06em; }
-  .rp-ticker-dot { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; }
-  .rp-brand-area { position: relative; z-index: 2; padding: 52px 52px 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
-  .rp-brand-mark { width: 40px; height: 40px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59,130,246,.35); }
-  .rp-brand-mark span { font-weight: 900; font-size: 11px; color: #fff; }
-  .rp-brand-name { font-weight: 900; font-size: 18px; color: #fff; letter-spacing: .06em; }
-  .rp-brand-sub { font-size: 11px; color: rgba(255,255,255,.4); font-weight: 600; margin-top: 2px; }
-  .rp-hero { position: relative; z-index: 2; padding: 40px 52px 0; flex: 1; }
-  .rp-hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.15); border-radius: 100px; padding: 6px 14px; margin-bottom: 24px; }
-  .rp-hero-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; position: relative; }
-  .rp-hero-tag-dot::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: rgba(245,158,11,.4); animation: pulse-ring 1.8s ease-out infinite; }
-  .rp-hero-tag-text { color: rgba(255,255,255,.85); font-size: 11px; font-weight: 800; letter-spacing: .05em; }
-  .rp-hero-title { font-weight: 900; font-size: clamp(28px, 3vw, 40px); line-height: 1.1; letter-spacing: -.02em; color: #fff; margin-bottom: 14px; }
-  .rp-hero-title em { font-style: normal; color: #60a5fa; }
-  .rp-hero-desc { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.7; max-width: 360px; font-weight: 500; margin-bottom: 28px; }
-  .rp-tips { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
-  .rp-tip { display: flex; align-items: flex-start; gap: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; padding: 12px 14px; }
-  .rp-tip-ico { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-  .rp-tip-text { font-size: 12px; color: rgba(255,255,255,.55); font-weight: 600; line-height: 1.5; }
-  .rp-tip-text strong { color: rgba(255,255,255,.8); font-weight: 800; }
-  .rp-tracker { display: flex; align-items: center; margin-bottom: 28px; }
-  .rp-track-step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .rp-track-circle { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; border: 2px solid rgba(255,255,255,.15); color: rgba(255,255,255,.3); background: transparent; transition: all .3s; }
-  .rp-track-circle.active { border-color: #3b82f6; background: rgba(59,130,246,.2); color: #93c5fd; }
-  .rp-track-circle.done { border-color: #22c55e; background: rgba(34,197,94,.2); color: #86efac; }
-  .rp-track-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); letter-spacing: .04em; }
-  .rp-track-label.active { color: rgba(255,255,255,.7); }
-  .rp-track-line { flex: 1; height: 1px; background: rgba(255,255,255,.1); margin: 0 4px; margin-bottom: 16px; }
-  .rp-track-line.done { background: rgba(34,197,94,.4); }
-  .rp-bottom-bar { position: relative; z-index: 2; padding: 22px 52px; border-top: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: space-between; }
-  .rp-bottom-trust { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,.35); font-weight: 700; }
-  .rp-bottom-trust-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
-  .rp-bottom-version { font-size: 11px; color: rgba(255,255,255,.2); font-weight: 700; }
-
-  /* RIGHT */
-  .rp-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 40px; background: #fff; overflow-y: auto; }
-  .rp-card { width: 100%; max-width: 400px; animation: fadeUp .5s ease forwards; }
-  .rp-form-title { font-weight: 900; font-size: 30px; color: #0f172a; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 6px; }
-  .rp-form-sub { font-size: 14px; color: #64748b; font-weight: 500; line-height: 1.5; margin-bottom: 24px; }
-  .rp-lbl { display: block; font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 7px; }
-  .rp-field { margin-bottom: 14px; }
-  .rp-inp-wrap { position: relative; display: flex; align-items: center; }
-  .rp-inp-icon { position: absolute; left: 14px; width: 16px; height: 16px; pointer-events: none; z-index: 1; color: #94a3b8; }
-  .rp-inp { width: 100%; height: 48px; padding: 0 44px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: 'Nunito', sans-serif; font-weight: 600; color: #0f172a; outline: none; transition: border-color .2s, box-shadow .2s; }
-  .rp-inp:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-  .rp-inp.invalid { border-color: #ef4444; }
-  .rp-inp::placeholder { color: #cbd5e1; font-weight: 500; }
-  .rp-inp-eye { position: absolute; right: 14px; background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: #94a3b8; }
-  .rp-err-msg { font-size: 12px; color: #dc2626; margin-top: 5px; font-weight: 700; font-family: 'Nunito', sans-serif; }
-  .rp-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 14px; text-align: center; font-family: 'Nunito', sans-serif; }
-  .rp-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 14px; text-align: center; font-family: 'Nunito', sans-serif; }
-  .rp-btn { width: 100%; height: 50px; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: 'Nunito', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 24px rgba(59,130,246,.3); transition: transform .2s; margin-top: 6px; }
-  .rp-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(59,130,246,.4); }
-  .rp-btn:disabled { opacity: .7; cursor: not-allowed; }
-  .rp-dots { display: flex; gap: 5px; }
-  .rp-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: dotBounce 1s ease-in-out infinite; }
-  .rp-strength { display: flex; gap: 4px; margin-top: 7px; }
-  .rp-strength-bar { flex: 1; height: 3px; border-radius: 2px; background: #e2e8f0; transition: background .3s; }
-  .rp-done-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px; animation: checkPop .5s ease forwards; box-shadow: 0 12px 32px rgba(34,197,94,.35); }
-  .rp-topbar { display: none; background: linear-gradient(135deg, #060b1a, #1e3a8a); padding: 14px 20px; align-items: center; gap: 12px; cursor: pointer; }
-  .rp-topbar-mark { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .rp-topbar-mark span { font-weight: 900; font-size: 10px; color: #fff; }
-  .rp-topbar-name { font-weight: 900; font-size: 15px; color: #fff; }
-  .rp-topbar-sub { font-size: 10px; color: rgba(255,255,255,.4); font-weight: 600; }
-  .otp-box-wrap { display: flex; gap: 10px; justify-content: center; }
-  .otp-box { width: 52px; height: 60px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 26px; font-weight: 900; text-align: center; font-family: 'Nunito', sans-serif; color: #0f172a; outline: none; transition: border-color .2s, box-shadow .2s, transform .15s; caret-color: transparent; }
-  .otp-box:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,.15); transform: translateY(-2px); }
-  .otp-box.filled { border-color: #1e3a8a; background: #eff6ff; }
-  @media (max-width: 900px) {
-    .rp-left { display: none; }
-    .rp-topbar { display: flex; }
-    .rp-root { flex-direction: column; }
-    .rp-right { padding: 32px 20px 48px; align-items: flex-start; }
-    .rp-card { max-width: 100%; }
-  }
-  @media (max-width: 480px) {
-    .rp-right { padding: 24px 16px 40px; }
-    .rp-form-title { font-size: 24px; }
-    .rp-inp { height: 44px; }
-    .rp-btn { height: 46px; }
-    .otp-box { width: 44px; height: 54px; font-size: 22px; border-radius: 10px; }
-    .otp-box-wrap { gap: 7px; }
-  }
 `
+
+const inputBase =
+  "h-12 w-full rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 px-11 text-sm font-semibold text-slate-900 outline-none transition-[border-color,box-shadow] placeholder:font-medium placeholder:text-slate-300 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] max-[480px]:h-11"
 
 // ── Shared micro-components ─────────────────────────────────────
 function LoadingDots() {
   return (
-    <span className="rp-dots">
-      <span className="rp-dot" style={{ animationDelay: "0s" }} />
-      <span className="rp-dot" style={{ animationDelay: ".15s" }} />
-      <span className="rp-dot" style={{ animationDelay: ".3s" }} />
+    <span className="flex gap-1.25">
+      <span
+        className="h-1.5 w-1.5 animate-[dotBounce_1s_ease-in-out_infinite] rounded-full bg-white"
+        style={{ animationDelay: "0s" }}
+      />
+      <span
+        className="h-1.5 w-1.5 animate-[dotBounce_1s_ease-in-out_infinite] rounded-full bg-white"
+        style={{ animationDelay: ".15s" }}
+      />
+      <span
+        className="h-1.5 w-1.5 animate-[dotBounce_1s_ease-in-out_infinite] rounded-full bg-white"
+        style={{ animationDelay: ".3s" }}
+      />
     </span>
   )
 }
@@ -147,28 +63,27 @@ function EyeIcon() {
 function PasswordStrength({ password }: { password: string }) {
   const len = password.length
   const level = len === 0 ? -1 : len < 6 ? 0 : len < 8 ? 1 : len < 12 ? 2 : 3
-  const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"]
+  const barColors = [
+    "bg-red-500",
+    "bg-amber-500",
+    "bg-brand-500",
+    "bg-green-500"
+  ]
   const labels = ["", "🔴 Terlalu lemah", "🟡 Lemah", "🔵 Sedang", "🟢 Kuat"]
   return (
     <>
-      <div className="rp-strength">
+      <div className="mt-1.75 flex gap-1">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rp-strength-bar"
-            style={{ background: i <= level ? colors[level] : undefined }}
+            className={cn(
+              "h-0.75 flex-1 rounded-sm transition-colors duration-300",
+              i <= level ? barColors[level] : "bg-slate-200"
+            )}
           />
         ))}
       </div>
-      <p
-        style={{
-          fontSize: 11,
-          color: "#94a3b8",
-          marginTop: 5,
-          fontFamily: "'Nunito', sans-serif",
-          fontWeight: 600
-        }}
-      >
+      <p className="mt-1.25 text-[11px] font-semibold text-slate-400">
         {level === -1 ? "Masukkan password" : labels[level + 1]}
       </p>
     </>
@@ -189,14 +104,18 @@ function OtpInput({
   onPaste: (e: React.ClipboardEvent) => void
 }) {
   return (
-    <div className="otp-box-wrap">
+    <div className="flex justify-center gap-2.5 max-[480px]:gap-1.75">
       {digits.map((digit, i) => (
         <input
           key={i}
           ref={(el) => {
             refs.current[i] = el
           }}
-          className={`otp-box${digit ? " filled" : ""}`}
+          className={cn(
+            "h-15 w-13 rounded-xl border-2 border-slate-200 bg-slate-50 text-center text-2xl font-black text-slate-900 caret-transparent outline-none transition-[border-color,box-shadow,transform] duration-150 focus:-translate-y-0.5 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,.15)]",
+            "max-[480px]:h-13.5 max-[480px]:w-11 max-[480px]:rounded-[10px] max-[480px]:text-[22px]",
+            digit && "border-brand-700 bg-blue-50"
+          )}
           type="text"
           inputMode="numeric"
           maxLength={1}
@@ -227,28 +146,35 @@ const STEP_INDEX: Record<Step, number> = {
 function StepTracker({ step }: { step: Step }) {
   const idx = STEP_INDEX[step]
   return (
-    <div className="rp-tracker">
+    <div className="mb-7 flex items-center">
       {TRACK_STEPS.map((s, i) => (
-        <div
-          key={i}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            flex: i < 2 ? 1 : undefined
-          }}
-        >
-          <div className="rp-track-step">
+        <div key={i} className={cn("flex items-center", i < 2 && "flex-1")}>
+          <div className="flex flex-col items-center gap-1.5">
             <div
-              className={`rp-track-circle ${i < idx ? "done" : i === idx ? "active" : ""}`}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/15 bg-transparent text-[11px] font-black text-white/30 transition-all duration-300",
+                i < idx && "border-green-500 bg-green-500/20 text-green-300",
+                i === idx && "border-brand-500 bg-brand-500/20 text-brand-300"
+              )}
             >
               {i < idx ? "✓" : s.n}
             </div>
-            <div className={`rp-track-label ${i === idx ? "active" : ""}`}>
+            <div
+              className={cn(
+                "text-[10px] font-bold tracking-[.04em] text-white/30",
+                i === idx && "text-white/70"
+              )}
+            >
               {s.label}
             </div>
           </div>
           {i < 2 && (
-            <div className={`rp-track-line ${i < idx ? "done" : ""}`} />
+            <div
+              className={cn(
+                "mx-1 mb-4 h-px flex-1 bg-white/10",
+                i < idx && "bg-green-500/40"
+              )}
+            />
           )}
         </div>
       ))}
@@ -290,17 +216,21 @@ function LeftPanel({
   onLogoClick: () => void
 }) {
   return (
-    <div className="rp-left">
-      <div className="rp-left-grid" />
-      <div className="rp-left-glow" />
-      <div className="rp-left-glow2" />
-      <div className="rp-ticker-wrap">
-        <div className="rp-ticker-track">
+    <div className="relative flex min-h-screen w-[52%] flex-col overflow-hidden bg-[linear-gradient(160deg,var(--color-brand-950)_0%,var(--color-brand-900)_30%,var(--color-brand-800)_60%,var(--color-brand-700)_100%)] max-[900px]:hidden">
+      <div className="pointer-events-none absolute inset-0 animate-[gridPan_8s_linear_infinite] bg-[linear-gradient(rgba(255,255,255,.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
+      <div className="pointer-events-none absolute -right-30 -top-30 h-125 w-125 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.22)_0%,transparent_70%)]" />
+      <div className="pointer-events-none absolute -bottom-20 -left-20 h-95 w-95 rounded-full bg-[radial-gradient(circle,rgba(30,58,138,.18)_0%,transparent_70%)]" />
+
+      <div className="absolute inset-x-0 top-0 flex h-9 items-center overflow-hidden border-b border-white/8 bg-black/sm">
+        <div className="flex animate-[ticker_28s_linear_infinite] whitespace-nowrap">
           {[0, 1].map((i) => (
             <span key={i}>
               {TICKERS.map((t, j) => (
-                <span key={j} className="rp-ticker-item">
-                  <span className="rp-ticker-dot" />
+                <span
+                  key={j}
+                  className="inline-flex items-center gap-3.5 px-9 text-[11px] font-bold tracking-[.06em] text-white/50"
+                >
+                  <span className="h-1 w-1 rounded-full bg-brand-400" />
                   {t}
                 </span>
               ))}
@@ -308,36 +238,50 @@ function LeftPanel({
           ))}
         </div>
       </div>
-      <div className="rp-brand-area" onClick={onLogoClick}>
-        <div className="rp-brand-mark">
-          <span>INV</span>
+
+      <div
+        className="relative z-2 flex cursor-pointer items-center gap-3 px-13 pt-13"
+        onClick={onLogoClick}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px] bg-linear-to-br from-brand-700 to-brand-500 shadow-[0_4px_12px_rgba(59,130,246,.35)]">
+          <span className="text-[11px] font-black text-white">INV</span>
         </div>
         <div>
-          <div className="rp-brand-name">STOCKR</div>
-          <div className="rp-brand-sub">Inventory Management System</div>
+          <div className="text-lg font-black tracking-[.06em] text-white">
+            STOCKR
+          </div>
+          <div className="mt-0.5 text-[11px] font-semibold text-white/40">
+            Inventory Management System
+          </div>
         </div>
       </div>
-      <div className="rp-hero">
-        <div className="rp-hero-tag">
-          <span className="rp-hero-tag-dot" />
-          <span className="rp-hero-tag-text">Keamanan Akun</span>
+
+      <div className="relative z-2 flex-1 px-13 pt-10">
+        <div className="relative mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3.5 py-1.5 backdrop-blur-sm">
+          <span className="relative h-1.5 w-1.5 rounded-full bg-amber-500 after:absolute after:-inset-0.75 after:animate-[pulse-ring_1.8s_ease-out_infinite] after:rounded-full after:bg-amber-500/40 after:content-['']" />
+          <span className="text-[11px] font-extrabold tracking-[.05em] text-white/85">
+            Keamanan Akun
+          </span>
         </div>
-        <h1 className="rp-hero-title">
+        <h1 className="mb-3.5 text-[clamp(28px,3vw,40px)] font-black leading-[1.1] tracking-[-.02em] text-white">
           Lupa Password?
           <br />
-          <em>Atur Ulang Sekarang.</em>
+          <em className="text-brand-400 not-italic">Atur Ulang Sekarang.</em>
         </h1>
-        <p className="rp-hero-desc">
+        <p className="mb-7 max-w-90 text-sm font-medium leading-[1.7] text-white/60">
           Verifikasi identitas kamu melalui WhatsApp dan buat password baru yang
           aman dalam hitungan menit.
         </p>
         <StepTracker step={step} />
-        <div className="rp-tips">
+        <div className="mb-7 flex flex-col gap-3">
           {TIPS.map((t) => (
-            <div key={t.title} className="rp-tip">
-              <span className="rp-tip-ico">{t.ico}</span>
+            <div
+              key={t.title}
+              className="flex items-start gap-3 rounded-[10px] border border-white/[.07] bg-white/4 px-3.5 py-3"
+            >
+              <span className="mt-px shrink-0 text-lg">{t.ico}</span>
               <div
-                className="rp-tip-text"
+                className="text-xs font-semibold leading-relaxed text-white/55"
                 dangerouslySetInnerHTML={{
                   __html: `<strong style="color:rgba(255,255,255,.8)">${t.title}</strong><br/>${t.desc}`
                 }}
@@ -346,12 +290,15 @@ function LeftPanel({
           ))}
         </div>
       </div>
-      <div className="rp-bottom-bar">
-        <div className="rp-bottom-trust">
-          <span className="rp-bottom-trust-dot" />
+
+      <div className="relative z-2 flex items-center justify-between border-t border-white/[.07] px-13 py-5.5">
+        <div className="flex items-center gap-2 text-xs font-bold text-white/35">
+          <span className="h-1.75 w-1.75 rounded-full bg-green-500" />
           Sistem keamanan terenkripsi
         </div>
-        <span className="rp-bottom-version">v2.4.1 · 2026</span>
+        <span className="text-[11px] font-bold text-white/20">
+          v2.4.1 · 2026
+        </span>
       </div>
     </div>
   )
@@ -514,44 +461,57 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <style>{STYLES}</style>
-      <div className="rp-root">
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
+      <div className="flex min-h-screen font-nunito max-[900px]:flex-col">
         {/* Mobile topbar */}
-        <div className="rp-topbar" onClick={() => router.push("/")}>
-          <div className="rp-topbar-mark">
-            <span>INV</span>
+        <div
+          className="hidden cursor-pointer items-center gap-3 bg-linear-to-br from-brand-950 to-brand-700 px-5 py-3.5 max-[900px]:flex"
+          onClick={() => router.push("/")}
+        >
+          <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-brand-700 to-brand-500">
+            <span className="text-[10px] font-black text-white">INV</span>
           </div>
           <div>
-            <div className="rp-topbar-name">STOCKR</div>
-            <div className="rp-topbar-sub">Inventory Management System</div>
+            <div className="text-[15px] font-black text-white">STOCKR</div>
+            <div className="text-[10px] font-semibold text-white/40">
+              Inventory Management System
+            </div>
           </div>
         </div>
 
         <LeftPanel step={step} onLogoClick={() => router.push("/")} />
 
         {/* ── RIGHT PANEL ── */}
-        <div className="rp-right">
-          <div className="rp-card">
+        <div className="flex flex-1 items-center justify-center overflow-y-auto bg-white px-10 py-12 max-[900px]:items-start max-[900px]:px-5 max-[900px]:pb-12 max-[900px]:pt-8 max-[480px]:px-4 max-[480px]:pb-10 max-[480px]:pt-6">
+          <div className="w-full max-w-100 animate-[fadeUp_0.5s_ease_forwards] max-[900px]:max-w-full">
             {/* STEP 1: REQUEST */}
             {step === "request" && (
               <>
-                <div style={{ marginBottom: 28 }}>
-                  <h1 className="rp-form-title">Reset Password</h1>
-                  <p className="rp-form-sub">
+                <div className="mb-7">
+                  <h1 className="mb-1.5 text-[30px] font-black tracking-[-.02em] text-slate-900 max-[480px]:text-2xl">
+                    Reset Password
+                  </h1>
+                  <p className="mb-6 text-sm font-medium leading-normal text-slate-500">
                     Masukkan nomor WhatsApp yang terdaftar. Kami akan
                     mengirimkan kode OTP untuk verifikasi.
                   </p>
                 </div>
-                {serverError && <div className="rp-error">⚠ {serverError}</div>}
+                {serverError && (
+                  <div className="mb-3.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-center text-[13px] font-bold text-red-600">
+                    ⚠ {serverError}
+                  </div>
+                )}
                 <form
                   onSubmit={requestForm.handleSubmit(onRequestSubmit)}
                   noValidate
                 >
-                  <div className="rp-field">
-                    <label className="rp-lbl">Nomor WhatsApp Terdaftar</label>
-                    <div className="rp-inp-wrap">
+                  <div className="mb-3.5">
+                    <label className="mb-1.75 block text-[13px] font-bold text-gray-700">
+                      Nomor WhatsApp Terdaftar
+                    </label>
+                    <div className="relative flex items-center">
                       <svg
-                        className="rp-inp-icon"
+                        className="pointer-events-none absolute left-3.5 z-1 h-4 w-4 text-slate-400"
                         viewBox="0 0 24 24"
                         fill="none"
                         strokeWidth="2"
@@ -560,7 +520,10 @@ export default function ResetPasswordPage() {
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
                       <input
-                        className={`rp-inp${requestForm.formState.errors.phone ? " invalid" : ""}`}
+                        className={cn(
+                          inputBase,
+                          requestForm.formState.errors.phone && "border-red-500"
+                        )}
                         type="tel"
                         placeholder="08xxxxxxxxxx"
                         {...requestForm.register("phone", {
@@ -574,45 +537,28 @@ export default function ResetPasswordPage() {
                       />
                     </div>
                     {requestForm.formState.errors.phone ? (
-                      <p className="rp-err-msg">
+                      <p className="mt-1.25 text-xs font-bold text-red-600">
                         {requestForm.formState.errors.phone.message}
                       </p>
                     ) : (
-                      <p
-                        style={{
-                          fontSize: 11,
-                          color: "#94a3b8",
-                          marginTop: 5,
-                          fontFamily: "'Nunito', sans-serif",
-                          fontWeight: 600
-                        }}
-                      >
+                      <p className="mt-1.25 text-[11px] font-semibold text-slate-400">
                         OTP akan dikirim ke nomor ini
                       </p>
                     )}
                   </div>
-                  <button type="submit" className="rp-btn" disabled={loading}>
+                  <button
+                    type="submit"
+                    className="mt-1.5 flex h-12.5 w-full items-center justify-center gap-2 rounded-[10px] bg-linear-to-br from-brand-700 to-brand-500 text-[15px] font-extrabold text-white shadow-[0_8px_24px_rgba(59,130,246,.3)] transition-transform enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_12px_32px_rgba(59,130,246,.4)] disabled:cursor-not-allowed disabled:opacity-70 max-[480px]:h-11.5"
+                    disabled={loading}
+                  >
                     {loading ? <LoadingDots /> : "Kirim Kode OTP →"}
                   </button>
                 </form>
-                <p
-                  style={{
-                    textAlign: "center",
-                    marginTop: 20,
-                    fontSize: 13,
-                    color: "#64748b",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
-                >
+                <p className="mt-5 text-center text-[13px] font-semibold text-slate-500">
                   Ingat password kamu?{" "}
                   <Link
                     href="/login"
-                    style={{
-                      color: "#1e3a8a",
-                      textDecoration: "none",
-                      fontWeight: 800
-                    }}
+                    className="font-extrabold text-brand-700 no-underline"
                   >
                     Masuk di sini
                   </Link>
@@ -623,7 +569,7 @@ export default function ResetPasswordPage() {
             {/* STEP 2: OTP */}
             {step === "otp" && (
               <>
-                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div className="mb-6 text-center">
                   <Image
                     src={imageWa}
                     alt="WhatsApp"
@@ -631,33 +577,31 @@ export default function ResetPasswordPage() {
                     height={64}
                     priority
                     unoptimized
-                    style={{
-                      borderRadius: 16,
-                      margin: "0 auto 16px",
-                      display: "block",
-                      objectFit: "contain"
-                    }}
+                    className="mx-auto mb-4 block rounded-2xl object-contain"
                   />
-                  <h1 className="rp-form-title" style={{ fontSize: 26 }}>
+                  <h1 className="mb-1.5 text-[26px] font-black tracking-[-.02em] text-slate-900">
                     Verifikasi WhatsApp
                   </h1>
-                  <p className="rp-form-sub">
+                  <p className="text-sm font-medium leading-normal text-slate-500">
                     Kode OTP dikirim ke
                     <br />
-                    <strong style={{ color: "#0f172a" }}>
+                    <strong className="text-slate-900">
                       WhatsApp {phoneValue}
                     </strong>
                   </p>
                 </div>
-                {serverError && <div className="rp-error">⚠ {serverError}</div>}
-                {serverSuccess && (
-                  <div className="rp-success">✓ {serverSuccess}</div>
+                {serverError && (
+                  <div className="mb-3.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-center text-[13px] font-bold text-red-600">
+                    ⚠ {serverError}
+                  </div>
                 )}
-                <div className="rp-field">
-                  <label
-                    className="rp-lbl"
-                    style={{ textAlign: "center", display: "block" }}
-                  >
+                {serverSuccess && (
+                  <div className="mb-3.5 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-center text-[13px] font-bold text-green-600">
+                    ✓ {serverSuccess}
+                  </div>
+                )}
+                <div className="mb-3.5">
+                  <label className="mb-1.75 block text-center text-[13px] font-bold text-gray-700">
                     Masukkan 6 Digit OTP
                   </label>
                   <OtpInput
@@ -667,66 +611,37 @@ export default function ResetPasswordPage() {
                     onKeyDown={handleOtpKeyDown}
                     onPaste={handleOtpPaste}
                   />
-                  <p
-                    style={{
-                      textAlign: "center",
-                      fontSize: 12,
-                      color: "#94a3b8",
-                      marginTop: 10,
-                      fontFamily: "'Nunito', sans-serif",
-                      fontWeight: 600
-                    }}
-                  >
+                  <p className="mt-2.5 text-center text-xs font-semibold text-slate-400">
                     Berlaku 5 menit
                   </p>
                 </div>
                 <button
-                  className="rp-btn"
+                  className="flex h-12.5 w-full items-center justify-center gap-2 rounded-[10px] bg-linear-to-br from-brand-700 to-brand-500 text-[15px] font-extrabold text-white shadow-[0_8px_24px_rgba(59,130,246,.3)] transition-transform enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_12px_32px_rgba(59,130,246,.4)] disabled:cursor-not-allowed disabled:opacity-70 max-[480px]:h-11.5"
                   onClick={handleVerifyOTP}
                   disabled={loading || otpValue.length !== 6}
                 >
                   {loading ? <LoadingDots /> : "Verifikasi Kode ✓"}
                 </button>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginTop: 16,
-                    fontSize: 13,
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 700
-                  }}
-                >
+                <div className="mt-4 flex justify-between text-[13px] font-bold">
                   <button
                     onClick={() => {
                       setStep("request")
                       setServerError("")
                       setOtpDigits(Array(6).fill(""))
                     }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#64748b",
-                      cursor: "pointer",
-                      fontSize: 13,
-                      fontFamily: "'Nunito', sans-serif",
-                      fontWeight: 700
-                    }}
+                    className="border-none bg-transparent text-[13px] font-bold text-slate-500"
                   >
                     ← Ganti nomor
                   </button>
                   <button
                     onClick={handleResendOTP}
                     disabled={countdown > 0 || loading}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: countdown > 0 ? "#94a3b8" : "#1e3a8a",
-                      cursor: countdown > 0 ? "not-allowed" : "pointer",
-                      fontSize: 13,
-                      fontFamily: "'Nunito', sans-serif",
-                      fontWeight: 700
-                    }}
+                    className={cn(
+                      "border-none bg-transparent text-[13px] font-bold",
+                      countdown > 0
+                        ? "cursor-not-allowed text-slate-400"
+                        : "cursor-pointer text-brand-700"
+                    )}
                   >
                     {countdown > 0
                       ? `Kirim ulang (${countdown}s)`
@@ -739,24 +654,32 @@ export default function ResetPasswordPage() {
             {/* STEP 3: NEW PASSWORD */}
             {step === "newpass" && (
               <>
-                <div style={{ marginBottom: 28 }}>
-                  <h1 className="rp-form-title">Password Baru</h1>
-                  <p className="rp-form-sub">
+                <div className="mb-7">
+                  <h1 className="mb-1.5 text-[30px] font-black tracking-[-.02em] text-slate-900 max-[480px]:text-2xl">
+                    Password Baru
+                  </h1>
+                  <p className="mb-6 text-sm font-medium leading-normal text-slate-500">
                     Nomor terverifikasi! Sekarang buat password baru yang kuat
                     untuk akun kamu.
                   </p>
                 </div>
-                {serverError && <div className="rp-error">⚠ {serverError}</div>}
+                {serverError && (
+                  <div className="mb-3.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-center text-[13px] font-bold text-red-600">
+                    ⚠ {serverError}
+                  </div>
+                )}
                 <form
                   onSubmit={newPassForm.handleSubmit(onNewPassSubmit)}
                   noValidate
                 >
                   {/* Password */}
-                  <div className="rp-field">
-                    <label className="rp-lbl">Password Baru</label>
-                    <div className="rp-inp-wrap">
+                  <div className="mb-3.5">
+                    <label className="mb-1.75 block text-[13px] font-bold text-gray-700">
+                      Password Baru
+                    </label>
+                    <div className="relative flex items-center">
                       <svg
-                        className="rp-inp-icon"
+                        className="pointer-events-none absolute left-3.5 z-1 h-4 w-4 text-slate-400"
                         viewBox="0 0 24 24"
                         fill="none"
                         strokeWidth="2"
@@ -773,7 +696,12 @@ export default function ResetPasswordPage() {
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
                       <input
-                        className={`rp-inp${newPassForm.formState.errors.password ? " invalid" : ""}`}
+                        className={cn(
+                          inputBase,
+                          "pr-11",
+                          newPassForm.formState.errors.password &&
+                            "border-red-500"
+                        )}
                         type={showPassword ? "text" : "password"}
                         placeholder="Min. 8 karakter"
                         {...newPassForm.register("password", {
@@ -786,7 +714,7 @@ export default function ResetPasswordPage() {
                       />
                       <button
                         type="button"
-                        className="rp-inp-eye"
+                        className="absolute right-3.5 flex items-center border-none bg-transparent p-1 text-slate-400"
                         onClick={() => setShowPassword((v) => !v)}
                       >
                         <EyeIcon />
@@ -794,17 +722,19 @@ export default function ResetPasswordPage() {
                     </div>
                     <PasswordStrength password={passwordWatch} />
                     {newPassForm.formState.errors.password && (
-                      <p className="rp-err-msg">
+                      <p className="mt-1.25 text-xs font-bold text-red-600">
                         {newPassForm.formState.errors.password.message}
                       </p>
                     )}
                   </div>
                   {/* Confirm */}
-                  <div className="rp-field">
-                    <label className="rp-lbl">Konfirmasi Password</label>
-                    <div className="rp-inp-wrap">
+                  <div className="mb-3.5">
+                    <label className="mb-1.75 block text-[13px] font-bold text-gray-700">
+                      Konfirmasi Password
+                    </label>
+                    <div className="relative flex items-center">
                       <svg
-                        className="rp-inp-icon"
+                        className="pointer-events-none absolute left-3.5 z-1 h-4 w-4 text-slate-400"
                         viewBox="0 0 24 24"
                         fill="none"
                         strokeWidth="2"
@@ -813,7 +743,12 @@ export default function ResetPasswordPage() {
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
                       <input
-                        className={`rp-inp${newPassForm.formState.errors.confirm ? " invalid" : ""}`}
+                        className={cn(
+                          inputBase,
+                          "pr-11",
+                          newPassForm.formState.errors.confirm &&
+                            "border-red-500"
+                        )}
                         type={showConfirm ? "text" : "password"}
                         placeholder="Ulangi password"
                         {...newPassForm.register("confirm", {
@@ -824,19 +759,23 @@ export default function ResetPasswordPage() {
                       />
                       <button
                         type="button"
-                        className="rp-inp-eye"
+                        className="absolute right-3.5 flex items-center border-none bg-transparent p-1 text-slate-400"
                         onClick={() => setShowConfirm((v) => !v)}
                       >
                         <EyeIcon />
                       </button>
                     </div>
                     {newPassForm.formState.errors.confirm && (
-                      <p className="rp-err-msg">
+                      <p className="mt-1.25 text-xs font-bold text-red-600">
                         {newPassForm.formState.errors.confirm.message}
                       </p>
                     )}
                   </div>
-                  <button type="submit" className="rp-btn" disabled={loading}>
+                  <button
+                    type="submit"
+                    className="mt-1.5 flex h-12.5 w-full items-center justify-center gap-2 rounded-[10px] bg-linear-to-br from-brand-700 to-brand-500 text-[15px] font-extrabold text-white shadow-[0_8px_24px_rgba(59,130,246,.3)] transition-transform enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_12px_32px_rgba(59,130,246,.4)] disabled:cursor-not-allowed disabled:opacity-70 max-[480px]:h-11.5"
+                    disabled={loading}
+                  >
                     {loading ? <LoadingDots /> : "Simpan Password Baru ✓"}
                   </button>
                 </form>
@@ -845,35 +784,22 @@ export default function ResetPasswordPage() {
 
             {/* STEP 4: DONE */}
             {step === "done" && (
-              <div style={{ textAlign: "center" }}>
-                <div className="rp-done-icon">✓</div>
-                <h1
-                  className="rp-form-title"
-                  style={{ fontSize: 28, marginBottom: 10 }}
-                >
+              <div className="text-center">
+                <div className="mx-auto mb-5 flex h-20 w-20 animate-[checkPop_0.5s_ease_forwards] items-center justify-center rounded-full bg-linear-to-br from-green-600 to-green-500 text-4xl shadow-[0_12px_32px_rgba(34,197,94,.35)]">
+                  ✓
+                </div>
+                <h1 className="mb-2.5 text-[28px] font-black tracking-[-.02em] text-slate-900">
                   Password Berhasil Direset!
                 </h1>
-                <p className="rp-form-sub" style={{ marginBottom: 28 }}>
+                <p className="mb-7 text-sm font-medium leading-normal text-slate-500">
                   Password kamu telah berhasil diperbarui. Silakan masuk
                   menggunakan password baru kamu.
                 </p>
-                <div
-                  style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: 10,
-                    padding: "12px 14px",
-                    marginBottom: 24,
-                    fontSize: 13,
-                    color: "#15803d",
-                    fontWeight: 700,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
+                <div className="mb-6 rounded-[10px] border border-green-200 bg-green-50 px-3.5 py-3 text-[13px] font-bold text-green-700">
                   Semua sesi lama telah dihapus demi keamanan akun kamu
                 </div>
                 <button
-                  className="rp-btn"
+                  className="flex h-12.5 w-full items-center justify-center gap-2 rounded-[10px] bg-linear-to-br from-brand-700 to-brand-500 text-[15px] font-extrabold text-white shadow-[0_8px_24px_rgba(59,130,246,.3)] transition-transform enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_12px_32px_rgba(59,130,246,.4)]"
                   onClick={() => router.push("/login")}
                 >
                   Masuk Sekarang →
