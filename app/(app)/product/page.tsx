@@ -826,14 +826,14 @@ export default function ProductPage() {
             Siap Mulai Kelola Inventori{" "}
             <em className="not-italic text-brand-400">Lebih Cerdas?</em>
           </h2>
-          <p className="relative z-1 mx-auto mb-9 max-w-[480px] text-[17px] font-medium leading-[1.7] text-white/65">
+          <p className="relative z-1 mx-auto mb-9 max-w-120 text-[17px] font-medium leading-[1.7] text-white/65">
             Bergabung dengan 500+ bisnis yang sudah menggunakan STOCKR untuk
             memantau stok dan meningkatkan efisiensi operasional.
           </p>
           <div className="relative z-1 flex flex-wrap justify-center gap-3.5">
             <Link
               href="/register"
-              className="inline-flex h-13 items-center gap-2 rounded-xl bg-white px-7.5 text-base font-black text-[#1e3a8a] no-underline shadow-[0_8px_28px_rgba(0,0,0,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,0,0,.4)]"
+              className="inline-flex h-13 items-center gap-2 rounded-xl bg-white px-7.5 text-base font-black text-brand-700 no-underline shadow-[0_8px_28px_rgba(0,0,0,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,0,0,.4)]"
             >
               <svg
                 width="16"
