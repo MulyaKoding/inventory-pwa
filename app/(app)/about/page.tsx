@@ -413,7 +413,7 @@ export default function HomePage() {
 
             <div className="flex gap-3.5 flex-wrap">
               <Link
-                href="/register"
+                href="/login"
                 className="inline-flex items-center gap-2 h-13 px-7 rounded-xl bg-brand-500 text-white text-[15px] font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.5)] hover:bg-brand-600"
               >
                 <svg

@@ -832,7 +832,7 @@ export default function ProductPage() {
           </p>
           <div className="relative z-1 flex flex-wrap justify-center gap-3.5">
             <Link
-              href="/register"
+              href="/login"
               className="inline-flex h-13 items-center gap-2 rounded-xl bg-white px-7.5 text-base font-black text-brand-700 no-underline shadow-[0_8px_28px_rgba(0,0,0,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(0,0,0,.4)]"
             >
               <svg
