@@ -21,6 +21,7 @@ import LocationSelector, {
   LocationValue
 } from "../registration/LocationSelector"
 import Image from "next/image"
+import { cn } from "../../lib/utils"
 
 const DRAWER_WIDTH = 220
 
@@ -93,6 +94,36 @@ interface Store {
   updatedAt: string
 }
 
+// Theme palette shape shared across sub-components. These are runtime hex
+// values driven by isDark, so they are exposed to Tailwind via CSS
+// variables (see `themeStyle` below) rather than interpolated class names.
+interface Palette {
+  [key: string]: string
+  bg: string
+  bgPaper: string
+  border: string
+  textPrimary: string
+  textSecondary: string
+  textMuted: string
+  tableHeadBg: string
+  menuShadow: string
+}
+
+// Turns a palette object into inline CSS custom properties so Tailwind
+// arbitrary-value classes like `bg-(--p-bg)` can reference them.
+function paletteVars(p: Palette): React.CSSProperties {
+  return {
+    "--p-bg": p.bg,
+    "--p-bgPaper": p.bgPaper,
+    "--p-border": p.border,
+    "--p-textPrimary": p.textPrimary,
+    "--p-textSecondary": p.textSecondary,
+    "--p-textMuted": p.textMuted,
+    "--p-tableHeadBg": p.tableHeadBg,
+    "--p-menuShadow": p.menuShadow
+  } as React.CSSProperties
+}
+
 // ─── helpers ──────────────────────────────────────────────
 function statusColor(status: string, isDark: boolean) {
   if (status === "active")
@@ -117,6 +148,18 @@ function statusColor(status: string, isDark: boolean) {
   }
 }
 
+// Same idea as paletteVars, scoped to a single status badge.
+function statusVars(sc: ReturnType<typeof statusColor>): React.CSSProperties {
+  return {
+    "--sc-bg": sc.bg,
+    "--sc-text": sc.text,
+    "--sc-border": sc.border
+  } as React.CSSProperties
+}
+
+const inputBase =
+  "w-full rounded-md border bg-(--input-bg) px-3 py-2.5 font-nunito text-[13px] text-(--p-textPrimary) outline-none transition-colors box-border"
+
 // ─── Field wrapper ────────────────────────────────────────
 function Field({
   label,
@@ -131,43 +174,17 @@ function Field({
 }) {
   return (
     <div>
-      <label
-        style={{
-          display: "block",
-          fontSize: 11,
-          fontWeight: 700,
-          color: "#64748b",
-          marginBottom: 6,
-          fontFamily: "'Nunito', sans-serif",
-          letterSpacing: "0.04em"
-        }}
-      >
+      <label className="mb-1.5 block font-nunito text-[11px] font-bold tracking-[0.04em] text-(--p-textMuted)">
         {label}
       </label>
       {children}
       {hint && !error && (
-        <p
-          style={{
-            fontSize: 11,
-            color: "#94a3b8",
-            marginTop: 4,
-            fontFamily: "'Nunito', sans-serif"
-          }}
-        >
+        <p className="mt-1 font-nunito text-[11px] text-(--p-textMuted)">
           {hint}
         </p>
       )}
       {error && (
-        <p
-          style={{
-            fontSize: 11,
-            color: "#ef4444",
-            marginTop: 4,
-            fontFamily: "'Nunito', sans-serif"
-          }}
-        >
-          {error}
-        </p>
+        <p className="mt-1 font-nunito text-[11px] text-red-500">{error}</p>
       )}
     </div>
   )
@@ -189,15 +206,7 @@ function ImageModal({
   title: string
   icon: string
   isDark: boolean
-  p: {
-    [key: string]: string
-    border: string
-    textPrimary: string
-    textMuted: string
-    bgPaper: string
-    bg: string
-    menuShadow: string
-  }
+  p: Palette
 }) {
   const [status, setStatus] = useState<
     "idle" | "uploading" | "success" | "error"
@@ -217,10 +226,10 @@ function ImageModal({
         new File([blob], isKtp ? "ktp.jpg" : "store.jpg", { type: mimeType })
       )
       const res = await fetch(apiEndpoint, { method: "POST", body: form })
-      const result = await res.json() // ✅ sekali saja
+      const result = await res.json()
       if (!res.ok) throw new Error(result.error || "Gagal upload")
 
-      onUploaded(result.url, result.publicId ?? "") // ✅ pakai result langsung
+      onUploaded(result.url, result.publicId ?? "")
       setStatus("success")
       setTimeout(() => handleClose(), 1000)
     } catch (err: unknown) {
@@ -246,217 +255,115 @@ function ImageModal({
   return (
     <Modal open={open} onClose={handleClose}>
       <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%,-50%)",
-          width: { xs: "95vw", sm: 480 },
-          bgcolor: p.bgPaper,
-          border: `1px solid ${p.border}`,
-          borderRadius: "10px",
-          boxShadow: p.menuShadow,
-          outline: "none",
-          overflow: "hidden"
-        }}
+        style={{ ...paletteVars(p), boxShadow: "var(--p-menuShadow)" }}
+        className="absolute left-1/2 top-1/2 w-[95vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[10px] border border-(--p-border) bg-(--p-bgPaper) outline-none sm:w-120"
       >
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-        <Box
-          sx={{
-            px: 3,
-            py: 2,
-            borderBottom: `1px solid ${p.border}`,
-            bgcolor: p.bg,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 30,
-                height: 30,
-                bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14
-              }}
+        <div className="flex items-center justify-between border-b border-(--p-border) bg-(--p-bg) px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-7.5 w-7.5 items-center justify-center rounded-md border text-sm",
+                isDark
+                  ? "border-brand-700 bg-[#0d1f3c]"
+                  : "border-[#b5d4f4] bg-[#e6f1fb]"
+              )}
             >
               {icon}
-            </Box>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 700,
-                color: p.textPrimary,
-                fontFamily: "'Nunito', sans-serif"
-              }}
-            >
+            </div>
+            <p className="m-0 font-nunito text-sm font-bold text-(--p-textPrimary)">
               {title}
             </p>
-          </Box>
+          </div>
           <button
             onClick={handleClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: p.textMuted,
-              fontSize: 18,
-              padding: 4
-            }}
+            className="cursor-pointer border-none bg-transparent p-1 text-lg text-(--p-textMuted)"
           >
             ✕
           </button>
-        </Box>
-        <Box sx={{ p: 3 }}>
+        </div>
+        <div className="p-6">
           <input
             type="file"
             id="img-upload"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleFile}
-            style={{ display: "none" }}
+            className="hidden"
           />
           {!preview ? (
-            <Box
+            <div
               onClick={() =>
                 status !== "uploading" &&
                 document.getElementById("img-upload")?.click()
               }
-              sx={{
-                border: `1.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                borderRadius: "8px",
-                py: 5,
-                textAlign: "center",
-                cursor: "pointer",
-                "&:hover": {
-                  borderColor: "#1e3a8a",
-                  bgcolor: isDark ? "#0d1f3c" : "#eff6ff"
-                },
-                transition: "all 0.2s"
-              }}
+              className={cn(
+                "cursor-pointer rounded-lg border-[1.5px] border-dashed py-10 text-center transition-all",
+                isDark
+                  ? "border-brand-700 hover:bg-[#0d1f3c]"
+                  : "border-[#b5d4f4] hover:bg-blue-50 hover:border-brand-700"
+              )}
             >
-              <p style={{ margin: "0 0 6px", fontSize: 28 }}>📎</p>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  color: "#1e3a8a",
-                  fontFamily: "'Nunito', sans-serif",
-                  fontWeight: 700
-                }}
-              >
+              <p className="m-0 mb-1.5 text-[28px]">📎</p>
+              <p className="m-0 font-nunito text-sm font-bold text-brand-700">
                 Klik untuk pilih gambar
               </p>
-              <p
-                style={{
-                  margin: "4px 0 0",
-                  fontSize: 11,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+              <p className="m-0 mt-1 font-nunito text-[11px] text-(--p-textMuted)">
                 JPG, PNG, WEBP · Maks 5MB
               </p>
-            </Box>
+            </div>
           ) : (
             <Image
               src={preview}
               alt="Preview"
               width={440}
               height={220}
-              style={{
-                width: "100%",
-                borderRadius: 8,
-                border: `1px solid ${p.border}`,
-                maxHeight: 220,
-                objectFit: "cover"
-              }}
+              className="max-h-55 w-full rounded-lg border border-(--p-border) object-cover"
             />
           )}
           {status === "uploading" && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.5,
-                mt: 2,
-                p: 1.5,
-                bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                borderRadius: "6px"
-              }}
+            <div
+              className={cn(
+                "mt-4 flex items-center gap-3 rounded-md border p-3",
+                isDark
+                  ? "border-brand-700 bg-[#0d1f3c]"
+                  : "border-[#b5d4f4] bg-[#e6f1fb]"
+              )}
             >
-              <Box
-                sx={{
-                  width: 14,
-                  height: 14,
-                  border: "2px solid #1e3a8a",
-                  borderTopColor: "transparent",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite"
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 13,
-                  color: "#1e3a8a",
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-700 border-t-transparent" />
+              <span className="font-nunito text-[13px] text-brand-700">
                 Mengupload gambar...
               </span>
-            </Box>
+            </div>
           )}
           {status === "success" && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.5,
-                mt: 2,
-                p: 1.5,
-                bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                borderRadius: "6px"
-              }}
+            <div
+              className={cn(
+                "mt-4 flex items-center gap-3 rounded-md border p-3",
+                isDark
+                  ? "border-[#1a5c38] bg-[#0a2e1c]"
+                  : "border-[#bbf7d0] bg-green-50"
+              )}
             >
-              <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
+              <span className="text-base text-green-600">✓</span>
               <span
-                style={{
-                  fontSize: 13,
-                  color: isDark ? "#4ade80" : "#16a34a",
-                  fontFamily: "'Nunito', sans-serif",
-                  fontWeight: 600
-                }}
+                className={cn(
+                  "font-nunito text-[13px] font-semibold",
+                  isDark ? "text-green-400" : "text-green-600"
+                )}
               >
                 Gambar berhasil diupload!
               </span>
-            </Box>
+            </div>
           )}
           {status === "error" && (
-            <Box
-              sx={{
-                mt: 2,
-                p: 1.5,
-                bgcolor: isDark ? "#2e1010" : "#fef2f2",
-                border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-                borderRadius: "6px"
-              }}
+            <div
+              className={cn(
+                "mt-4 rounded-md border p-3",
+                isDark
+                  ? "border-[#5a1a1a] bg-[#2e1010]"
+                  : "border-red-200 bg-red-50"
+              )}
             >
-              <p
-                style={{
-                  margin: "0 0 8px",
-                  fontSize: 13,
-                  color: "#ef4444",
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+              <p className="m-0 mb-2 font-nunito text-[13px] text-red-500">
                 {error}
               </p>
               <button
@@ -465,23 +372,13 @@ function ImageModal({
                   setError("")
                   setPreview("")
                 }}
-                style={{
-                  padding: "6px 14px",
-                  border: "1px solid #ef4444",
-                  borderRadius: 4,
-                  background: "transparent",
-                  color: "#ef4444",
-                  fontSize: 12,
-                  fontFamily: "'Nunito', sans-serif",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}
+                className="cursor-pointer rounded border border-red-500 bg-transparent px-3.5 py-1.5 font-nunito text-xs font-semibold text-red-500"
               >
                 Coba Lagi
               </button>
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
       </Box>
     </Modal>
   )
@@ -501,15 +398,7 @@ function ImagePreviewModal({
   imageUrl: string | null
   title: string
   isDark: boolean
-  p: {
-    [key: string]: string
-    border: string
-    textPrimary: string
-    textMuted: string
-    bgPaper: string
-    bg: string
-    menuShadow: string
-  }
+  p: Palette
 }) {
   const [zoom, setZoom] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -566,84 +455,38 @@ function ImagePreviewModal({
   return (
     <Modal open={open} onClose={onClose}>
       <Box
-        sx={{
-          position: "absolute",
-          top: "35%",
-          left: "50%",
-          transform: "translate(-50%,-50%)",
-          width: { xs: "96vw", sm: "90vw", md: "80vw", lg: 1000 },
-          height: 520,
-          maxWidth: 1200,
-          maxHeight: 520,
-          display: "flex",
-          flexDirection: "column",
-          bgcolor: p.bgPaper,
-          border: `1px solid ${p.border}`,
-          borderRadius: "10px",
-          boxShadow: p.menuShadow,
-          outline: "none",
-          overflow: "hidden"
-        }}
+        style={{ ...paletteVars(p), boxShadow: "var(--p-menuShadow)" }}
+        className="absolute left-1/2 top-[35%] flex h-130 max-h-130 w-[96vw] max-w-300 -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[10px] border border-(--p-border) bg-(--p-bgPaper) outline-none sm:w-[90vw] md:w-[80vw] lg:w-250"
       >
         {/* Header */}
-        <Box
-          sx={{
-            px: 3,
-            py: 2,
-            borderBottom: `1px solid ${p.border}`,
-            bgcolor: p.bg,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexShrink: 0
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: 14,
-              fontWeight: 700,
-              color: p.textPrimary,
-              fontFamily: "'Nunito', sans-serif"
-            }}
-          >
+        <div className="flex shrink-0 items-center justify-between border-b border-(--p-border) bg-(--p-bg) px-6 py-4">
+          <p className="m-0 font-nunito text-sm font-bold text-(--p-textPrimary)">
             {title}
           </p>
           <button
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: p.textMuted,
-              fontSize: 18,
-              padding: 4
-            }}
+            className="cursor-pointer border-none bg-transparent p-1 text-lg text-(--p-textMuted)"
           >
             ✕
           </button>
-        </Box>
+        </div>
 
         {/* Image area */}
-        <Box
+        <div
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
-          sx={{
-            flex: 1,
-            position: "relative",
-            bgcolor: isDark ? "#0a0a0a" : "#f1f5f9",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            minHeight: 0,
-            p: 2,
-            cursor: zoom > 1 ? (isDragging ? "grabbing" : "grab") : "default",
-            userSelect: "none"
-          }}
+          className={cn(
+            "relative flex min-h-0 flex-1 select-none items-center justify-center overflow-hidden p-4",
+            isDark ? "bg-[#0a0a0a]" : "bg-slate-100",
+            zoom > 1
+              ? isDragging
+                ? "cursor-grabbing"
+                : "cursor-grab"
+              : "cursor-default"
+          )}
         >
           <Image
             src={imageUrl}
@@ -652,87 +495,35 @@ function ImagePreviewModal({
             height={1200}
             draggable={false}
             style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              width: "auto",
-              height: "auto",
-              objectFit: "contain",
               transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-              transition: isDragging ? "none" : "transform 0.15s",
-              pointerEvents: "none"
+              transition: isDragging ? "none" : "transform 0.15s"
             }}
+            className="pointer-events-none h-auto max-h-full w-auto max-w-full object-contain"
           />
 
           {/* Zoom controls */}
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 16,
-              right: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 1
-            }}
-          >
+          <div className="absolute bottom-4 right-4 flex flex-col gap-2">
             <button
               onClick={handleZoomIn}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                border: `1px solid ${p.border}`,
-                background: p.bgPaper,
-                color: p.textPrimary,
-                cursor: "pointer",
-                fontSize: 18,
-                fontWeight: 700
-              }}
+              className="h-9 w-9 rounded-full border border-(--p-border) bg-(--p-bgPaper) text-lg font-bold text-(--p-textPrimary)"
             >
               +
             </button>
             <button
               onClick={handleZoomOut}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                border: `1px solid ${p.border}`,
-                background: p.bgPaper,
-                color: p.textPrimary,
-                cursor: "pointer",
-                fontSize: 18,
-                fontWeight: 700
-              }}
+              className="h-9 w-9 rounded-full border border-(--p-border) bg-(--p-bgPaper) text-lg font-bold text-(--p-textPrimary)"
             >
               −
             </button>
-          </Box>
+          </div>
 
           {/* Zoom indicator */}
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 16,
-              left: 16,
-              px: 1.5,
-              py: 0.5,
-              borderRadius: "6px",
-              bgcolor: p.bgPaper,
-              border: `1px solid ${p.border}`
-            }}
-          >
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: p.textMuted,
-                fontFamily: "'Nunito', sans-serif"
-              }}
-            >
+          <div className="absolute bottom-4 left-4 rounded-md border border-(--p-border) bg-(--p-bgPaper) px-3 py-1">
+            <span className="font-nunito text-xs font-bold text-(--p-textMuted)">
               {Math.round(zoom * 100)}%
             </span>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </Box>
     </Modal>
   )
@@ -746,53 +537,22 @@ function StoreCard({
 }: {
   store: Store
   isDark: boolean
-  p: Record<string, string>
+  p: Palette
   onEdit: () => void
 }) {
   const sc = statusColor(store.status, isDark)
   return (
-    <Box
-      sx={{
-        border: `1px solid ${p.border}`,
-        borderRadius: "8px",
-        bgcolor: p.bgPaper,
-        p: 2,
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5
-      }}
-    >
+    <div className="flex flex-col gap-3 rounded-lg border border-(--p-border) bg-(--p-bgPaper) p-4">
       {/* Header row */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 1
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            flex: 1,
-            minWidth: 0
-          }}
-        >
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: "6px",
-              bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-              border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              flexShrink: 0
-            }}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border text-base",
+              isDark
+                ? "border-brand-700 bg-[#0d1f3c]"
+                : "border-[#b5d4f4] bg-[#e6f1fb]"
+            )}
           >
             {store.storeImageUrl ? (
               <Image
@@ -800,128 +560,56 @@ function StoreCard({
                 alt={store.storeName}
                 width={36}
                 height={36}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: 6
-                }}
+                className="h-full w-full rounded-md object-cover"
               />
             ) : (
               "🏪"
             )}
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 700,
-                color: p.textPrimary,
-                fontFamily: "'Nunito', sans-serif",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
-            >
+          </div>
+          <div className="min-w-0">
+            <p className="m-0 truncate font-nunito text-sm font-bold text-(--p-textPrimary)">
               {store.storeName}
             </p>
             <p
-              style={{
-                margin: 0,
-                fontSize: 11,
-                fontWeight: 700,
-                color: isDark ? "#60a5fa" : "#1e3a8a",
-                fontFamily: "'Nunito', sans-serif"
-              }}
+              className={cn(
+                "m-0 font-nunito text-[11px] font-bold",
+                isDark ? "text-blue-400" : "text-brand-700"
+              )}
             >
               {store.storeId}
             </p>
-          </Box>
-        </Box>
+          </div>
+        </div>
         <span
-          style={{
-            display: "inline-block",
-            padding: "3px 10px",
-            borderRadius: 100,
-            background: sc.bg,
-            color: sc.text,
-            border: `1px solid ${sc.border}`,
-            fontSize: 10,
-            fontWeight: 700,
-            fontFamily: "'Nunito', sans-serif",
-            whiteSpace: "nowrap",
-            flexShrink: 0
-          }}
+          style={statusVars(sc)}
+          className="inline-block shrink-0 whitespace-nowrap rounded-full border border-(--sc-border) bg-(--sc-bg) px-2.5 py-0.75 font-nunito text-[10px] font-bold text-(--sc-text)"
         >
           {sc.label}
         </span>
-      </Box>
+      </div>
 
       {/* Info grid 2x2 */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 1,
-          bgcolor: p.bg,
-          border: `1px solid ${p.border}`,
-          borderRadius: "6px",
-          p: 1.5
-        }}
-      >
+      <div className="grid grid-cols-2 gap-2 rounded-md border border-(--p-border) bg-(--p-bg) p-3">
         {[
           { label: "Jenis", val: store.storeType },
           { label: "Telepon", val: store.storePhone },
           { label: "Pemilik", val: store.owner.fullName },
           { label: "Kota", val: `${store.storeCity}, ${store.storeProvince}` }
         ].map((item) => (
-          <Box key={item.label}>
-            <p
-              style={{
-                margin: "0 0 1px",
-                fontSize: 9,
-                fontWeight: 700,
-                color: p.textMuted,
-                fontFamily: "'Nunito', sans-serif",
-                letterSpacing: "0.05em"
-              }}
-            >
+          <div key={item.label}>
+            <p className="m-0 mb-px font-nunito text-[9px] font-bold tracking-[0.05em] text-(--p-textMuted)">
               {item.label.toUpperCase()}
             </p>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 12,
-                fontWeight: 600,
-                color: p.textPrimary,
-                fontFamily: "'Nunito', sans-serif",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
-            >
+            <p className="m-0 truncate font-nunito text-xs font-semibold text-(--p-textPrimary)">
               {item.val}
             </p>
-          </Box>
+          </div>
         ))}
-      </Box>
+      </div>
 
       {/* Footer */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            color: p.textMuted,
-            fontFamily: "'Nunito', sans-serif"
-          }}
-        >
+      <div className="flex items-center justify-between">
+        <span className="font-nunito text-[11px] text-(--p-textMuted)">
           {new Date(store.createdAt).toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "short",
@@ -930,20 +618,12 @@ function StoreCard({
         </span>
         <button
           onClick={onEdit}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            padding: "6px 14px",
-            border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-            borderRadius: 6,
-            background: isDark ? "#0d1f3c" : "#e6f1fb",
-            color: isDark ? "#60a5fa" : "#1e3a8a",
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: "'Nunito', sans-serif",
-            cursor: "pointer"
-          }}
+          className={cn(
+            "flex items-center gap-1.25 rounded-md border px-3.5 py-1.5 font-nunito text-xs font-bold",
+            isDark
+              ? "border-brand-700 bg-[#0d1f3c] text-blue-400"
+              : "border-[#b5d4f4] bg-[#e6f1fb] text-brand-700"
+          )}
         >
           <svg
             width={12}
@@ -960,8 +640,8 @@ function StoreCard({
           </svg>
           Edit
         </button>
-      </Box>
-    </Box>
+      </div>
+    </div>
   )
 }
 
@@ -979,16 +659,7 @@ function EditStoreModal({
   onClose: () => void
   onSaved: (updated: Store) => void
   isDark: boolean
-  p: {
-    bg: string
-    bgPaper: string
-    border: string
-    textPrimary: string
-    textSecondary: string
-    textMuted: string
-    tableHeadBg: string
-    menuShadow: string
-  }
+  p: Palette
 }) {
   const [activeTab, setActiveTab] = useState<EditTab>("store")
   const [isSaving, setIsSaving] = useState(false)
@@ -1056,19 +727,10 @@ function EditStoreModal({
     setActiveTab("store")
   }, [store])
 
-  const inputStyle = (hasError: boolean): React.CSSProperties => ({
-    width: "100%",
-    padding: "9px 12px",
-    borderRadius: 6,
-    border: `1px solid ${hasError ? "#ef4444" : p.border}`,
-    background: isDark ? "#111" : "#fff",
-    color: p.textPrimary,
-    fontFamily: "'Nunito', sans-serif",
-    fontSize: 13,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s"
-  })
+  // Replaces the old inline `inputStyle(hasError)` function. Static classes
+  // live in `inputBase`; only the error border color is conditional.
+  const fieldClass = (hasError: boolean) =>
+    cn(inputBase, hasError ? "border-red-500" : "border-(--p-border)")
 
   const validateStore = () => {
     const errs: Record<string, string> = {}
@@ -1190,21 +852,12 @@ function EditStoreModal({
   }
 
   const SectionHeader = ({ label }: { label: string }) => (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-      <Box sx={{ width: 4, height: 16, bgcolor: "#1e3a8a", borderRadius: 2 }} />
-      <p
-        style={{
-          margin: 0,
-          fontSize: 11,
-          fontWeight: 700,
-          color: p.textSecondary,
-          fontFamily: "'Nunito', sans-serif",
-          letterSpacing: "0.05em"
-        }}
-      >
+    <div className="mb-4 flex items-center gap-2">
+      <div className="h-4 w-1 rounded-sm bg-brand-700" />
+      <p className="m-0 font-nunito text-[11px] font-bold tracking-[0.05em] text-(--p-textSecondary)">
         {label}
       </p>
-    </Box>
+    </div>
   )
 
   if (!store) return null
@@ -1214,188 +867,105 @@ function EditStoreModal({
     <>
       <Modal open={open} onClose={onClose}>
         <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: { xs: "98vw", sm: "90vw", md: 700 },
-            maxHeight: "92vh",
-            display: "flex",
-            flexDirection: "column",
-            bgcolor: p.bgPaper,
-            border: `1px solid ${p.border}`,
-            borderRadius: "12px",
-            boxShadow: p.menuShadow,
-            outline: "none",
-            overflow: "hidden"
-          }}
+          style={{ ...paletteVars(p), boxShadow: "var(--p-menuShadow)" }}
+          className="absolute left-1/2 top-1/2 flex max-h-[92vh] w-[98vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-(--p-border) bg-(--p-bgPaper) outline-none sm:w-[90vw] md:w-175"
         >
           {/* Header */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderBottom: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  flexShrink: 0
-                }}
+          <div className="flex shrink-0 items-center justify-between border-b border-(--p-border) bg-(--p-bg) px-6 py-4">
+            <div className="flex items-center gap-4">
+              <div
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-base",
+                  isDark
+                    ? "border-brand-700 bg-[#0d1f3c]"
+                    : "border-[#b5d4f4] bg-[#e6f1fb]"
+                )}
               >
                 🏪
-              </Box>
-              <Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 15,
-                      fontWeight: 800,
-                      color: p.textPrimary,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
+              </div>
+              <div>
+                <div className="flex items-center gap-3">
+                  <p className="m-0 font-nunito text-[15px] font-extrabold text-(--p-textPrimary)">
                     {store.storeName}
                   </p>
                   <Chip
                     label={sc.label}
                     size="small"
-                    sx={{
-                      bgcolor: sc.bg,
-                      color: sc.text,
-                      border: `1px solid ${sc.border}`,
-                      fontFamily: "'Nunito', sans-serif",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      height: 20
-                    }}
+                    style={statusVars(sc)}
+                    className="h-5! border border-(--sc-border)! bg-(--sc-bg)! font-nunito text-[10px]! font-bold! text-(--sc-text)!"
                   />
-                </Box>
+                </div>
                 <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    color: isDark ? "#60a5fa" : "#1e3a8a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 700
-                  }}
+                  className={cn(
+                    "m-0 font-nunito text-[11px] font-bold",
+                    isDark ? "text-blue-400" : "text-brand-700"
+                  )}
                 >
                   {store.storeId}
                 </p>
-              </Box>
-            </Box>
+              </div>
+            </div>
             <button
               onClick={onClose}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: p.textMuted,
-                fontSize: 20,
-                padding: 4,
-                lineHeight: 1
-              }}
+              className="cursor-pointer border-none bg-transparent p-1 text-xl leading-none text-(--p-textMuted)"
             >
               ✕
             </button>
-          </Box>
+          </div>
 
           {/* Tabs */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              borderBottom: `1px solid ${p.border}`,
-              flexShrink: 0
-            }}
-          >
+          <div className="grid shrink-0 grid-cols-2 border-b border-(--p-border)">
             {EDIT_TABS.map((tab, idx) => (
-              <Box
+              <div
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 1,
-                  px: 3,
-                  py: 1.5,
-                  borderRight: idx === 0 ? `1px solid ${p.border}` : "none",
-                  bgcolor:
-                    activeTab === tab.id
-                      ? isDark
-                        ? "#0d1f3c"
-                        : "#e6f1fb"
-                      : p.bgPaper,
-                  cursor: "pointer",
-                  transition: "background-color 0.2s"
-                }}
+                className={cn(
+                  "flex cursor-pointer items-center justify-center gap-2 px-6 py-3 transition-colors",
+                  idx === 0 && "border-r border-(--p-border)",
+                  activeTab === tab.id
+                    ? isDark
+                      ? "bg-[#0d1f3c]"
+                      : "bg-[#e6f1fb]"
+                    : "bg-(--p-bgPaper)"
+                )}
               >
                 <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: "'Nunito', sans-serif",
-                    color:
-                      activeTab === tab.id
-                        ? isDark
-                          ? "#93c5fd"
-                          : "#1e3a8a"
-                        : p.textMuted
-                  }}
+                  className={cn(
+                    "m-0 font-nunito text-[13px] font-bold",
+                    activeTab === tab.id
+                      ? isDark
+                        ? "text-blue-300"
+                        : "text-brand-700"
+                      : "text-(--p-textMuted)"
+                  )}
                 >
                   {tab.label}
                 </p>
-              </Box>
+              </div>
             ))}
-          </Box>
+          </div>
 
           {/* Body */}
-          <Box sx={{ flex: 1, overflowY: "auto", p: { xs: 2, sm: 3 } }}>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {/* ══ TAB STORE ══ */}
             {activeTab === "store" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <div className="flex flex-col gap-6">
                 {/* Foto Toko */}
-                <Box sx={{ pb: 3, borderBottom: `1px solid ${p.border}` }}>
+                <div className="border-b border-(--p-border) pb-6">
                   <SectionHeader label="FOTO TOKO" />
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
-                    <Box
+                  <div className="flex items-center gap-5">
+                    <div
                       onClick={() => setImgModalOpen(true)}
-                      sx={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: "50%",
-                        border: storeImageUrl
-                          ? "3px solid #16a34a"
-                          : `2px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                        overflow: "hidden",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: isDark ? "#0d1f3c" : "#eff6ff",
-                        flexShrink: 0,
-                        "&:hover": { borderColor: "#1e3a8a" },
-                        transition: "all 0.2s"
-                      }}
+                      className={cn(
+                        "flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full transition-all hover:border-brand-700",
+                        storeImageUrl
+                          ? "border-[3px] border-green-600"
+                          : cn(
+                              "border-2 border-dashed",
+                              isDark ? "border-brand-700" : "border-[#b5d4f4]"
+                            ),
+                        isDark ? "bg-[#0d1f3c]" : "bg-blue-50"
+                      )}
                     >
                       {storeImageUrl ? (
                         <Image
@@ -1403,53 +973,34 @@ function EditStoreModal({
                           alt="Foto"
                           width={80}
                           height={80}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover"
-                          }}
+                          className="h-full w-full object-cover"
                         />
                       ) : (
                         <span
-                          style={{
-                            fontSize: 9,
-                            color: isDark ? "#93c5fd" : "#1e3a8a",
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 700
-                          }}
+                          className={cn(
+                            "font-nunito text-[9px] font-bold",
+                            isDark ? "text-blue-300" : "text-brand-700"
+                          )}
                         >
                           FOTO
                         </span>
                       )}
-                    </Box>
-                    <Box>
+                    </div>
+                    <div>
                       {storeImageUrl && (
-                        <p
-                          style={{
-                            margin: "0 0 4px",
-                            fontSize: 11,
-                            color: "#16a34a",
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 600
-                          }}
-                        >
+                        <p className="m-0 mb-1 font-nunito text-[11px] font-semibold text-green-600">
                           ✓ Foto tersedia
                         </p>
                       )}
-                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => setImgModalOpen(true)}
-                          style={{
-                            padding: "5px 12px",
-                            border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                            borderRadius: 6,
-                            background: isDark ? "#0d1f3c" : "#eff6ff",
-                            color: "#1e3a8a",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            fontFamily: "'Nunito', sans-serif",
-                            cursor: "pointer"
-                          }}
+                          className={cn(
+                            "cursor-pointer rounded-md border px-3 py-1.5 font-nunito text-xs font-bold text-brand-700",
+                            isDark
+                              ? "border-brand-700 bg-[#0d1f3c]"
+                              : "border-[#b5d4f4] bg-blue-50"
+                          )}
                         >
                           {storeImageUrl ? "Ganti Foto" : "Upload Foto"}
                         </button>
@@ -1470,37 +1021,21 @@ function EditStoreModal({
                               setStoreImageUrl("")
                               setStoreImagePublicId("")
                             }}
-                            style={{
-                              padding: "5px 12px",
-                              border: "1px solid #fecaca",
-                              borderRadius: 6,
-                              background: "transparent",
-                              color: "#ef4444",
-                              fontSize: 12,
-                              fontWeight: 700,
-                              fontFamily: "'Nunito', sans-serif",
-                              cursor: "pointer"
-                            }}
+                            className="cursor-pointer rounded-md border border-red-200 bg-transparent px-3 py-1.5 font-nunito text-xs font-bold text-red-500"
                           >
                             Hapus
                           </button>
                         )}
-                      </Box>
-                    </Box>
-                  </Box>
-                </Box>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Informasi Umum */}
-                <Box sx={{ pb: 3, borderBottom: `1px solid ${p.border}` }}>
+                <div className="border-b border-(--p-border) pb-6">
                   <SectionHeader label="INFORMASI UMUM" />
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                      gap: 2
-                    }}
-                  >
-                    <Box sx={{ gridColumn: { xs: "1", sm: "span 2" } }}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
                       <Field label="NAMA TOKO *" error={storeErrors.storeName}>
                         <input
                           type="text"
@@ -1513,10 +1048,10 @@ function EditStoreModal({
                               storeName: ""
                             }))
                           }}
-                          style={inputStyle(!!storeErrors.storeName)}
+                          className={fieldClass(!!storeErrors.storeName)}
                         />
                       </Field>
-                    </Box>
+                    </div>
                     <Field label="JENIS TOKO *" error={storeErrors.storeType}>
                       <select
                         value={storeType}
@@ -1524,7 +1059,7 @@ function EditStoreModal({
                           setStoreType(e.target.value)
                           setStoreErrors((prev) => ({ ...prev, storeType: "" }))
                         }}
-                        style={inputStyle(!!storeErrors.storeType)}
+                        className={fieldClass(!!storeErrors.storeType)}
                       >
                         <option value="">Pilih jenis toko</option>
                         {STORE_TYPES.map((t) => (
@@ -1549,21 +1084,21 @@ function EditStoreModal({
                             storePhone: ""
                           }))
                         }}
-                        style={inputStyle(!!storeErrors.storePhone)}
+                        className={fieldClass(!!storeErrors.storePhone)}
                       />
                     </Field>
-                    <Box sx={{ gridColumn: { xs: "1", sm: "span 2" } }}>
+                    <div className="sm:col-span-2">
                       <Field label="EMAIL TOKO">
                         <input
                           type="email"
                           placeholder="email@toko.com (opsional)"
                           value={storeEmail}
                           onChange={(e) => setStoreEmail(e.target.value)}
-                          style={inputStyle(false)}
+                          className={fieldClass(false)}
                         />
                       </Field>
-                    </Box>
-                    <Box sx={{ gridColumn: { xs: "1", sm: "span 2" } }}>
+                    </div>
+                    <div className="sm:col-span-2">
                       <Field
                         label="ALAMAT TOKO *"
                         error={storeErrors.storeAddress}
@@ -1579,18 +1114,18 @@ function EditStoreModal({
                               storeAddress: ""
                             }))
                           }}
-                          style={{
-                            ...inputStyle(!!storeErrors.storeAddress),
-                            resize: "vertical"
-                          }}
+                          className={cn(
+                            fieldClass(!!storeErrors.storeAddress),
+                            "resize-y"
+                          )}
                         />
                       </Field>
-                    </Box>
-                  </Box>
-                </Box>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Wilayah */}
-                <Box>
+                <div>
                   <SectionHeader label="WILAYAH" />
                   <LocationSelector
                     value={location}
@@ -1602,66 +1137,34 @@ function EditStoreModal({
                     isDark={isDark}
                     p={p}
                   />
-                </Box>
-              </Box>
+                </div>
+              </div>
             )}
 
             {/* ══ TAB OWNER ══ */}
             {activeTab === "owner" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <div className="flex flex-col gap-6">
                 {/* Foto KTP */}
-                <Box sx={{ pb: 3, borderBottom: `1px solid ${p.border}` }}>
+                <div className="border-b border-(--p-border) pb-6">
                   <SectionHeader label="FOTO KTP" />
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 3,
-                      flexWrap: "wrap"
-                    }}
-                  >
+                  <div className="flex flex-wrap items-start gap-6">
                     {ownerKtpUrl ? (
-                      <Box sx={{ position: "relative", flexShrink: 0 }}>
+                      <div className="relative shrink-0">
                         <Image
                           src={ownerKtpUrl}
                           alt="KTP"
                           width={180}
                           height={113}
-                          style={{
-                            width: 180,
-                            height: 113,
-                            objectFit: "cover",
-                            borderRadius: 8,
-                            border: "2px solid #16a34a",
-                            display: "block"
-                          }}
+                          className="block h-28.25 w-45 rounded-lg border-2 border-green-600 object-cover"
                         />
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 6,
-                            right: 6,
-                            display: "flex",
-                            gap: 0.5
-                          }}
-                        >
-                          <Box
+                        <div className="absolute right-1.5 top-1.5 flex gap-1">
+                          <div
                             onClick={() => setKtpModalOpen(true)}
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              bgcolor: "#1e3a8a",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              fontSize: 11
-                            }}
+                            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-brand-700 text-[11px]"
                           >
                             📷
-                          </Box>
-                          <Box
+                          </div>
+                          <div
                             onClick={async () => {
                               if (ownerKtpPublicId) {
                                 await fetch("/api/upload/delete", {
@@ -1677,87 +1180,49 @@ function EditStoreModal({
                               setOwnerKtpUrl("")
                               setOwnerKtpPublicId("")
                             }}
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              bgcolor: "#ef4444",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              fontSize: 11
-                            }}
+                            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-red-500 text-[11px]"
                           >
                             🗑️
-                          </Box>
-                        </Box>
-                      </Box>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
-                      <Box
+                      <div
                         onClick={() => setKtpModalOpen(true)}
-                        sx={{
-                          width: 180,
-                          height: 113,
-                          border: `2px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                          borderRadius: "8px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 0.5,
-                          cursor: "pointer",
-                          bgcolor: isDark ? "#0d1f3c" : "#eff6ff",
-                          flexShrink: 0,
-                          "&:hover": { borderColor: "#1e3a8a" }
-                        }}
+                        className={cn(
+                          "flex h-28.25 w-45 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed hover:border-brand-700",
+                          isDark
+                            ? "border-brand-700 bg-[#0d1f3c]"
+                            : "border-[#b5d4f4] bg-blue-50"
+                        )}
                       >
-                        <span style={{ fontSize: 22 }}>🪪</span>
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: 11,
-                            color: "#1e3a8a",
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 700
-                          }}
-                        >
+                        <span className="text-[22px]">🪪</span>
+                        <p className="m-0 font-nunito text-[11px] font-bold text-brand-700">
                           Upload KTP
                         </p>
-                      </Box>
+                      </div>
                     )}
-                    <Box>
+                    <div>
                       <button
                         onClick={() => setKtpModalOpen(true)}
-                        style={{
-                          padding: "5px 12px",
-                          border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                          borderRadius: 6,
-                          background: isDark ? "#0d1f3c" : "#eff6ff",
-                          color: "#1e3a8a",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          fontFamily: "'Nunito', sans-serif",
-                          cursor: "pointer"
-                        }}
+                        className={cn(
+                          "cursor-pointer rounded-md border px-3 py-1.5 font-nunito text-xs font-bold text-brand-700",
+                          isDark
+                            ? "border-brand-700 bg-[#0d1f3c]"
+                            : "border-[#b5d4f4] bg-blue-50"
+                        )}
                       >
                         {ownerKtpUrl ? "Ganti KTP" : "Upload KTP"}
                       </button>
-                    </Box>
-                  </Box>
-                </Box>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Data Diri */}
-                <Box>
+                <div>
                   <SectionHeader label="DATA DIRI PEMILIK" />
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                      gap: 2
-                    }}
-                  >
-                    <Box sx={{ gridColumn: { xs: "1", sm: "span 2" } }}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
                       <Field label="NIK *" error={ownerErrors.nik}>
                         <input
                           type="text"
@@ -1768,11 +1233,11 @@ function EditStoreModal({
                             setOwnerNik(e.target.value.replace(/\D/g, ""))
                             setOwnerErrors((prev) => ({ ...prev, nik: "" }))
                           }}
-                          style={inputStyle(!!ownerErrors.nik)}
+                          className={fieldClass(!!ownerErrors.nik)}
                         />
                       </Field>
-                    </Box>
-                    <Box sx={{ gridColumn: { xs: "1", sm: "span 2" } }}>
+                    </div>
+                    <div className="sm:col-span-2">
                       <Field
                         label="NAMA LENGKAP *"
                         error={ownerErrors.fullName}
@@ -1788,10 +1253,10 @@ function EditStoreModal({
                               fullName: ""
                             }))
                           }}
-                          style={inputStyle(!!ownerErrors.fullName)}
+                          className={fieldClass(!!ownerErrors.fullName)}
                         />
                       </Field>
-                    </Box>
+                    </div>
                     <Field
                       label="TANGGAL LAHIR *"
                       error={ownerErrors.birthDate}
@@ -1805,7 +1270,7 @@ function EditStoreModal({
                           setOwnerBirthDate(e.target.value)
                           setOwnerErrors((prev) => ({ ...prev, birthDate: "" }))
                         }}
-                        style={inputStyle(!!ownerErrors.birthDate)}
+                        className={fieldClass(!!ownerErrors.birthDate)}
                       />
                     </Field>
                     <Field label="JENIS KELAMIN *" error={ownerErrors.gender}>
@@ -1815,14 +1280,14 @@ function EditStoreModal({
                           setOwnerGender(e.target.value)
                           setOwnerErrors((prev) => ({ ...prev, gender: "" }))
                         }}
-                        style={inputStyle(!!ownerErrors.gender)}
+                        className={fieldClass(!!ownerErrors.gender)}
                       >
                         <option value="">Pilih</option>
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
                       </select>
                     </Field>
-                    <Box sx={{ gridColumn: { xs: "1", sm: "span 2" } }}>
+                    <div className="sm:col-span-2">
                       <Field
                         label="ALAMAT SESUAI KTP *"
                         error={ownerErrors.address}
@@ -1835,84 +1300,45 @@ function EditStoreModal({
                             setOwnerAddress(e.target.value)
                             setOwnerErrors((prev) => ({ ...prev, address: "" }))
                           }}
-                          style={{
-                            ...inputStyle(!!ownerErrors.address),
-                            resize: "vertical"
-                          }}
+                          className={cn(
+                            fieldClass(!!ownerErrors.address),
+                            "resize-y"
+                          )}
                         />
                       </Field>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-          </Box>
+          </div>
 
           {/* Footer */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderTop: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              gap: 1.5,
-              justifyContent: "flex-end",
-              flexShrink: 0
-            }}
-          >
+          <div className="flex shrink-0 justify-end gap-3 border-t border-(--p-border) bg-(--p-bg) px-6 py-4">
             <button
               onClick={onClose}
-              style={{
-                padding: "9px 20px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer"
-              }}
+              className="cursor-pointer rounded-md border border-(--p-border) bg-transparent px-5 py-2.5 font-nunito text-[13px] font-bold text-(--p-textSecondary)"
             >
               Batal
             </button>
             <button
               onClick={activeTab === "store" ? saveStore : saveOwner}
               disabled={isSaving}
-              style={{
-                padding: "9px 24px",
-                border: "none",
-                borderRadius: 6,
-                background: isSaving ? "#64748b" : "#1e3a8a",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                opacity: isSaving ? 0.8 : 1
-              }}
+              className={cn(
+                "flex items-center gap-2 rounded-md border-none px-6 py-2.5 font-nunito text-[13px] font-bold text-white",
+                isSaving
+                  ? "cursor-not-allowed bg-slate-500 opacity-80"
+                  : "cursor-pointer bg-brand-700"
+              )}
             >
               {isSaving && (
-                <Box
-                  sx={{
-                    width: 13,
-                    height: 13,
-                    border: "2px solid rgba(255,255,255,0.4)",
-                    borderTopColor: "#fff",
-                    borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite"
-                  }}
-                />
+                <div className="h-3.25 w-3.25 animate-spin rounded-full border-2 border-white/40 border-t-white" />
               )}
               {isSaving
                 ? "Menyimpan..."
                 : `Simpan ${activeTab === "store" ? "Data Toko" : "Data Pemilik"}`}
             </button>
-          </Box>
+          </div>
         </Box>
       </Modal>
 
@@ -1951,7 +1377,7 @@ function EditStoreModal({
         <Alert
           severity={snackbar.severity}
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          sx={{ fontFamily: "'Nunito', sans-serif", fontSize: 13 }}
+          className="font-nunito! text-[13px]!"
         >
           {snackbar.msg}
         </Alert>
@@ -1991,7 +1417,7 @@ export default function SettingsPage() {
     [isDark]
   )
 
-  const p = useMemo(
+  const p: Palette = useMemo(
     () => ({
       bg: isDark ? "#0D0D0D" : "#f8fafc",
       bgPaper: isDark ? "#111111" : "#ffffff",
@@ -2019,8 +1445,6 @@ export default function SettingsPage() {
     msg: string
     severity: "success" | "error"
   }>({ open: false, msg: "", severity: "success" })
-
-  const T = "0.3s ease"
 
   const drawerPaperSx = () => ({
     width: DRAWER_WIDTH,
@@ -2091,30 +1515,11 @@ export default function SettingsPage() {
     setStores((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
   }
 
-  const inputStyle: React.CSSProperties = {
-    padding: "8px 12px",
-    borderRadius: 6,
-    border: `1px solid ${p.border}`,
-    background: isDark ? "#111" : "#fff",
-    color: p.textPrimary,
-    fontFamily: "'Nunito', sans-serif",
-    fontSize: 13,
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box"
-  }
-
   return (
     <ThemeProvider theme={theme}>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <Box
-        sx={{
-          display: "flex",
-          minHeight: "100vh",
-          bgcolor: p.bg,
-          fontFamily: "'Nunito', sans-serif",
-          transition: `background-color ${T}`
-        }}
+        style={paletteVars(p)}
+        className="flex min-h-screen bg-(--p-bg) font-nunito transition-colors duration-300"
       >
         {/* Drawer Mobile */}
         <Drawer
@@ -2122,35 +1527,21 @@ export default function SettingsPage() {
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": drawerPaperSx()
-          }}
+          className="block md:hidden"
+          sx={{ "& .MuiDrawer-paper": drawerPaperSx() }}
         >
-          <Sidebar isDark={isDark} T={T} />
+          <Sidebar isDark={isDark} T="0.3s ease" />
         </Drawer>
         {/* Drawer Desktop */}
         <Drawer
           variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
-            width: DRAWER_WIDTH,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": drawerPaperSx()
-          }}
+          className="hidden shrink-0 md:block"
+          sx={{ width: DRAWER_WIDTH, "& .MuiDrawer-paper": drawerPaperSx() }}
         >
-          <Sidebar isDark={isDark} T={T} />
+          <Sidebar isDark={isDark} T="0.3s ease" />
         </Drawer>
 
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minWidth: 0
-          }}
-        >
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <Header
             isDark={isDark}
             onToggleTheme={toggleTheme}
@@ -2160,125 +1551,41 @@ export default function SettingsPage() {
             notificationCount={0}
           />
 
-          <Box
-            sx={{ flex: 1, overflow: "auto", p: { xs: "12px", sm: "16px" } }}
-          >
+          <div className="flex-1 overflow-auto p-3 sm:p-4">
             {/* Page Title */}
-            <Box sx={{ mb: 3 }}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: p.textPrimary,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+            <div className="mb-6">
+              <p className="m-0 font-nunito text-lg font-extrabold text-(--p-textPrimary)">
                 Pengaturan Toko
               </p>
-              <p
-                style={{
-                  margin: "2px 0 0",
-                  fontSize: 12,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+              <p className="m-0 mt-0.5 font-nunito text-xs text-(--p-textMuted)">
                 Kelola dan edit data semua toko yang terdaftar
               </p>
-            </Box>
+            </div>
 
             {/* Stat Cards */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "repeat(2,1fr)",
-                  sm: "repeat(4,1fr)"
-                },
-                gap: { xs: 1.5, sm: 2 },
-                mb: { xs: 2, sm: 3 }
-              }}
-            >
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:grid-cols-4 sm:gap-4">
               {stats.map((s) => (
-                <Box
+                <div
                   key={s.label}
-                  sx={{
-                    p: { xs: 1.5, sm: 2 },
-                    border: `1px solid ${p.border}`,
-                    bgcolor: p.bgPaper,
-                    borderRadius: "8px",
-                    position: "relative",
-                    overflow: "hidden",
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "3px",
-                      bgcolor: s.color
-                    }
-                  }}
+                  style={{ "--stat-color": s.color } as React.CSSProperties}
+                  className="relative overflow-hidden rounded-lg border border-(--p-border) bg-(--p-bgPaper) p-3 before:absolute before:left-0 before:right-0 before:top-0 before:h-0.75 before:bg-(--stat-color) sm:p-4"
                 >
-                  <p
-                    style={{
-                      margin: "0 0 4px",
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif",
-                      letterSpacing: "0.06em"
-                    }}
-                  >
+                  <p className="m-0 mb-1 font-nunito text-[9px] font-bold tracking-[0.06em] text-(--p-textMuted)">
                     {s.label.toUpperCase()}
                   </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 26,
-                      fontWeight: 900,
-                      color: p.textPrimary,
-                      fontFamily: "'Nunito', sans-serif",
-                      lineHeight: 1
-                    }}
-                  >
+                  <p className="m-0 font-nunito text-[26px] font-black leading-none text-(--p-textPrimary)">
                     {s.value}
                   </p>
-                </Box>
+                </div>
               ))}
-            </Box>
+            </div>
 
             {/* Main Card */}
-            <Box
-              sx={{
-                border: `1px solid ${p.border}`,
-                bgcolor: p.bgPaper,
-                borderRadius: "8px",
-                overflow: "hidden"
-              }}
-            >
+            <div className="overflow-hidden rounded-lg border border-(--p-border) bg-(--p-bgPaper)">
               {/* Filter Bar */}
-              <Box
-                sx={{
-                  px: { xs: 2, sm: 3 },
-                  py: 2,
-                  borderBottom: `1px solid ${p.border}`,
-                  bgcolor: p.bg
-                }}
-              >
-                <Box sx={{ position: "relative", mb: 1.5 }}>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      left: 10,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: p.textMuted,
-                      display: "flex",
-                      zIndex: 1
-                    }}
-                  >
+              <div className="border-b border-(--p-border) bg-(--p-bg) px-4 py-4 sm:px-6">
+                <div className="relative mb-3">
+                  <div className="pointer-events-none absolute left-2.5 top-1/2 z-10 flex -translate-y-1/2 text-(--p-textMuted)">
                     <svg
                       width={14}
                       height={14}
@@ -2291,49 +1598,31 @@ export default function SettingsPage() {
                     >
                       <path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0" />
                     </svg>
-                  </Box>
+                  </div>
                   <input
                     type="text"
                     placeholder="Cari nama toko, ID, kota, pemilik..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    style={{ ...inputStyle, paddingLeft: 32 }}
+                    className={cn(inputBase, "border-(--p-border) py-2 pl-8")}
                   />
-                </Box>
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  <Box sx={{ flex: "1 1 130px", minWidth: 0 }}>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="min-w-0 flex-1 basis-32.5">
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      style={inputStyle}
+                      className={cn(inputBase, "border-(--p-border) py-2")}
                     >
                       <option value="all">Semua Status</option>
                       <option value="active">Aktif</option>
                       <option value="inactive">Nonaktif</option>
                       <option value="suspended">Suspended</option>
                     </select>
-                  </Box>
+                  </div>
                   <button
                     onClick={() => router.push("/registration")}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "8px 14px",
-                      border: "none",
-                      borderRadius: 6,
-                      background:
-                        "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-                      boxShadow: "0 4px 12px rgba(59,130,246,.25)",
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      fontFamily: "'Nunito', sans-serif",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      height: 38
-                    }}
+                    className="flex h-9.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border-none bg-linear-to-br from-brand-700 to-brand-500 px-3.5 font-nunito text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(59,130,246,.25)]"
                   >
                     <svg
                       width={14}
@@ -2349,63 +1638,38 @@ export default function SettingsPage() {
                     </svg>
                     Tambah Toko
                   </button>
-                </Box>
-              </Box>
+                </div>
+              </div>
 
               {/* Mobile Card List */}
               {isMobile ? (
-                <Box
-                  sx={{
-                    p: 1.5,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1.5
-                  }}
-                >
+                <div className="flex flex-col gap-3 p-3">
                   {loading ? (
                     Array.from({ length: 3 }).map((_, i) => (
-                      <Box
+                      <div
                         key={i}
-                        sx={{
-                          border: `1px solid ${p.border}`,
-                          borderRadius: "8px",
-                          p: 2
-                        }}
+                        className="rounded-lg border border-(--p-border) p-4"
                       >
                         {[100, 60, 80, 50].map((w, j) => (
-                          <Box
+                          <div
                             key={j}
-                            sx={{
-                              height: 11,
-                              borderRadius: 1,
-                              bgcolor: isDark ? "#1f1f1f" : "#f1f5f9",
-                              width: `${w}%`,
-                              mb: 1.2,
-                              animation: "pulse 1.5s ease-in-out infinite",
-                              "@keyframes pulse": {
-                                "0%, 100%": { opacity: 1 },
-                                "50%": { opacity: 0.4 }
-                              }
-                            }}
+                            style={{ width: `${w}%` }}
+                            className={cn(
+                              "mb-2.5 h-2.75 animate-pulse rounded",
+                              isDark ? "bg-[#1f1f1f]" : "bg-slate-100"
+                            )}
                           />
                         ))}
-                      </Box>
+                      </div>
                     ))
                   ) : filtered.length === 0 ? (
-                    <Box sx={{ py: 6, textAlign: "center" }}>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 14,
-                          color: p.textMuted,
-                          fontFamily: "'Nunito', sans-serif"
-                        }}
-                      >
+                    <div className="py-12 text-center">
+                      <p className="m-0 font-nunito text-sm text-(--p-textMuted)">
                         {search || filterStatus !== "all"
                           ? "Tidak ada toko yang sesuai filter"
                           : "Belum ada toko terdaftar"}
                       </p>
-                    </Box>
+                    </div>
                   ) : (
                     filtered.map((store) => (
                       <StoreCard
@@ -2417,23 +1681,12 @@ export default function SettingsPage() {
                       />
                     ))
                   )}
-                </Box>
+                </div>
               ) : (
-                <Box sx={{ overflowX: "auto" }}>
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse font-nunito">
                     <thead>
-                      <tr
-                        style={{
-                          background: p.tableHeadBg,
-                          borderBottom: `1px solid ${p.border}`
-                        }}
-                      >
+                      <tr className="border-b border-(--p-border) bg-(--p-tableHeadBg)">
                         {[
                           "ID TOKO",
                           "NAMA TOKO",
@@ -2446,15 +1699,7 @@ export default function SettingsPage() {
                         ].map((col) => (
                           <th
                             key={col}
-                            style={{
-                              padding: "10px 16px",
-                              textAlign: "left",
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: p.textMuted,
-                              letterSpacing: "0.08em",
-                              whiteSpace: "nowrap"
-                            }}
+                            className="whitespace-nowrap px-4 py-2.5 text-left text-[10px] font-bold tracking-[0.08em] text-(--p-textMuted)"
                           >
                             {col}
                           </th>
@@ -2466,14 +1711,14 @@ export default function SettingsPage() {
                         Array.from({ length: 5 }).map((_, i) => (
                           <tr key={i}>
                             {Array.from({ length: 8 }).map((_, j) => (
-                              <td key={j} style={{ padding: "14px 16px" }}>
+                              <td key={j} className="px-4 py-3.5">
                                 <Skeleton
                                   variant="text"
                                   width={j === 1 ? "80%" : "60%"}
                                   height={14}
-                                  sx={{
-                                    bgcolor: isDark ? "#1f1f1f" : "#f1f5f9"
-                                  }}
+                                  className={
+                                    isDark ? "bg-[#1f1f1f]!" : "bg-slate-100!"
+                                  }
                                 />
                               </td>
                             ))}
@@ -2481,21 +1726,8 @@ export default function SettingsPage() {
                         ))
                       ) : filtered.length === 0 ? (
                         <tr>
-                          <td
-                            colSpan={8}
-                            style={{
-                              padding: "48px 16px",
-                              textAlign: "center"
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: 14,
-                                color: p.textMuted,
-                                fontFamily: "'Nunito', sans-serif"
-                              }}
-                            >
+                          <td colSpan={8} className="px-4 py-12 text-center">
+                            <p className="m-0 font-nunito text-sm text-(--p-textMuted)">
                               {search || filterStatus !== "all"
                                 ? "Tidak ada toko yang sesuai filter"
                                 : "Belum ada toko terdaftar"}
@@ -2509,55 +1741,32 @@ export default function SettingsPage() {
                           return (
                             <tr
                               key={store.id}
-                              style={{
-                                background: isEven
-                                  ? "transparent"
+                              className={cn(
+                                "border-b transition-colors",
+                                isDark ? "border-[#111111]" : "border-slate-50",
+                                isEven
+                                  ? "bg-transparent"
                                   : isDark
-                                    ? "rgba(255,255,255,0.01)"
-                                    : "rgba(0,0,0,0.01)",
-                                borderBottom: `1px solid ${isDark ? "#111" : "#f8fafc"}`,
-                                transition: "background 0.15s"
-                              }}
-                              onMouseEnter={(e) => {
-                                ;(
-                                  e.currentTarget as HTMLTableRowElement
-                                ).style.background = isDark
-                                  ? "#161616"
-                                  : "#f8fafc"
-                              }}
-                              onMouseLeave={(e) => {
-                                ;(
-                                  e.currentTarget as HTMLTableRowElement
-                                ).style.background = isEven
-                                  ? "transparent"
-                                  : isDark
-                                    ? "rgba(255,255,255,0.01)"
-                                    : "rgba(0,0,0,0.01)"
-                              }}
+                                    ? "bg-white/1"
+                                    : "bg-black/1",
+                                isDark
+                                  ? "hover:bg-[#161616]"
+                                  : "hover:bg-slate-50"
+                              )}
                             >
-                              <td style={{ padding: "12px 16px" }}>
+                              <td className="px-4 py-3">
                                 <span
-                                  style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    color: isDark ? "#60a5fa" : "#1e3a8a",
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
+                                  className={cn(
+                                    "font-nunito text-[11px] font-bold",
+                                    isDark ? "text-blue-400" : "text-brand-700"
+                                  )}
                                 >
                                   {store.storeId}
                                 </span>
                               </td>
-                              <td
-                                style={{ padding: "12px 16px", minWidth: 180 }}
-                              >
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1.5
-                                  }}
-                                >
-                                  <Box
+                              <td className="min-w-45 px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div
                                     onClick={() =>
                                       store.storeImageUrl &&
                                       setPreviewImage({
@@ -2565,21 +1774,15 @@ export default function SettingsPage() {
                                         title: store.storeName
                                       })
                                     }
-                                    sx={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: "6px",
-                                      bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                                      border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: 14,
-                                      flexShrink: 0,
-                                      cursor: store.storeImageUrl
-                                        ? "pointer"
-                                        : "default"
-                                    }}
+                                    className={cn(
+                                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-sm",
+                                      isDark
+                                        ? "border-brand-700 bg-[#0d1f3c]"
+                                        : "border-[#b5d4f4] bg-[#e6f1fb]",
+                                      store.storeImageUrl
+                                        ? "cursor-pointer"
+                                        : "cursor-default"
+                                    )}
                                   >
                                     {store.storeImageUrl ? (
                                       <Image
@@ -2587,125 +1790,55 @@ export default function SettingsPage() {
                                         alt={store.storeName}
                                         width={32}
                                         height={32}
-                                        style={{
-                                          width: "100%",
-                                          height: "100%",
-                                          objectFit: "cover",
-                                          borderRadius: 6
-                                        }}
+                                        className="h-full w-full rounded-md object-cover"
                                       />
                                     ) : (
                                       "🏪"
                                     )}
-                                  </Box>
-                                  <Box>
-                                    <p
-                                      style={{
-                                        margin: 0,
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        color: p.textPrimary,
-                                        fontFamily: "'Nunito', sans-serif"
-                                      }}
-                                    >
+                                  </div>
+                                  <div>
+                                    <p className="m-0 font-nunito text-[13px] font-bold text-(--p-textPrimary)">
                                       {store.storeName}
                                     </p>
                                     {store.storeEmail && (
-                                      <p
-                                        style={{
-                                          margin: 0,
-                                          fontSize: 11,
-                                          color: p.textMuted,
-                                          fontFamily: "'Nunito', sans-serif"
-                                        }}
-                                      >
+                                      <p className="m-0 font-nunito text-[11px] text-(--p-textMuted)">
                                         {store.storeEmail}
                                       </p>
                                     )}
-                                  </Box>
-                                </Box>
+                                  </div>
+                                </div>
                               </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    fontSize: 12,
-                                    color: p.textSecondary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
+                              <td className="px-4 py-3">
+                                <span className="font-nunito text-xs text-(--p-textSecondary)">
                                   {store.storeType}
                                 </span>
                               </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    color: p.textPrimary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
+                              <td className="px-4 py-3">
+                                <p className="m-0 font-nunito text-[13px] font-semibold text-(--p-textPrimary)">
                                   {store.owner.fullName}
                                 </p>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 10,
-                                    color: p.textMuted,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
+                                <p className="m-0 font-nunito text-[10px] text-(--p-textMuted)">
                                   NIK: {store.owner.nik.slice(0, 6)}••••••••••
                                 </p>
                               </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 12,
-                                    color: p.textPrimary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
+                              <td className="px-4 py-3">
+                                <p className="m-0 font-nunito text-xs text-(--p-textPrimary)">
                                   {store.storeCity}
                                 </p>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 10,
-                                    color: p.textMuted,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
+                                <p className="m-0 font-nunito text-[10px] text-(--p-textMuted)">
                                   {store.storeProvince}
                                 </p>
                               </td>
-                              <td style={{ padding: "12px 16px" }}>
+                              <td className="px-4 py-3">
                                 <span
-                                  style={{
-                                    display: "inline-block",
-                                    padding: "3px 10px",
-                                    borderRadius: 100,
-                                    background: sc.bg,
-                                    color: sc.text,
-                                    border: `1px solid ${sc.border}`,
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
+                                  style={statusVars(sc)}
+                                  className="inline-block rounded-full border border-(--sc-border) bg-(--sc-bg) px-2.5 py-0.75 font-nunito text-[11px] font-bold text-(--sc-text)"
                                 >
                                   {sc.label}
                                 </span>
                               </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    color: p.textMuted,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
+                              <td className="px-4 py-3">
+                                <span className="font-nunito text-[11px] text-(--p-textMuted)">
                                   {new Date(store.createdAt).toLocaleDateString(
                                     "id-ID",
                                     {
@@ -2716,24 +1849,15 @@ export default function SettingsPage() {
                                   )}
                                 </span>
                               </td>
-                              <td style={{ padding: "12px 16px" }}>
+                              <td className="px-4 py-3">
                                 <button
                                   onClick={() => openEdit(store)}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 5,
-                                    padding: "6px 14px",
-                                    border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                    borderRadius: 6,
-                                    background: isDark ? "#0d1f3c" : "#e6f1fb",
-                                    color: isDark ? "#60a5fa" : "#1e3a8a",
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    cursor: "pointer",
-                                    whiteSpace: "nowrap"
-                                  }}
+                                  className={cn(
+                                    "flex items-center gap-1.25 whitespace-nowrap rounded-md border px-3.5 py-1.5 font-nunito text-xs font-bold",
+                                    isDark
+                                      ? "border-brand-700 bg-[#0d1f3c] text-blue-400"
+                                      : "border-[#b5d4f4] bg-[#e6f1fb] text-brand-700"
+                                  )}
                                 >
                                   <svg
                                     width={12}
@@ -2757,41 +1881,28 @@ export default function SettingsPage() {
                       )}
                     </tbody>
                   </table>
-                </Box>
+                </div>
               )}
 
               {/* Footer count */}
               {!loading && filtered.length > 0 && (
-                <Box
-                  sx={{
-                    px: 3,
-                    py: 1.5,
-                    borderTop: `1px solid ${p.border}`,
-                    bgcolor: p.tableHeadBg
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
+                <div className="border-t border-(--p-border) bg-(--p-tableHeadBg) px-6 py-3">
+                  <span className="font-nunito text-xs text-(--p-textMuted)">
                     Menampilkan{" "}
-                    <strong style={{ color: p.textSecondary }}>
+                    <strong className="text-(--p-textSecondary)">
                       {filtered.length}
                     </strong>{" "}
                     dari{" "}
-                    <strong style={{ color: p.textSecondary }}>
+                    <strong className="text-(--p-textSecondary)">
                       {stores.length}
                     </strong>{" "}
                     toko
                   </span>
-                </Box>
+                </div>
               )}
-            </Box>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
       </Box>
 
       {/* Edit Modal */}
@@ -2826,7 +1937,7 @@ export default function SettingsPage() {
         <Alert
           severity={snackbar.severity}
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          sx={{ fontFamily: "'Nunito', sans-serif", fontSize: 13 }}
+          className="font-nunito! text-[13px]!"
         >
           {snackbar.msg}
         </Alert>
