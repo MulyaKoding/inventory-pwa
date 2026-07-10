@@ -91,22 +91,22 @@ export default function Sidebar({ T = "0.3s ease" }: SidebarProps) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden border-r border-white/8 bg-[linear-gradient(160deg,var(--color-brand-950)_0%,var(--color-brand-900)_40%,var(--color-brand-800)_70%,var(--color-brand-700)_100%)]">
       {/* faint grid overlay */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,.025)_1px,transparent_1px),linear-gradient (90deg,rgba(255,255,255,.025)_1px,transparent_1px)] bg-size-[40px_40px]" />
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.025)_1px,transparent_1px)] bg-[size:40px_40px]" />
       {/* glow blob */}
-      <div className="pointer-events-none absolute -right-15 -top-15 z-0 h-55 w-55 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.25)_0%,transparent_70%)]" />
+      <div className="pointer-events-none absolute -right-14 -top-14 z-0 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.25)_0%,transparent_70%)]" />
 
       {/* ── LOGO ── */}
-      <div className="relative z-10 flex items-center gap-3 px-6 py-5">
-        <div className="flex h-0.5 w-0.5 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-brand-700 to-brand-500 shadow-[0_4px_12px_rgba(59,130,246,.4)]">
+      <div className="relative z-10 flex items-center gap-3 px-5 py-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-brand-700 to-brand-500 shadow-[0_4px_12px_rgba(59,130,246,.4)]">
           <span className="font-nunito text-[11px] font-black tracking-wide text-white">
             INV
           </span>
         </div>
-        <div>
-          <p className="font-nunito text-[15px] font-black leading-tight tracking-wide text-white">
+        <div className="min-w-0">
+          <p className="font-nunito text-[15px] font-black leading-tight tracking-wide text-white truncate">
             STOCKR
           </p>
-          <p className="font-nunito text-[10px] font-semibold text-white/40">
+          <p className="font-nunito text-[10px] font-semibold text-white/40 truncate">
             Inventory Management
           </p>
         </div>
