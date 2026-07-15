@@ -1,36 +1,13 @@
 "use client"
 
-import { Box, Chip, Divider, Drawer, Paper, Typography } from "@mui/material"
-import { createTheme, ThemeProvider } from "@mui/material/styles"
+import { Chip, Drawer } from "@mui/material"
 import { useEffect, useMemo, useState } from "react"
+import { cn } from "../../lib/utils"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
 import { useTheme } from "../hooks/useTheme"
 
 const DRAWER_WIDTH = 220
-
-const Icon = ({
-  d,
-  size = 20,
-  color = "currentColor"
-}: {
-  d: string
-  size?: number
-  color?: string
-}) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={color}
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d={d} />
-  </svg>
-)
 
 // ── WEEKLY DATA (static display data, tidak berubah) ────────────────────────
 const WEEKLY_DATA = [
@@ -126,7 +103,7 @@ function StatCard({
   trend,
   spark,
   sparkColor,
-  p
+  isDark
 }: {
   label: string
   value: string
@@ -134,68 +111,59 @@ function StatCard({
   trend: "up" | "down" | "neutral"
   spark: number[]
   sparkColor: string
-  p: Record<string, string>
+  isDark: boolean
 }) {
-  const trendColor =
-    trend === "up" ? "#16a34a" : trend === "down" ? "#dc2626" : p.textMuted
+  const trendTextClass =
+    trend === "up"
+      ? "text-[#16a34a]"
+      : trend === "down"
+        ? "text-[#dc2626]"
+        : isDark
+          ? "text-[#555555]"
+          : "text-[#94a3b8]"
   const trendIcon = trend === "up" ? "↑" : trend === "down" ? "↓" : "→"
+  const topBarClass =
+    trend === "up"
+      ? "bg-[#087463]"
+      : trend === "down"
+        ? "bg-[#FF6B35]"
+        : isDark
+          ? "bg-[#1f1f1f]"
+          : "bg-[#e2e8f0]"
+
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2, md: 2.5 },
-        border: `1px solid ${p.border}`,
-        bgcolor: p.bgPaper,
-        position: "relative",
-        overflow: "hidden",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "2px",
-          bgcolor:
-            trend === "up" ? "#087463" : trend === "down" ? "#FF6B35" : p.border
-        }
-      }}
+    <div
+      className={cn(
+        "relative overflow-hidden border p-4 md:p-2.5",
+        isDark ? "bg-[#111111] border-[#1f1f1f]" : "bg-white border-[#e2e8f0]"
+      )}
     >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start"
-        }}
-      >
-        <Box>
-          <Typography
-            sx={{
-              color: p.textMuted,
-              fontSize: 10,
-              letterSpacing: "0.08em",
-              mb: 1
-            }}
+      <span className={cn("absolute inset-x-0 top-0 h-0.5", topBarClass)} />
+      <div className="flex items-start justify-between">
+        <div>
+          <p
+            className={cn(
+              "mb-1 text-[10px] tracking-[0.08em]",
+              isDark ? "text-[#555555]" : "text-[#94a3b8]"
+            )}
           >
             {label.toUpperCase()}
-          </Typography>
-          <Typography
-            sx={{
-              color: p.textPrimary,
-              fontSize: { xs: 20, md: 28 },
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              lineHeight: 1
-            }}
+          </p>
+          <p
+            className={cn(
+              "text-[20px] font-extrabold leading-none tracking-[-0.02em] md:text-[28px]",
+              isDark ? "text-[#F5F5F0]" : "text-[#0f172a]"
+            )}
           >
             {value}
-          </Typography>
-          <Typography sx={{ color: trendColor, fontSize: 11, mt: 0.8 }}>
+          </p>
+          <p className={cn("mt-0.75 text-[11px]", trendTextClass)}>
             {trendIcon} {delta}
-          </Typography>
-        </Box>
+          </p>
+        </div>
         <SparkLine values={spark} color={sparkColor} />
-      </Box>
-    </Paper>
+      </div>
+    </div>
   )
 }
 
@@ -288,7 +256,6 @@ export default function DashboardPage() {
 
   // ── Stock distribution ────────────────────────────────────────────────────
   const stockDist = useMemo(() => {
-    const total = products.length || 1
     const inStock = products.filter((p) => p.status === "In Stock").length
     const lowStock = products.filter((p) => p.status === "Low Stock").length
     const outOfStock = products.filter(
@@ -297,32 +264,8 @@ export default function DashboardPage() {
     return { total: products.length, inStock, lowStock, outOfStock }
   }, [products])
 
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode: isDark ? "dark" : "light",
-          primary: { main: "#087463" },
-          background: {
-            default: isDark ? "#0D0D0D" : "#f8fafc",
-            paper: isDark ? "#141414" : "#ffffff"
-          },
-          text: {
-            primary: isDark ? "#F5F5F0" : "#0f172a",
-            secondary: isDark ? "#888" : "#64748b"
-          }
-        },
-        typography: { fontFamily: "'Nunito', sans-serif" },
-        shape: { borderRadius: 2 },
-        components: {
-          MuiButton: {
-            styleOverrides: { root: { textTransform: "none", fontWeight: 600 } }
-          }
-        }
-      }),
-    [isDark]
-  )
-
+  // Object hex tetap dipertahankan untuk komponen anak (Header, Sidebar) yang
+  // masih mengharapkan token warna dalam bentuk ini.
   const p = useMemo(
     () => ({
       bg: isDark ? "#0D0D0D" : "#f8fafc",
@@ -345,753 +288,550 @@ export default function DashboardPage() {
     [isDark]
   )
 
-  const T = "0.3s ease"
+  // ── Kelas Tailwind terpusat, dikomposisi lewat cn() menggantikan sx ───────
+  const cls = useMemo(
+    () => ({
+      page: cn(
+        "flex min-h-screen font-nunito transition-colors duration-300",
+        isDark ? "bg-[#0D0D0D]" : "bg-[#f8fafc]"
+      ),
+      panel: cn(
+        "border",
+        isDark ? "bg-[#111111] border-[#1f1f1f]" : "bg-white border-[#e2e8f0]"
+      ),
+      textMuted: cn(
+        "text-[10px] tracking-[0.08em]",
+        isDark ? "text-[#555555]" : "text-[#94a3b8]"
+      ),
+      textMutedXs: cn(
+        "text-[9px] tracking-[0.06em]",
+        isDark ? "text-[#555555]" : "text-[#94a3b8]"
+      ),
+      title: cn(
+        "mt-0.75 text-[15px] font-bold",
+        isDark ? "text-[#F5F5F0]" : "text-[#0f172a]"
+      ),
+      textPrimary: isDark ? "text-[#F5F5F0]" : "text-[#0f172a]",
+      textSecondary: isDark ? "text-[#888888]" : "text-[#64748b]",
+      divider: isDark ? "border-[#1f1f1f]" : "border-[#e2e8f0]",
+      rowBorder: isDark ? "border-[#151515]" : "border-[#f1f5f9]",
+      tableHead: isDark ? "bg-[#111111]" : "bg-[#f8fafc]",
+      hover: isDark ? "hover:bg-[#161616]" : "hover:bg-[#f1f5f9]",
+      trackBg: isDark ? "bg-[#1f1f1f]" : "bg-[#e2e8f0]",
+      totalBadge: cn(
+        "border",
+        isDark
+          ? "bg-[#0a1f1c] border-[#0d3830]"
+          : "bg-[#e6f4f2] border-[#a7d4ce]"
+      ),
+      warnBadge: cn(
+        "border",
+        isDark
+          ? "bg-[#2e2010] border-[#5a3a10]"
+          : "bg-[#fff7ed] border-[#fed7aa]"
+      )
+    }),
+    [isDark]
+  )
+
+  const T = "transition-colors duration-300"
 
   return (
-    <ThemeProvider theme={theme}>
-      <Box
+    <div className={cls.page}>
+      {/* ── SIDEBAR MOBILE ── */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        ModalProps={{ keepMounted: true }}
+        className="block md:hidden"
         sx={{
-          display: "flex",
-          minHeight: "100vh",
-          bgcolor: p.bg,
-          fontFamily: "'Nunito', sans-serif",
-          transition: `background-color ${T}`
+          "& .MuiDrawer-paper": {
+            width: DRAWER_WIDTH,
+            boxSizing: "border-box",
+            bgcolor: "transparent",
+            border: "none",
+            overflow: "hidden"
+          }
         }}
       >
-        {/* ── SIDEBAR MOBILE ── */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": {
-              width: DRAWER_WIDTH,
-              boxSizing: "border-box",
-              bgcolor: "transparent",
-              border: "none",
-              overflow: "hidden"
-            }
-          }}
-        >
-          <Sidebar isDark={isDark} T={T} />
-        </Drawer>
+        <Sidebar isDark={isDark} T={T} />
+      </Drawer>
 
-        {/* ── SIDEBAR DESKTOP ── */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
+      {/* ── SIDEBAR DESKTOP ── */}
+      <Drawer
+        variant="permanent"
+        className="hidden md:block"
+        sx={{
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
             width: DRAWER_WIDTH,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": {
-              width: DRAWER_WIDTH,
-              boxSizing: "border-box",
-              bgcolor: "transparent",
-              border: "none",
-              overflow: "hidden"
-            }
-          }}
-        >
-          <Sidebar isDark={isDark} T={T} />
-        </Drawer>
+            boxSizing: "border-box",
+            bgcolor: "transparent",
+            border: "none",
+            overflow: "hidden"
+          }
+        }}
+      >
+        <Sidebar isDark={isDark} T={T} />
+      </Drawer>
 
-        {/* ── MAIN CONTENT ── */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minWidth: 0
-          }}
-        >
-          <Header
-            isDark={isDark}
-            onToggleTheme={toggleTheme}
-            onMenuClick={() => setMobileOpen(true)}
-            onAddProduct={() => {}}
-            title="Dashboard"
-            showAddButton={false}
-            notificationCount={3}
-            p={p}
-          />
+      {/* ── MAIN CONTENT ── */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Header
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+          onMenuClick={() => setMobileOpen(true)}
+          onAddProduct={() => {}}
+          title="Dashboard"
+          showAddButton={false}
+          notificationCount={3}
+          p={p}
+        />
 
-          <Box sx={{ flex: 1, overflow: "auto", p: { xs: 2, md: 4 } }}>
-            {/* ── STAT CARDS (dari real API) ── */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "repeat(2, 1fr)",
-                  lg: "repeat(4, 1fr)"
-                },
-                gap: { xs: 1.5, md: 2 },
-                mb: { xs: 3, md: 4 }
-              }}
-            >
-              {stats.map((s) => (
-                <StatCard key={s.label} {...s} p={p} />
-              ))}
-            </Box>
+        <div className="flex-1 overflow-auto p-4 md:p-8">
+          {/* ── STAT CARDS (dari real API) ── */}
+          <div className="mb-6 grid grid-cols-2 gap-3 md:mb-8 md:gap-4 lg:grid-cols-4">
+            {stats.map((s) => (
+              <StatCard key={s.label} {...s} isDark={isDark} />
+            ))}
+          </div>
 
-            {/* ── ROW 2: CHART + ACTIVITY ── */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" },
-                gap: 2,
-                mb: 2
-              }}
-            >
-              {/* Weekly Sales Chart */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  border: `1px solid ${p.border}`,
-                  bgcolor: p.bgPaper
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    mb: 2.5
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      sx={{
-                        color: p.textMuted,
-                        fontSize: 10,
-                        letterSpacing: "0.08em"
-                      }}
-                    >
-                      WEEKLY OVERVIEW
-                    </Typography>
-                    <Typography
-                      sx={{
-                        color: p.textPrimary,
-                        fontSize: 15,
-                        fontWeight: 700,
-                        mt: 0.3
-                      }}
-                    >
-                      Aktivitas 7 Hari
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                    >
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          bgcolor: "#087463"
-                        }}
-                      />
-                      <Typography sx={{ color: p.textMuted, fontSize: 10 }}>
-                        Sales
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                    >
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          bgcolor: "#3b82f6"
-                        }}
-                      />
-                      <Typography sx={{ color: p.textMuted, fontSize: 10 }}>
-                        Stock
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-
-                {/* Dual bar chart */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: 1,
-                    height: 120,
-                    px: 1
-                  }}
-                >
-                  {WEEKLY_DATA.map((d, i) => {
-                    const maxSales = Math.max(
-                      ...WEEKLY_DATA.map((x) => x.sales)
-                    )
-                    const maxStock = Math.max(
-                      ...WEEKLY_DATA.map((x) => x.stock)
-                    )
-                    const salesH = (d.sales / maxSales) * 100
-                    const stockH = (d.stock / maxStock) * 100
-                    const isToday = i === WEEKLY_DATA.length - 1
-                    return (
-                      <Box
-                        key={d.day}
-                        sx={{
-                          flex: 1,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          height: "100%"
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            flex: 1,
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "flex-end",
-                            gap: "2px",
-                            px: "2px"
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              flex: 1,
-                              height: `${salesH}%`,
-                              bgcolor: "#087463",
-                              opacity: isToday ? 1 : 0.4,
-                              borderRadius: "2px 2px 0 0",
-                              transition: "all 0.3s",
-                              "&:hover": { opacity: 1 }
-                            }}
-                          />
-                          <Box
-                            sx={{
-                              flex: 1,
-                              height: `${stockH}%`,
-                              bgcolor: "#3b82f6",
-                              opacity: isToday ? 1 : 0.35,
-                              borderRadius: "2px 2px 0 0",
-                              transition: "all 0.3s",
-                              "&:hover": { opacity: 1 }
-                            }}
-                          />
-                        </Box>
-                        <Typography
-                          sx={{
-                            color: p.textMuted,
-                            fontSize: 9,
-                            mt: 0.5,
-                            fontWeight: isToday ? 700 : 400
-                          }}
-                        >
-                          {d.day}
-                        </Typography>
-                      </Box>
-                    )
-                  })}
-                </Box>
-
-                <Divider sx={{ borderColor: p.border, my: 2 }} />
-
-                {/* Summary row */}
-                <Box sx={{ display: "flex", gap: 3 }}>
-                  {[
-                    {
-                      label: "Avg Sales / Hari",
-                      value: String(
-                        Math.round(
-                          WEEKLY_DATA.reduce((s, d) => s + d.sales, 0) / 7
-                        )
-                      ),
-                      color: "#087463"
-                    },
-                    {
-                      label: "Total Transaksi",
-                      value: String(
-                        WEEKLY_DATA.reduce((s, d) => s + d.sales, 0)
-                      ),
-                      color: "#3b82f6"
-                    },
-                    {
-                      label: "Avg Stock",
-                      value: String(
-                        Math.round(
-                          WEEKLY_DATA.reduce((s, d) => s + d.stock, 0) / 7
-                        )
-                      ),
-                      color: p.textMuted
-                    }
-                  ].map((item) => (
-                    <Box key={item.label}>
-                      <Typography
-                        sx={{
-                          color: p.textMuted,
-                          fontSize: 9,
-                          letterSpacing: "0.06em"
-                        }}
-                      >
-                        {item.label.toUpperCase()}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          color: item.color,
-                          fontSize: 18,
-                          fontWeight: 800,
-                          letterSpacing: "-0.02em"
-                        }}
-                      >
-                        {item.value}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Paper>
-
-              {/* Activity Timeline */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  border: `1px solid ${p.border}`,
-                  bgcolor: p.bgPaper,
-                  display: "flex",
-                  flexDirection: "column"
-                }}
-              >
-                <Typography
-                  sx={{
-                    color: p.textMuted,
-                    fontSize: 10,
-                    letterSpacing: "0.08em"
-                  }}
-                >
-                  ACTIVITY LOG
-                </Typography>
-                <Typography
-                  sx={{
-                    color: p.textPrimary,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    mt: 0.3,
-                    mb: 2
-                  }}
-                >
-                  Aktivitas Hari Ini
-                </Typography>
-
-                <Box
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0
-                  }}
-                >
-                  {ACTIVITIES.map((act, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        display: "flex",
-                        gap: 1.5,
-                        position: "relative",
-                        pb: i < ACTIVITIES.length - 1 ? 1.5 : 0
-                      }}
-                    >
-                      {i < ACTIVITIES.length - 1 && (
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            left: 27,
-                            top: 20,
-                            bottom: 0,
-                            width: "1px",
-                            bgcolor: p.border
-                          }}
-                        />
+          {/* ── ROW 2: CHART + ACTIVITY ── */}
+          <div className="mb-2 grid grid-cols-1 gap-2 lg:grid-cols-[1fr_340px]">
+            {/* Weekly Sales Chart */}
+            <div className={cn(cls.panel, "p-2.5")}>
+              <div className="mb-2.5 flex items-start justify-between">
+                <div>
+                  <p className={cls.textMuted}>WEEKLY OVERVIEW</p>
+                  <p className={cls.title}>Aktivitas 7 Hari</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5">
+                    <span className="h-2 w-2 rounded-full bg-[#087463]" />
+                    <p
+                      className={cn(
+                        "text-[10px]",
+                        isDark ? "text-[#555555]" : "text-[#94a3b8]"
                       )}
-                      <Typography
-                        sx={{
-                          color: p.textMuted,
-                          fontSize: 10,
-                          minWidth: 40,
-                          mt: "3px",
-                          fontVariantNumeric: "tabular-nums"
-                        }}
+                    >
+                      Sales
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <span className="h-2 w-2 rounded-full bg-brand-500" />
+                    <p
+                      className={cn(
+                        "text-[10px]",
+                        isDark ? "text-[#555555]" : "text-[#94a3b8]"
+                      )}
+                    >
+                      Stock
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dual bar chart */}
+              <div className="flex h-30 items-end gap-1 px-1">
+                {WEEKLY_DATA.map((d, i) => {
+                  const maxSales = Math.max(...WEEKLY_DATA.map((x) => x.sales))
+                  const maxStock = Math.max(...WEEKLY_DATA.map((x) => x.stock))
+                  const salesH = (d.sales / maxSales) * 100
+                  const stockH = (d.stock / maxStock) * 100
+                  const isToday = i === WEEKLY_DATA.length - 1
+                  return (
+                    <div
+                      key={d.day}
+                      className="flex h-full flex-1 flex-col items-center"
+                    >
+                      <div className="flex w-full flex-1 items-end gap-0.5 px-0.5">
+                        <div
+                          className={cn(
+                            "flex-1 rounded-t-xs bg-[#087463] transition-all duration-300 hover:opacity-100",
+                            isToday ? "opacity-100" : "opacity-40"
+                          )}
+                          style={{ height: `${salesH}%` }}
+                        />
+                        <div
+                          className={cn(
+                            "flex-1 rounded-t-xs bg-brand-500 transition-all duration-300 hover:opacity-100",
+                            isToday ? "opacity-100" : "opacity-35"
+                          )}
+                          style={{ height: `${stockH}%` }}
+                        />
+                      </div>
+                      <p
+                        className={cn(
+                          "mt-1 text-[9px]",
+                          isDark ? "text-[#555555]" : "text-[#94a3b8]",
+                          isToday ? "font-bold" : "font-normal"
+                        )}
                       >
-                        {act.time}
-                      </Typography>
-                      <Box
-                        sx={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: "50%",
-                          bgcolor: activityColor(act.type),
-                          flexShrink: 0,
-                          mt: "4px",
-                          boxShadow: `0 0 0 3px ${activityColor(act.type)}22`
-                        }}
-                      />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography
-                          sx={{
-                            color: p.textPrimary,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            lineHeight: 1.3
-                          }}
-                        >
-                          {act.action}
-                        </Typography>
-                        <Typography
-                          sx={{ color: p.textSecondary, fontSize: 10 }}
-                        >
-                          {act.detail}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Paper>
-            </Box>
+                        {d.day}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
 
-            {/* ── ROW 3: TOP PRODUCTS (dari real API) + STOCK STATUS ── */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", lg: "1fr 260px" },
-                gap: 2
-              }}
-            >
-              {/* Top Products — sorted by sold dari real data */}
-              <Paper
-                elevation={0}
-                sx={{
-                  border: `1px solid ${p.border}`,
-                  bgcolor: p.bgPaper,
-                  overflow: "hidden"
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2.5,
-                    pt: 2.5,
-                    pb: 1.5,
-                    borderBottom: `1px solid ${p.border}`
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      color: p.textMuted,
-                      fontSize: 10,
-                      letterSpacing: "0.08em"
-                    }}
-                  >
-                    PERFORMANCE
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: p.textPrimary,
-                      fontSize: 15,
-                      fontWeight: 700,
-                      mt: 0.3
-                    }}
-                  >
-                    Top Produk
-                  </Typography>
-                </Box>
+              <hr className={cn("my-4 border-t", cls.divider)} />
 
-                {/* Header */}
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "32px 1fr 80px 100px 80px 60px",
-                    px: 2.5,
-                    py: 1,
-                    bgcolor: p.tableHeadBg,
-                    borderBottom: `1px solid ${p.border}`
-                  }}
-                >
-                  {["#", "PRODUK", "KATEGORI", "REVENUE", "SOLD", ""].map(
-                    (h, i) => (
-                      <Typography
-                        key={i}
-                        sx={{
-                          color: p.textMuted,
-                          fontSize: 9,
-                          letterSpacing: "0.1em",
-                          fontWeight: 700
-                        }}
-                      >
-                        {h}
-                      </Typography>
-                    )
-                  )}
-                </Box>
-
-                {loadingProducts ? (
-                  <Box sx={{ px: 2.5, py: 3 }}>
-                    <Typography sx={{ color: p.textMuted, fontSize: 12 }}>
-                      Memuat data produk...
-                    </Typography>
-                  </Box>
-                ) : topProducts.length === 0 ? (
-                  <Box sx={{ px: 2.5, py: 3 }}>
-                    <Typography sx={{ color: p.textMuted, fontSize: 12 }}>
-                      Belum ada produk.
-                    </Typography>
-                  </Box>
-                ) : (
-                  topProducts.map((prod, i) => {
-                    const revenue = (prod.price || 0) * (prod.sold || 0)
-                    const revenueStr =
-                      revenue >= 1_000_000_000
-                        ? `${(revenue / 1_000_000_000).toFixed(1)}B`
-                        : revenue >= 1_000_000
-                          ? `${(revenue / 1_000_000).toFixed(1)}M`
-                          : revenue.toLocaleString("id-ID")
-                    // Compare sold to previous product to determine trend
-                    const prevSold =
-                      i > 0
-                        ? topProducts[i - 1].sold || 0
-                        : (prod.sold || 0) + 1
-                    const trend = (prod.sold || 0) >= prevSold ? "up" : "down"
-
-                    return (
-                      <Box
-                        key={prod.id}
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: "32px 1fr 80px 100px 80px 60px",
-                          px: 2.5,
-                          py: 1.5,
-                          borderBottom:
-                            i < topProducts.length - 1
-                              ? `1px solid ${p.tableRowBorder}`
-                              : "none",
-                          "&:hover": { bgcolor: p.hoverBg },
-                          alignItems: "center",
-                          transition: "background 0.15s"
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            color: prod.rank === 1 ? "#087463" : p.textMuted,
-                            fontSize: 12,
-                            fontWeight: prod.rank === 1 ? 800 : 400
-                          }}
-                        >
-                          {String(prod.rank).padStart(2, "0")}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            color: p.textPrimary,
-                            fontSize: 13,
-                            fontWeight: 600
-                          }}
-                        >
-                          {prod.name}
-                        </Typography>
-                        <Typography
-                          sx={{ color: p.textSecondary, fontSize: 11 }}
-                        >
-                          {prod.category}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            color: p.textPrimary,
-                            fontSize: 12,
-                            fontWeight: 600
-                          }}
-                        >
-                          {revenueStr}
-                        </Typography>
-                        <Typography
-                          sx={{ color: p.textSecondary, fontSize: 12 }}
-                        >
-                          {(prod.sold || 0).toLocaleString()}
-                        </Typography>
-                        <Box
-                          sx={{ display: "flex", justifyContent: "flex-end" }}
-                        >
-                          <Chip
-                            label={trend === "up" ? "↑" : "↓"}
-                            size="small"
-                            sx={{
-                              bgcolor:
-                                trend === "up"
-                                  ? isDark
-                                    ? "#1a2e1a"
-                                    : "#f0fdf4"
-                                  : isDark
-                                    ? "#2e1010"
-                                    : "#fef2f2",
-                              color: trend === "up" ? "#16a34a" : "#dc2626",
-                              fontSize: 10,
-                              height: 20,
-                              fontWeight: 700,
-                              border: `1px solid ${
-                                trend === "up"
-                                  ? isDark
-                                    ? "#2d5a2d"
-                                    : "#bbf7d0"
-                                  : isDark
-                                    ? "#5a1a1a"
-                                    : "#fecaca"
-                              }`
-                            }}
-                          />
-                        </Box>
-                      </Box>
-                    )
-                  })
-                )}
-              </Paper>
-
-              {/* Stock Status Distribution — dari real data */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  border: `1px solid ${p.border}`,
-                  bgcolor: p.bgPaper
-                }}
-              >
-                <Typography
-                  sx={{
-                    color: p.textMuted,
-                    fontSize: 10,
-                    letterSpacing: "0.08em"
-                  }}
-                >
-                  STOCK STATUS
-                </Typography>
-                <Typography
-                  sx={{
-                    color: p.textPrimary,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    mt: 0.3,
-                    mb: 2.5
-                  }}
-                >
-                  Distribusi
-                </Typography>
-
+              {/* Summary row */}
+              <div className="flex gap-6">
                 {[
                   {
-                    label: "In Stock",
-                    count: stockDist.inStock,
-                    total: stockDist.total || 1,
-                    color: "#087463"
+                    label: "Avg Sales / Hari",
+                    value: String(
+                      Math.round(
+                        WEEKLY_DATA.reduce((s, d) => s + d.sales, 0) / 7
+                      )
+                    ),
+                    colorClass: "text-[#087463]"
                   },
                   {
-                    label: "Low Stock",
-                    count: stockDist.lowStock,
-                    total: stockDist.total || 1,
-                    color: "#f59e0b"
+                    label: "Total Transaksi",
+                    value: String(WEEKLY_DATA.reduce((s, d) => s + d.sales, 0)),
+                    colorClass: "text-[#3b82f6]"
                   },
                   {
-                    label: "Out of Stock",
-                    count: stockDist.outOfStock,
-                    total: stockDist.total || 1,
-                    color: "#ef4444"
+                    label: "Avg Stock",
+                    value: String(
+                      Math.round(
+                        WEEKLY_DATA.reduce((s, d) => s + d.stock, 0) / 7
+                      )
+                    ),
+                    colorClass: isDark ? "text-[#555555]" : "text-[#94a3b8]"
                   }
                 ].map((item) => (
-                  <Box key={item.label} sx={{ mb: 2 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mb: 0.5
-                      }}
+                  <div key={item.label}>
+                    <p className={cls.textMutedXs}>
+                      {item.label.toUpperCase()}
+                    </p>
+                    <p
+                      className={cn(
+                        "text-lg font-extrabold tracking-[-0.02em]",
+                        item.colorClass
+                      )}
                     >
-                      <Typography sx={{ color: p.textSecondary, fontSize: 11 }}>
-                        {item.label}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          color: p.textPrimary,
-                          fontSize: 11,
-                          fontWeight: 700
-                        }}
-                      >
-                        {item.count}/{stockDist.total}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        height: 4,
-                        borderRadius: 2,
-                        bgcolor: isDark ? "#1f1f1f" : "#e2e8f0",
-                        overflow: "hidden"
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: `${(item.count / item.total) * 100}%`,
-                          height: "100%",
-                          bgcolor: item.color,
-                          borderRadius: 2,
-                          transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)"
-                        }}
-                      />
-                    </Box>
-                  </Box>
+                      {item.value}
+                    </p>
+                  </div>
                 ))}
+              </div>
+            </div>
 
-                <Divider sx={{ borderColor: p.border, my: 2 }} />
+            {/* Activity Timeline */}
+            <div className={cn(cls.panel, "flex flex-col p-2.5")}>
+              <p className={cls.textMuted}>ACTIVITY LOG</p>
+              <p className={cn(cls.title, "mb-2")}>Aktivitas Hari Ini</p>
 
-                {/* Summary badges */}
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      p: 1.5,
-                      borderRadius: "4px",
-                      bgcolor: isDark ? "#0a1f1c" : "#e6f4f2",
-                      border: `1px solid ${isDark ? "#0d3830" : "#a7d4ce"}`
-                    }}
+              <div className="flex flex-1 flex-col gap-0">
+                {ACTIVITIES.map((act, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "relative flex gap-1.5",
+                      i < ACTIVITIES.length - 1 ? "pb-1.5" : ""
+                    )}
                   >
-                    <Typography sx={{ color: "#087463", fontSize: 11 }}>
-                      Total Produk
-                    </Typography>
-                    <Typography
-                      sx={{ color: "#087463", fontSize: 13, fontWeight: 800 }}
+                    {i < ACTIVITIES.length - 1 && (
+                      <span
+                        className={cn(
+                          "absolute bottom-0 top-5 w-px",
+                          isDark ? "bg-[#1f1f1f]" : "bg-[#e2e8f0]"
+                        )}
+                        style={{ left: 27 }}
+                      />
+                    )}
+                    <p
+                      className={cn(
+                        "mt-0.75 min-w-10 text-[10px] tabular-nums",
+                        isDark ? "text-[#555555]" : "text-[#94a3b8]"
+                      )}
                     >
-                      {stockDist.total}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      p: 1.5,
-                      borderRadius: "4px",
-                      bgcolor: isDark ? "#2e2010" : "#fff7ed",
-                      border: `1px solid ${isDark ? "#5a3a10" : "#fed7aa"}`
-                    }}
+                      {act.time}
+                    </p>
+                    <span
+                      className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: activityColor(act.type),
+                        boxShadow: `0 0 0 3px ${activityColor(act.type)}22`
+                      }}
+                    />
+                    <div className="flex-1">
+                      <p
+                        className={cn(
+                          "text-[11px] font-semibold leading-tight",
+                          isDark ? "text-[#F5F5F0]" : "text-[#0f172a]"
+                        )}
+                      >
+                        {act.action}
+                      </p>
+                      <p
+                        className={cn(
+                          "text-[10px]",
+                          isDark ? "text-[#888888]" : "text-[#64748b]"
+                        )}
+                      >
+                        {act.detail}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── ROW 3: TOP PRODUCTS (dari real API) + STOCK STATUS ── */}
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_260px]">
+            {/* Top Products — sorted by sold dari real data */}
+            <div className={cn(cls.panel, "overflow-hidden")}>
+              <div className={cn("border-b px-2.5 pb-1.5 pt-2.5", cls.divider)}>
+                <p className={cls.textMuted}>PERFORMANCE</p>
+                <p className={cls.title}>Top Produk</p>
+              </div>
+
+              {/* Header */}
+              <div
+                className={cn(
+                  "grid grid-cols-[32px_1fr_80px_100px_80px_60px] border-b px-2.5 py-2",
+                  cls.tableHead,
+                  cls.divider
+                )}
+              >
+                {["#", "PRODUK", "KATEGORI", "REVENUE", "SOLD", ""].map(
+                  (h, i) => (
+                    <p
+                      key={i}
+                      className={cn(
+                        "text-[9px] font-bold tracking-widest",
+                        isDark ? "text-[#555555]" : "text-[#94a3b8]"
+                      )}
+                    >
+                      {h}
+                    </p>
+                  )
+                )}
+              </div>
+
+              {loadingProducts ? (
+                <div className="px-2.5 py-6">
+                  <p
+                    className={cn(
+                      "text-xs",
+                      isDark ? "text-[#555555]" : "text-[#94a3b8]"
+                    )}
                   >
-                    <Typography sx={{ color: "#f59e0b", fontSize: 11 }}>
-                      Perlu Perhatian
-                    </Typography>
-                    <Typography
-                      sx={{ color: "#f59e0b", fontSize: 13, fontWeight: 800 }}
+                    Memuat data produk...
+                  </p>
+                </div>
+              ) : topProducts.length === 0 ? (
+                <div className="px-2.5 py-6">
+                  <p
+                    className={cn(
+                      "text-xs",
+                      isDark ? "text-[#555555]" : "text-[#94a3b8]"
+                    )}
+                  >
+                    Belum ada produk.
+                  </p>
+                </div>
+              ) : (
+                topProducts.map((prod, i) => {
+                  const revenue = (prod.price || 0) * (prod.sold || 0)
+                  const revenueStr =
+                    revenue >= 1_000_000_000
+                      ? `${(revenue / 1_000_000_000).toFixed(1)}B`
+                      : revenue >= 1_000_000
+                        ? `${(revenue / 1_000_000).toFixed(1)}M`
+                        : revenue.toLocaleString("id-ID")
+                  const prevSold =
+                    i > 0 ? topProducts[i - 1].sold || 0 : (prod.sold || 0) + 1
+                  const trend = (prod.sold || 0) >= prevSold ? "up" : "down"
+
+                  return (
+                    <div
+                      key={prod.id}
+                      className={cn(
+                        "grid grid-cols-[32px_1fr_80px_100px_80px_60px] items-center px-2.5 py-3 transition-colors",
+                        cls.hover,
+                        i < topProducts.length - 1
+                          ? cn("border-b", cls.rowBorder)
+                          : ""
+                      )}
                     >
-                      {stockDist.lowStock + stockDist.outOfStock}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-    </ThemeProvider>
+                      <p
+                        className={cn(
+                          "text-xs",
+                          prod.rank === 1
+                            ? "font-extrabold text-[#087463]"
+                            : cn(
+                                "font-normal",
+                                isDark ? "text-[#555555]" : "text-[#94a3b8]"
+                              )
+                        )}
+                      >
+                        {String(prod.rank).padStart(2, "0")}
+                      </p>
+                      <p
+                        className={cn(
+                          "text-[13px] font-semibold",
+                          isDark ? "text-[#F5F5F0]" : "text-[#0f172a]"
+                        )}
+                      >
+                        {prod.name}
+                      </p>
+                      <p
+                        className={cn(
+                          "text-[11px]",
+                          isDark ? "text-[#888888]" : "text-[#64748b]"
+                        )}
+                      >
+                        {prod.category}
+                      </p>
+                      <p
+                        className={cn(
+                          "text-xs font-semibold",
+                          isDark ? "text-[#F5F5F0]" : "text-[#0f172a]"
+                        )}
+                      >
+                        {revenueStr}
+                      </p>
+                      <p
+                        className={cn(
+                          "text-xs",
+                          isDark ? "text-[#888888]" : "text-[#64748b]"
+                        )}
+                      >
+                        {(prod.sold || 0).toLocaleString()}
+                      </p>
+                      <div className="flex justify-end">
+                        <Chip
+                          label={trend === "up" ? "↑" : "↓"}
+                          size="small"
+                          className="h-5! text-[10px]! font-bold!"
+                          sx={{
+                            bgcolor:
+                              trend === "up"
+                                ? isDark
+                                  ? "#1a2e1a"
+                                  : "#f0fdf4"
+                                : isDark
+                                  ? "#2e1010"
+                                  : "#fef2f2",
+                            color: trend === "up" ? "#16a34a" : "#dc2626",
+                            border: `1px solid ${
+                              trend === "up"
+                                ? isDark
+                                  ? "#2d5a2d"
+                                  : "#bbf7d0"
+                                : isDark
+                                  ? "#5a1a1a"
+                                  : "#fecaca"
+                            }`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Stock Status Distribution — dari real data */}
+            <div className={cn(cls.panel, "p-2.5")}>
+              <p className={cls.textMuted}>STOCK STATUS</p>
+              <p className={cn(cls.title, "mb-2.5")}>Distribusi</p>
+
+              {[
+                {
+                  label: "In Stock",
+                  count: stockDist.inStock,
+                  total: stockDist.total || 1,
+                  colorClass: "bg-[#087463]"
+                },
+                {
+                  label: "Low Stock",
+                  count: stockDist.lowStock,
+                  total: stockDist.total || 1,
+                  colorClass: "bg-[#f59e0b]"
+                },
+                {
+                  label: "Out of Stock",
+                  count: stockDist.outOfStock,
+                  total: stockDist.total || 1,
+                  colorClass: "bg-[#ef4444]"
+                }
+              ].map((item) => (
+                <div key={item.label} className="mb-4">
+                  <div className="mb-1 flex justify-between">
+                    <p
+                      className={cn(
+                        "text-[11px]",
+                        isDark ? "text-[#888888]" : "text-[#64748b]"
+                      )}
+                    >
+                      {item.label}
+                    </p>
+                    <p
+                      className={cn(
+                        "text-[11px] font-bold",
+                        isDark ? "text-[#F5F5F0]" : "text-[#0f172a]"
+                      )}
+                    >
+                      {item.count}/{stockDist.total}
+                    </p>
+                  </div>
+                  <div
+                    className={cn(
+                      "h-1 overflow-hidden rounded-full",
+                      cls.trackBg
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500",
+                        item.colorClass
+                      )}
+                      style={{ width: `${(item.count / item.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <hr className={cn("my-4 border-t", cls.divider)} />
+
+              {/* Summary badges */}
+              <div className="flex flex-col gap-2">
+                <div
+                  className={cn(
+                    "flex justify-between rounded p-3",
+                    cls.totalBadge
+                  )}
+                >
+                  <p className="text-[11px] text-[#087463]">Total Produk</p>
+                  <p className="text-[13px] font-extrabold text-[#087463]">
+                    {stockDist.total}
+                  </p>
+                </div>
+                <div
+                  className={cn(
+                    "flex justify-between rounded p-3",
+                    cls.warnBadge
+                  )}
+                >
+                  <p className="text-[11px] text-[#f59e0b]">Perlu Perhatian</p>
+                  <p className="text-[13px] font-extrabold text-[#f59e0b]">
+                    {stockDist.lowStock + stockDist.outOfStock}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
