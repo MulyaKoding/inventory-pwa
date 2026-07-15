@@ -2,22 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Alert,
-  Box,
-  Chip,
-  Drawer,
-  IconButton,
-  Modal,
-  Snackbar,
-  ThemeProvider,
-  Tooltip,
-  createTheme,
-  useMediaQuery
-} from "@mui/material"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
 import { useTheme } from "../hooks/useTheme"
+import { cn } from "../../lib/utils"
 
 const DRAWER_WIDTH = 220
 
@@ -73,27 +61,130 @@ const Icon = ({
   </svg>
 )
 
+// ── Theme tokens (Tailwind class strings, computed from isDark) ──────────
+type Tw = ReturnType<typeof getTw>
+function getTw(isDark: boolean) {
+  return {
+    bg: isDark ? "bg-[#0D0D0D]" : "bg-[#f8fafc]",
+    bgPaper: isDark ? "bg-[#111111]" : "bg-white",
+    border: isDark ? "border-[#1f1f1f]" : "border-[#e2e8f0]",
+    borderRow: isDark ? "border-[#111111]" : "border-[#f8fafc]",
+    text: isDark ? "text-[#F5F5F0]" : "text-[#0f172a]",
+    textSec: isDark ? "text-[#888888]" : "text-[#64748b]",
+    textMuted: isDark ? "text-[#555555]" : "text-[#94a3b8]",
+    panelBg: isDark ? "bg-[#0d1f3c]" : "bg-[#e6f1fb]",
+    panelBorder: isDark ? "border-[#1e3a8a]" : "border-[#b5d4f4]",
+    infoText: isDark ? "text-[#60a5fa]" : "text-[#1e3a8a]",
+    tableHeadBg: isDark ? "bg-[#111111]" : "bg-[#f8fafc]",
+    errorBg: isDark ? "bg-[#2e1010]" : "bg-[#fef2f2]",
+    errorBorder: isDark ? "border-[#5a1a1a]" : "border-[#fecaca]",
+    skeleton: isDark ? "bg-[#1f1f1f]" : "bg-[#f1f5f9]",
+    rowHover: isDark ? "hover:bg-[#161616]" : "hover:bg-[#f8fafc]",
+    rowOdd: isDark ? "odd:bg-white/[0.02]" : "odd:bg-black/[0.02]",
+    shadow: isDark
+      ? "shadow-[0_8px_32px_rgba(0,0,0,0.8)]"
+      : "shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
+  }
+}
+
 function statusColor(status: string, isDark: boolean) {
   if (status === "active")
     return {
-      bg: isDark ? "#0a2e1c" : "#f0fdf4",
-      text: isDark ? "#4ade80" : "#16a34a",
-      border: isDark ? "#1a5c38" : "#bbf7d0",
+      bg: isDark ? "bg-[#0a2e1c]" : "bg-[#f0fdf4]",
+      text: isDark ? "text-[#4ade80]" : "text-[#16a34a]",
+      border: isDark ? "border-[#1a5c38]" : "border-[#bbf7d0]",
       label: "Aktif"
     }
   if (status === "inactive")
     return {
-      bg: isDark ? "#1f1f1f" : "#f8fafc",
-      text: isDark ? "#888" : "#64748b",
-      border: isDark ? "#333" : "#e2e8f0",
+      bg: isDark ? "bg-[#1f1f1f]" : "bg-[#f8fafc]",
+      text: isDark ? "text-[#888888]" : "text-[#64748b]",
+      border: isDark ? "border-[#333333]" : "border-[#e2e8f0]",
       label: "Nonaktif"
     }
   return {
-    bg: isDark ? "#2e1010" : "#fef2f2",
-    text: isDark ? "#f87171" : "#dc2626",
-    border: isDark ? "#5a1a1a" : "#fecaca",
+    bg: isDark ? "bg-[#2e1010]" : "bg-[#fef2f2]",
+    text: isDark ? "text-[#f87171]" : "text-[#dc2626]",
+    border: isDark ? "border-[#5a1a1a]" : "border-[#fecaca]",
     label: "Suspended"
   }
+}
+
+// ── Shared bits ─────────────────────────────────────────────────────────
+function DetailRow({
+  label,
+  value,
+  tw
+}: {
+  label: string
+  value: string
+  tw: Tw
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-0.5 border-b py-2.5 last:border-b-0 sm:flex-row sm:gap-4",
+        tw.border
+      )}
+    >
+      <div className="w-full shrink-0 sm:w-35">
+        <span
+          className={cn(
+            "font-nunito text-[10px] font-bold tracking-[0.05em]",
+            tw.textMuted
+          )}
+        >
+          {label}
+        </span>
+      </div>
+      <span
+        className={cn("flex-1 font-nunito text-[13px] font-semibold", tw.text)}
+      >
+        {value || "-"}
+      </span>
+    </div>
+  )
+}
+
+function Toast({
+  open,
+  msg,
+  severity,
+  onClose
+}: {
+  open: boolean
+  msg: string
+  severity: "success" | "error"
+  onClose: () => void
+}) {
+  useEffect(() => {
+    if (!open) return
+    const t = setTimeout(onClose, 2500)
+    return () => clearTimeout(t)
+  }, [open, onClose])
+
+  if (!open) return null
+  return (
+    <div className="fixed bottom-5 right-5 z-60">
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-md border px-4 py-3 font-nunito text-[13px] font-semibold shadow-lg",
+          severity === "success"
+            ? "border-green-200 bg-green-50 text-green-700"
+            : "border-red-200 bg-red-50 text-red-700"
+        )}
+      >
+        <span>{severity === "success" ? "✓" : "⚠"}</span>
+        {msg}
+        <button
+          onClick={onClose}
+          className="ml-1 cursor-pointer border-none bg-transparent text-current"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  )
 }
 
 // ── Store Detail Modal ─────────────────────────────────────────────────────
@@ -102,255 +193,169 @@ function StoreDetailModal({
   open,
   onClose,
   isDark,
-  p
+  tw
 }: {
   store: Store | null
   open: boolean
   onClose: () => void
   isDark: boolean
-  p: Record<string, string>
+  tw: Tw
 }) {
-  if (!store) return null
+  if (!open || !store) return null
   const sc = statusColor(store.status, isDark)
 
-  const DetailRow = ({ label, value }: { label: string; value: string }) => (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", sm: "row" },
-        py: 1.5,
-        borderBottom: `1px solid ${p.border}`,
-        gap: { xs: 0.3, sm: 2 },
-        "&:last-child": { borderBottom: "none" }
-      }}
-    >
-      <Box sx={{ width: { xs: "100%", sm: 140 }, flexShrink: 0 }}>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: p.textMuted,
-            fontFamily: "'Nunito', sans-serif",
-            letterSpacing: "0.05em"
-          }}
-        >
-          {label}
-        </span>
-      </Box>
-      <span
-        style={{
-          fontSize: 13,
-          color: p.textPrimary,
-          fontFamily: "'Nunito', sans-serif",
-          fontWeight: 600,
-          flex: 1
-        }}
-      >
-        {value || "-"}
-      </span>
-    </Box>
-  )
-
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: { xs: "95vw", sm: 580 },
-          maxHeight: "90vh",
-          overflow: "auto",
-          bgcolor: p.bgPaper,
-          border: `1px solid ${p.border}`,
-          borderRadius: "10px",
-          boxShadow: p.menuShadow,
-          outline: "none"
-        }}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className={cn(
+          "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-[10px] border sm:w-145",
+          tw.bgPaper,
+          tw.border,
+          tw.shadow
+        )}
+        onClick={(e) => e.stopPropagation()}
       >
-        <Box
-          sx={{
-            px: { xs: 2, sm: 3 },
-            py: 2,
-            borderBottom: `1px solid ${p.border}`,
-            bgcolor: p.bg,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            zIndex: 1
-          }}
+        {/* Header */}
+        <div
+          className={cn(
+            "sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4 sm:px-6",
+            tw.border,
+            tw.bg
+          )}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 15,
-                flexShrink: 0
-              }}
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-[15px]",
+                tw.panelBg,
+                tw.panelBorder
+              )}
             >
               🏪
-            </Box>
-            <Box>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: p.textPrimary,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+            </div>
+            <div>
+              <p className={cn("m-0 font-nunito text-sm font-bold", tw.text)}>
                 Detail Toko
               </p>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
+              <p className={cn("m-0 font-nunito text-[11px]", tw.textMuted)}>
                 {store.storeId}
               </p>
-            </Box>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Chip
-              label={sc.label}
-              size="small"
-              sx={{
-                bgcolor: sc.bg,
-                color: sc.text,
-                border: `1px solid ${sc.border}`,
-                fontFamily: "'Nunito', sans-serif",
-                fontSize: 11,
-                fontWeight: 700,
-                height: 22
-              }}
-            />
-            <IconButton
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 font-nunito text-[11px] font-bold",
+                sc.bg,
+                sc.text,
+                sc.border
+              )}
+            >
+              {sc.label}
+            </span>
+            <button
               onClick={onClose}
-              size="small"
-              sx={{ color: p.textMuted }}
+              className={cn(
+                "cursor-pointer rounded border-none bg-transparent p-1",
+                tw.textMuted
+              )}
             >
               <Icon d="M18 6 6 18M6 6l12 12" size={16} />
-            </IconButton>
-          </Box>
-        </Box>
+            </button>
+          </div>
+        </div>
 
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        {/* Body */}
+        <div className="overflow-y-auto p-4 sm:p-6">
           <p
-            style={{
-              margin: "0 0 10px",
-              fontSize: 11,
-              fontWeight: 700,
-              color: isDark ? "#60a5fa" : "#1e3a8a",
-              fontFamily: "'Nunito', sans-serif",
-              letterSpacing: "0.08em"
-            }}
+            className={cn(
+              "m-0 mb-2.5 font-nunito text-[11px] font-bold tracking-[0.08em]",
+              tw.infoText
+            )}
           >
             INFORMASI TOKO
           </p>
-          <Box
-            sx={{
-              bgcolor: p.bg,
-              border: `1px solid ${p.border}`,
-              borderRadius: "6px",
-              px: 2,
-              mb: 3
-            }}
-          >
-            <DetailRow label="NAMA TOKO" value={store.storeName} />
-            <DetailRow label="JENIS TOKO" value={store.storeType} />
-            <DetailRow label="TELEPON" value={store.storePhone} />
-            <DetailRow label="EMAIL" value={store.storeEmail || "-"} />
-            <DetailRow label="ALAMAT" value={store.storeAddress} />
+          <div className={cn("mb-6 rounded-md border px-4", tw.bg, tw.border)}>
+            <DetailRow label="NAMA TOKO" value={store.storeName} tw={tw} />
+            <DetailRow label="JENIS TOKO" value={store.storeType} tw={tw} />
+            <DetailRow label="TELEPON" value={store.storePhone} tw={tw} />
+            <DetailRow label="EMAIL" value={store.storeEmail || "-"} tw={tw} />
+            <DetailRow label="ALAMAT" value={store.storeAddress} tw={tw} />
             <DetailRow
               label="KOTA / PROVINSI"
               value={`${store.storeCity}, ${store.storeProvince}`}
+              tw={tw}
             />
-            <DetailRow label="KODE POS" value={store.storePostalCode || "-"} />
-          </Box>
+            <DetailRow
+              label="KODE POS"
+              value={store.storePostalCode || "-"}
+              tw={tw}
+            />
+          </div>
 
           <p
-            style={{
-              margin: "0 0 10px",
-              fontSize: 11,
-              fontWeight: 700,
-              color: isDark ? "#60a5fa" : "#1e3a8a",
-              fontFamily: "'Nunito', sans-serif",
-              letterSpacing: "0.08em"
-            }}
+            className={cn(
+              "m-0 mb-2.5 font-nunito text-[11px] font-bold tracking-[0.08em]",
+              tw.infoText
+            )}
           >
             DATA PEMILIK
           </p>
-          <Box
-            sx={{
-              bgcolor: p.bg,
-              border: `1px solid ${p.border}`,
-              borderRadius: "6px",
-              px: 2,
-              mb: 3
-            }}
-          >
-            <DetailRow label="NAMA LENGKAP" value={store.owner.fullName} />
-            <DetailRow label="NIK" value={store.owner.nik} />
-            <DetailRow label="TANGGAL LAHIR" value={store.owner.birthDate} />
-            <DetailRow label="JENIS KELAMIN" value={store.owner.gender} />
-            <DetailRow label="ALAMAT KTP" value={store.owner.address} />
+          <div className={cn("mb-6 rounded-md border px-4", tw.bg, tw.border)}>
+            <DetailRow
+              label="NAMA LENGKAP"
+              value={store.owner.fullName}
+              tw={tw}
+            />
+            <DetailRow label="NIK" value={store.owner.nik} tw={tw} />
+            <DetailRow
+              label="TANGGAL LAHIR"
+              value={store.owner.birthDate}
+              tw={tw}
+            />
+            <DetailRow
+              label="JENIS KELAMIN"
+              value={store.owner.gender}
+              tw={tw}
+            />
+            <DetailRow label="ALAMAT KTP" value={store.owner.address} tw={tw} />
             <DetailRow
               label="INPUT METHOD"
               value={
                 store.owner.inputMethod === "ocr" ? "Scan KTP (OCR)" : "Manual"
               }
+              tw={tw}
             />
-          </Box>
+          </div>
 
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 2,
-              p: 2,
-              bgcolor: p.bg,
-              border: `1px solid ${p.border}`,
-              borderRadius: "6px"
-            }}
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-4 rounded-md border p-4",
+              tw.bg,
+              tw.border
+            )}
           >
             {[
               { label: "TERDAFTAR", val: store.createdAt },
               { label: "TERAKHIR UPDATE", val: store.updatedAt }
             ].map((m) => (
-              <Box key={m.label}>
+              <div key={m.label}>
                 <p
-                  style={{
-                    margin: "0 0 2px",
-                    fontSize: 10,
-                    color: p.textMuted,
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 700
-                  }}
+                  className={cn(
+                    "m-0 mb-0.5 font-nunito text-[10px] font-bold",
+                    tw.textMuted
+                  )}
                 >
                   {m.label}
                 </p>
                 <p
-                  style={{
-                    margin: 0,
-                    fontSize: 12,
-                    color: p.textPrimary,
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
+                  className={cn(
+                    "m-0 font-nunito text-xs font-semibold",
+                    tw.text
+                  )}
                 >
                   {new Date(m.val).toLocaleDateString("id-ID", {
                     day: "numeric",
@@ -358,12 +363,12 @@ function StoreDetailModal({
                     year: "numeric"
                   })}
                 </p>
-              </Box>
+              </div>
             ))}
-          </Box>
-        </Box>
-      </Box>
-    </Modal>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -373,121 +378,77 @@ function DeleteModal({
   open,
   onClose,
   onConfirm,
-  isDark,
-  p,
+  tw,
   isDeleting
 }: {
   store: Store | null
   open: boolean
   onClose: () => void
   onConfirm: () => void
-  isDark: boolean
-  p: Record<string, string>
+  tw: Tw
   isDeleting: boolean
 }) {
-  if (!store) return null
+  if (!open || !store) return null
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: { xs: "90vw", sm: 420 },
-          bgcolor: p.bgPaper,
-          border: `1px solid ${p.border}`,
-          borderRadius: "10px",
-          boxShadow: p.menuShadow,
-          outline: "none",
-          overflow: "hidden"
-        }}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className={cn(
+          "w-full overflow-hidden rounded-[10px] border sm:w-105",
+          tw.bgPaper,
+          tw.border,
+          tw.shadow
+        )}
+        onClick={(e) => e.stopPropagation()}
       >
-        <Box
-          sx={{
-            px: 3,
-            py: 2,
-            borderBottom: `1px solid ${p.border}`,
-            bgcolor: p.bg
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: 14,
-              fontWeight: 700,
-              color: p.textPrimary,
-              fontFamily: "'Nunito', sans-serif"
-            }}
-          >
+        <div className={cn("border-b px-6 py-4", tw.border, tw.bg)}>
+          <p className={cn("m-0 font-nunito text-sm font-bold", tw.text)}>
             Hapus Toko
           </p>
-        </Box>
-        <Box sx={{ p: 3 }}>
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: isDark ? "#2e1010" : "#fef2f2",
-              border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-              borderRadius: "6px",
-              mb: 3
-            }}
+        </div>
+        <div className="p-6">
+          <div
+            className={cn(
+              "mb-6 rounded-md border p-4",
+              tw.errorBg,
+              tw.errorBorder
+            )}
           >
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                color: "#ef4444",
-                fontFamily: "'Nunito', sans-serif",
-                lineHeight: 1.6
-              }}
-            >
+            <p className="m-0 font-nunito text-[13px] leading-relaxed text-[#ef4444]">
               Yakin ingin menghapus toko{" "}
               <strong>&ldquo;{store.storeName}&rdquo;</strong>? Tindakan ini
               tidak dapat dibatalkan.
             </p>
-          </Box>
-          <Box sx={{ display: "flex", gap: 1.5 }}>
+          </div>
+          <div className="flex gap-3">
             <button
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: "10px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer"
-              }}
+              className={cn(
+                "flex-1 cursor-pointer rounded-md border bg-transparent py-2.5 font-nunito text-[13px] font-bold",
+                tw.border,
+                tw.textSec
+              )}
             >
               Batal
             </button>
             <button
               onClick={onConfirm}
               disabled={isDeleting}
-              style={{
-                flex: 1,
-                padding: "10px",
-                border: "none",
-                borderRadius: 6,
-                background: isDeleting ? "#b91c1c" : "#dc2626",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: isDeleting ? "not-allowed" : "pointer",
-                opacity: isDeleting ? 0.7 : 1
-              }}
+              className={cn(
+                "flex-1 rounded-md border-none py-2.5 font-nunito text-[13px] font-bold text-white",
+                isDeleting
+                  ? "cursor-not-allowed bg-[#b91c1c] opacity-70"
+                  : "cursor-pointer bg-[#dc2626]"
+              )}
             >
               {isDeleting ? "Menghapus..." : "Ya, Hapus"}
             </button>
-          </Box>
-        </Box>
-      </Box>
-    </Modal>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -495,121 +456,75 @@ function DeleteModal({
 function StoreCard({
   store,
   isDark,
-  p,
+  tw,
   onDetail,
   onDelete
 }: {
   store: Store
   isDark: boolean
-  p: Record<string, string>
+  tw: Tw
   onDetail: () => void
   onDelete: () => void
 }) {
   const sc = statusColor(store.status, isDark)
   return (
-    <Box
-      sx={{
-        border: `1px solid ${p.border}`,
-        borderRadius: "8px",
-        bgcolor: p.bgPaper,
-        p: 2,
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5
-      }}
+    <div
+      className={cn(
+        "flex flex-col gap-3.5 rounded-lg border p-4",
+        tw.border,
+        tw.bgPaper
+      )}
     >
       {/* Header row */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 1
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            flex: 1,
-            minWidth: 0
-          }}
-        >
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: "6px",
-              bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-              border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              flexShrink: 0
-            }}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border text-base",
+              tw.panelBg,
+              tw.panelBorder
+            )}
           >
             🏪
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
+          </div>
+          <div className="min-w-0">
             <p
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 700,
-                color: p.textPrimary,
-                fontFamily: "'Nunito', sans-serif",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
+              className={cn(
+                "m-0 overflow-hidden text-ellipsis whitespace-nowrap font-nunito text-sm font-bold",
+                tw.text
+              )}
             >
               {store.storeName}
             </p>
             <p
-              style={{
-                margin: 0,
-                fontSize: 11,
-                fontWeight: 700,
-                color: isDark ? "#60a5fa" : "#1e3a8a",
-                fontFamily: "'Nunito', sans-serif"
-              }}
+              className={cn(
+                "m-0 font-nunito text-[11px] font-bold",
+                tw.infoText
+              )}
             >
               {store.storeId}
             </p>
-          </Box>
-        </Box>
+          </div>
+        </div>
         <span
-          style={{
-            display: "inline-block",
-            padding: "3px 10px",
-            borderRadius: 100,
-            background: sc.bg,
-            color: sc.text,
-            border: `1px solid ${sc.border}`,
-            fontSize: 10,
-            fontWeight: 700,
-            fontFamily: "'Nunito', sans-serif",
-            whiteSpace: "nowrap",
-            flexShrink: 0
-          }}
+          className={cn(
+            "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 font-nunito text-[10px] font-bold",
+            sc.bg,
+            sc.text,
+            sc.border
+          )}
         >
           {sc.label}
         </span>
-      </Box>
+      </div>
 
       {/* Info grid 2x2 */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 1,
-          bgcolor: p.bg,
-          border: `1px solid ${p.border}`,
-          borderRadius: "6px",
-          p: 1.5
-        }}
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-2.5 rounded-md border p-3.5",
+          tw.bg,
+          tw.border
+        )}
       >
         {[
           { label: "Jenis", val: store.storeType },
@@ -617,75 +532,45 @@ function StoreCard({
           { label: "Pemilik", val: store.owner.fullName },
           { label: "Kota", val: `${store.storeCity}, ${store.storeProvince}` }
         ].map((item) => (
-          <Box key={item.label}>
+          <div key={item.label}>
             <p
-              style={{
-                margin: "0 0 1px",
-                fontSize: 9,
-                fontWeight: 700,
-                color: p.textMuted,
-                fontFamily: "'Nunito', sans-serif",
-                letterSpacing: "0.05em"
-              }}
+              className={cn(
+                "m-0 mb-0.5 font-nunito text-[9px] font-bold tracking-[0.05em]",
+                tw.textMuted
+              )}
             >
               {item.label.toUpperCase()}
             </p>
             <p
-              style={{
-                margin: 0,
-                fontSize: 12,
-                fontWeight: 600,
-                color: p.textPrimary,
-                fontFamily: "'Nunito', sans-serif",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
+              className={cn(
+                "m-0 overflow-hidden text-ellipsis whitespace-nowrap font-nunito text-xs font-semibold",
+                tw.text
+              )}
             >
               {item.val}
             </p>
-          </Box>
+          </div>
         ))}
-      </Box>
+      </div>
 
       {/* Footer */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            color: p.textMuted,
-            fontFamily: "'Nunito', sans-serif"
-          }}
-        >
+      <div className="flex items-center justify-between">
+        <span className={cn("font-nunito text-[11px]", tw.textMuted)}>
           {new Date(store.createdAt).toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "short",
             year: "numeric"
           })}
         </span>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <div className="flex gap-2">
           <button
             onClick={onDetail}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "6px 12px",
-              border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-              borderRadius: 5,
-              background: isDark ? "#0d1f3c" : "#e6f1fb",
-              color: isDark ? "#60a5fa" : "#1e3a8a",
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: "'Nunito', sans-serif",
-              cursor: "pointer"
-            }}
+            className={cn(
+              "flex cursor-pointer items-center gap-1 rounded border px-3 py-1.5 font-nunito text-xs font-bold",
+              tw.panelBorder,
+              tw.panelBg,
+              tw.infoText
+            )}
           >
             <Icon
               d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
@@ -695,20 +580,11 @@ function StoreCard({
           </button>
           <button
             onClick={onDelete}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "6px 12px",
-              border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-              borderRadius: 5,
-              background: isDark ? "#2e1010" : "#fef2f2",
-              color: "#ef4444",
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: "'Nunito', sans-serif",
-              cursor: "pointer"
-            }}
+            className={cn(
+              "flex cursor-pointer items-center gap-1 rounded border px-3 py-1.5 font-nunito text-xs font-bold text-[#ef4444]",
+              tw.errorBorder,
+              tw.errorBg
+            )}
           >
             <Icon
               d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
@@ -716,9 +592,9 @@ function StoreCard({
             />
             Hapus
           </button>
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -748,27 +624,9 @@ export default function ListTokoPage() {
   const showSnackbar = (msg: string, severity: "success" | "error") =>
     setSnackbar({ open: true, msg, severity })
 
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode: isDark ? "dark" : "light",
-          primary: { main: "#1e3a8a" },
-          background: {
-            default: isDark ? "#0D0D0D" : "#f8fafc",
-            paper: isDark ? "#141414" : "#ffffff"
-          },
-          text: {
-            primary: isDark ? "#F5F5F0" : "#0f172a",
-            secondary: isDark ? "#888" : "#64748b"
-          }
-        },
-        typography: { fontFamily: "'Nunito', sans-serif" },
-        shape: { borderRadius: 2 }
-      }),
-    [isDark]
-  )
+  const tw = useMemo(() => getTw(isDark), [isDark])
 
+  // p kept for the Header/Sidebar prop contract (unchanged external components)
   const p = useMemo(
     () => ({
       bg: isDark ? "#0D0D0D" : "#f8fafc",
@@ -787,15 +645,6 @@ export default function ListTokoPage() {
   )
 
   const T = "0.3s ease"
-  const isMobile = useMediaQuery("(max-width: 768px)")
-
-  const drawerPaperSx = () => ({
-    width: DRAWER_WIDTH,
-    boxSizing: "border-box" as const,
-    bgcolor: "transparent",
-    border: "none",
-    overflow: "hidden"
-  })
 
   useEffect(() => {
     fetchStores()
@@ -872,18 +721,11 @@ export default function ListTokoPage() {
     ]
   }, [stores])
 
-  const inputStyle: React.CSSProperties = {
-    padding: "8px 12px",
-    borderRadius: 6,
-    border: `1px solid ${p.border}`,
-    background: isDark ? "#111" : "#fff",
-    color: p.textPrimary,
-    fontFamily: "'Nunito', sans-serif",
-    fontSize: 13,
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box" as const
-  }
+  const inputCls = cn(
+    "box-border w-full rounded-md border px-3 py-2 font-nunito text-[13px] outline-none",
+    isDark ? "bg-[#111111] text-[#F5F5F0]" : "bg-white text-[#0f172a]",
+    tw.border
+  )
 
   const openDetail = (store: Store) => {
     setSelectedStore(store)
@@ -895,792 +737,524 @@ export default function ListTokoPage() {
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <Box
-        sx={{
-          display: "flex",
-          minHeight: "100vh",
-          bgcolor: p.bg,
-          fontFamily: "'Nunito', sans-serif",
-          transition: `background-color ${T}`
-        }}
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": drawerPaperSx()
-          }}
-        >
-          <Sidebar isDark={isDark} T={T} />
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
-            width: DRAWER_WIDTH,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": drawerPaperSx()
-          }}
-        >
-          <Sidebar isDark={isDark} T={T} />
-        </Drawer>
-
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minWidth: 0
-          }}
-        >
-          <Header
-            isDark={isDark}
-            onToggleTheme={toggleTheme}
-            onMenuClick={() => setMobileOpen(true)}
-            title="List Toko"
-            showAddButton={false}
-            onAddProduct={() => router.push("/registration")}
-            notificationCount={0}
-            p={p}
+    <div
+      className={cn("flex min-h-screen font-nunito transition-colors", tw.bg)}
+      style={{ transitionDuration: T }}
+    >
+      {/* Mobile sidebar (off-canvas) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileOpen(false)}
           />
+          <div className="relative h-full w-55 overflow-hidden">
+            <Sidebar isDark={isDark} T={T} />
+          </div>
+        </div>
+      )}
 
-          <Box
-            sx={{ flex: 1, overflow: "auto", p: { xs: "12px", sm: "16px" } }}
-          >
-            {/* Stat Cards — 2 kolom di mobile, 4 di desktop */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "repeat(2, 1fr)",
-                  sm: "repeat(4, 1fr)"
-                },
-                gap: { xs: 1.5, sm: 2 },
-                mb: { xs: 2, sm: 3 }
-              }}
-            >
-              {stats.map((s) => (
-                <Box
-                  key={s.label}
-                  sx={{
-                    p: { xs: 1.5, sm: 2 },
-                    border: `1px solid ${p.border}`,
-                    bgcolor: p.bgPaper,
-                    borderRadius: "8px",
-                    position: "relative",
-                    overflow: "hidden",
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "3px",
-                      bgcolor: s.color
-                    }
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: "0 0 4px",
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif",
-                      letterSpacing: "0.06em"
-                    }}
-                  >
-                    {s.label.toUpperCase()}
-                  </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: isMobile ? 22 : 28,
-                      fontWeight: 900,
-                      color: p.textPrimary,
-                      fontFamily: "'Nunito', sans-serif",
-                      lineHeight: 1
-                    }}
-                  >
-                    {s.value}
-                  </p>
-                </Box>
-              ))}
-            </Box>
+      {/* Desktop sidebar (permanent) */}
+      <div className="hidden w-55 shrink-0 overflow-hidden md:block">
+        <Sidebar isDark={isDark} T={T} />
+      </div>
 
-            {/* Main card */}
-            <Box
-              sx={{
-                border: `1px solid ${p.border}`,
-                bgcolor: p.bgPaper,
-                borderRadius: "8px",
-                overflow: "hidden"
-              }}
-            >
-              {/* Filter bar */}
-              <Box
-                sx={{
-                  px: { xs: 2, sm: 3 },
-                  py: 2,
-                  borderBottom: `1px solid ${p.border}`,
-                  bgcolor: p.bg
-                }}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Header
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+          onMenuClick={() => setMobileOpen(true)}
+          title="List Toko"
+          showAddButton={false}
+          onAddProduct={() => router.push("/registration")}
+          notificationCount={0}
+          p={p}
+        />
+
+        <div className="flex-1 overflow-auto p-3 sm:p-4">
+          {/* Stat Cards — 2 kolom di mobile, 4 di desktop */}
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:grid-cols-4 sm:gap-4">
+            {stats.map((s) => (
+              <div
+                key={s.label}
+                className={cn(
+                  "relative overflow-hidden rounded-lg border p-3 sm:p-4",
+                  tw.border,
+                  tw.bgPaper
+                )}
               >
-                {/* Search — full width */}
-                <Box sx={{ position: "relative", mb: 1.5 }}>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      left: 10,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: p.textMuted,
-                      display: "flex",
-                      zIndex: 1
-                    }}
-                  >
-                    <Icon
-                      d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0"
-                      size={14}
-                    />
-                  </Box>
-                  <input
-                    type="text"
-                    placeholder="Cari nama toko, ID, kota, pemilik..."
-                    value={search}
+                <div
+                  className="absolute inset-x-0 top-0 h-0.75"
+                  style={{ backgroundColor: s.color }}
+                />
+                <p
+                  className={cn(
+                    "m-0 mb-1 font-nunito text-[9px] font-bold tracking-[0.06em]",
+                    tw.textMuted
+                  )}
+                >
+                  {s.label.toUpperCase()}
+                </p>
+                <p
+                  className={cn(
+                    "m-0 font-nunito text-[22px] font-black leading-none sm:text-[28px]",
+                    tw.text
+                  )}
+                >
+                  {s.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Main card */}
+          <div
+            className={cn(
+              "overflow-hidden rounded-lg border",
+              tw.border,
+              tw.bgPaper
+            )}
+          >
+            {/* Filter bar */}
+            <div className={cn("border-b px-4 py-4 sm:px-6", tw.border, tw.bg)}>
+              {/* Search — full width */}
+              <div className="relative mb-3">
+                <div
+                  className={cn(
+                    "pointer-events-none absolute left-2.5 top-1/2 z-10 flex -translate-y-1/2",
+                    tw.textMuted
+                  )}
+                >
+                  <Icon
+                    d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0"
+                    size={14}
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Cari nama toko, ID, kota, pemilik..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setPage(1)
+                  }}
+                  className={cn(inputCls, "pl-8")}
+                />
+              </div>
+
+              {/* Filters + button row */}
+              <div className="flex flex-wrap gap-2">
+                <div className="min-w-0 flex-[1_1_110px]">
+                  <select
+                    value={filterStatus}
                     onChange={(e) => {
-                      setSearch(e.target.value)
+                      setFilterStatus(e.target.value)
                       setPage(1)
                     }}
-                    style={{ ...inputStyle, paddingLeft: 32 }}
-                  />
-                </Box>
-
-                {/* Filters + button row */}
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  <Box sx={{ flex: "1 1 110px", minWidth: 0 }}>
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => {
-                        setFilterStatus(e.target.value)
-                        setPage(1)
-                      }}
-                      style={inputStyle}
-                    >
-                      <option value="all">Semua Status</option>
-                      <option value="active">Aktif</option>
-                      <option value="inactive">Nonaktif</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
-                  </Box>
-                  <Box sx={{ flex: "1 1 130px", minWidth: 0 }}>
-                    <select
-                      value={filterType}
-                      onChange={(e) => {
-                        setFilterType(e.target.value)
-                        setPage(1)
-                      }}
-                      style={inputStyle}
-                    >
-                      <option value="all">Semua Jenis</option>
-                      {storeTypes.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </Box>
-                  <button
-                    onClick={() => router.push("/registration")}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      padding: "8px 14px",
-                      border: "none",
-                      borderRadius: 6,
-                      background:
-                        "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-                      boxShadow: "0 4px 12px rgba(59,130,246,.25)",
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      fontFamily: "'Nunito', sans-serif",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      height: 38
-                    }}
+                    className={inputCls}
                   >
-                    <Icon d="M12 5v14M5 12h14" size={14} color="#fff" />
-                    {isMobile ? "Tambah" : "Tambah Toko"}
-                  </button>
-                </Box>
-              </Box>
-
-              {/* ── MOBILE: Card List ── */}
-              {isMobile ? (
-                <Box
-                  sx={{
-                    p: 1.5,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1.5
-                  }}
+                    <option value="all">Semua Status</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Nonaktif</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+                <div className="min-w-0 flex-[1_1_130px]">
+                  <select
+                    value={filterType}
+                    onChange={(e) => {
+                      setFilterType(e.target.value)
+                      setPage(1)
+                    }}
+                    className={inputCls}
+                  >
+                    <option value="all">Semua Jenis</option>
+                    {storeTypes.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={() => router.push("/registration")}
+                  className="flex h-9.5 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border-none bg-[linear-gradient(135deg,#1e3a8a_0%,#3b82f6_100%)] px-3.5 font-nunito text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(59,130,246,.25)]"
                 >
-                  {loading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <Box
-                        key={i}
-                        sx={{
-                          border: `1px solid ${p.border}`,
-                          borderRadius: "8px",
-                          p: 2
-                        }}
-                      >
-                        {[100, 60, 80, 50].map((w, j) => (
-                          <Box
-                            key={j}
-                            sx={{
-                              height: 11,
-                              borderRadius: 1,
-                              bgcolor: isDark ? "#1f1f1f" : "#f1f5f9",
-                              width: `${w}%`,
-                              mb: 1.2,
-                              animation: "pulse 1.5s ease-in-out infinite",
-                              "@keyframes pulse": {
-                                "0%, 100%": { opacity: 1 },
-                                "50%": { opacity: 0.4 }
-                              }
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    ))
-                  ) : paginated.length === 0 ? (
-                    <Box sx={{ py: 6, textAlign: "center" }}>
-                      <p
-                        style={{
-                          margin: "0 0 12px",
-                          fontSize: 14,
-                          color: p.textMuted,
-                          fontFamily: "'Nunito', sans-serif"
-                        }}
-                      >
-                        {search ||
-                        filterStatus !== "all" ||
-                        filterType !== "all"
-                          ? "Tidak ada toko yang sesuai filter"
-                          : "Belum ada toko terdaftar"}
-                      </p>
-                      {!search &&
-                        filterStatus === "all" &&
-                        filterType === "all" && (
-                          <button
-                            onClick={() => router.push("/registration")}
-                            style={{
-                              padding: "8px 20px",
-                              border: "none",
-                              borderRadius: 6,
-                              background:
-                                "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-                              color: "#fff",
-                              fontSize: 13,
-                              fontWeight: 700,
-                              fontFamily: "'Nunito', sans-serif",
-                              cursor: "pointer"
-                            }}
-                          >
-                            + Daftarkan Toko Pertama
-                          </button>
-                        )}
-                    </Box>
-                  ) : (
-                    paginated.map((store) => (
-                      <StoreCard
-                        key={store.id}
-                        store={store}
-                        isDark={isDark}
-                        p={p}
-                        onDetail={() => openDetail(store)}
-                        onDelete={() => openDeleteConfirm(store)}
-                      />
-                    ))
-                  )}
-                </Box>
-              ) : (
-                /* ── DESKTOP: Table ── */
-                <Box sx={{ overflowX: "auto" }}>
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
+                  <Icon d="M12 5v14M5 12h14" size={14} color="#fff" />
+                  <span className="sm:hidden">Tambah</span>
+                  <span className="hidden sm:inline">Tambah Toko</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ── MOBILE: Card List ── */}
+            <div className="flex flex-col gap-3 p-3 md:hidden">
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn("rounded-lg border p-4", tw.border)}
                   >
-                    <thead>
-                      <tr
-                        style={{
-                          background: p.tableHeadBg,
-                          borderBottom: `1px solid ${p.border}`
-                        }}
+                    {[100, 60, 80, 50].map((w, j) => (
+                      <div
+                        key={j}
+                        className={cn(
+                          "mb-1.5 h-2.75 animate-pulse rounded",
+                          tw.skeleton
+                        )}
+                        style={{ width: `${w}%` }}
+                      />
+                    ))}
+                  </div>
+                ))
+              ) : paginated.length === 0 ? (
+                <div className="py-12 text-center">
+                  <p
+                    className={cn("m-0 mb-3 font-nunito text-sm", tw.textMuted)}
+                  >
+                    {search || filterStatus !== "all" || filterType !== "all"
+                      ? "Tidak ada toko yang sesuai filter"
+                      : "Belum ada toko terdaftar"}
+                  </p>
+                  {!search &&
+                    filterStatus === "all" &&
+                    filterType === "all" && (
+                      <button
+                        onClick={() => router.push("/registration")}
+                        className="cursor-pointer rounded-md border-none bg-[linear-gradient(135deg,#1e3a8a_0%,#3b82f6_100%)] px-5 py-2 font-nunito text-[13px] font-bold text-white"
                       >
-                        {[
-                          { label: "ID TOKO", w: 120 },
-                          { label: "NAMA TOKO", w: "auto" },
-                          { label: "JENIS", w: 160 },
-                          { label: "PEMILIK", w: 160 },
-                          { label: "KOTA", w: 130 },
-                          { label: "TELEPON", w: 140 },
-                          { label: "STATUS", w: 100 },
-                          { label: "TERDAFTAR", w: 120 },
-                          { label: "", w: 80 }
-                        ].map((col) => (
-                          <th
-                            key={col.label}
-                            style={{
-                              padding: "10px 16px",
-                              textAlign: "left",
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: p.textMuted,
-                              letterSpacing: "0.08em",
-                              whiteSpace: "nowrap",
-                              width: col.w
-                            }}
-                          >
-                            {col.label}
-                          </th>
+                        + Daftarkan Toko Pertama
+                      </button>
+                    )}
+                </div>
+              ) : (
+                paginated.map((store) => (
+                  <StoreCard
+                    key={store.id}
+                    store={store}
+                    isDark={isDark}
+                    tw={tw}
+                    onDetail={() => openDetail(store)}
+                    onDelete={() => openDeleteConfirm(store)}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* ── DESKTOP: Table ── */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full border-collapse font-nunito">
+                <thead>
+                  <tr className={cn("border-b", tw.tableHeadBg, tw.border)}>
+                    {[
+                      { label: "ID TOKO", w: "w-30" },
+                      { label: "NAMA TOKO", w: "" },
+                      { label: "JENIS", w: "w-40" },
+                      { label: "PEMILIK", w: "w-40" },
+                      { label: "KOTA", w: "w-32.5" },
+                      { label: "TELEPON", w: "w-35" },
+                      { label: "STATUS", w: "w-25" },
+                      { label: "TERDAFTAR", w: "w-30" },
+                      { label: "", w: "w-20" }
+                    ].map((col) => (
+                      <th
+                        key={col.label}
+                        className={cn(
+                          "whitespace-nowrap px-4 py-2.5 text-left text-[10px] font-bold tracking-[0.08em]",
+                          tw.textMuted,
+                          col.w
+                        )}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        {Array.from({ length: 9 }).map((_, j) => (
+                          <td key={j} className="px-4 py-3.5">
+                            <div
+                              className={cn(
+                                "h-3 animate-pulse rounded",
+                                tw.skeleton,
+                                j === 1 ? "w-4/5" : "w-3/5"
+                              )}
+                            />
+                          </td>
                         ))}
                       </tr>
-                    </thead>
-                    <tbody>
-                      {loading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <tr key={i}>
-                            {Array.from({ length: 9 }).map((_, j) => (
-                              <td key={j} style={{ padding: "14px 16px" }}>
-                                <Box
-                                  sx={{
-                                    height: 12,
-                                    borderRadius: 1,
-                                    bgcolor: isDark ? "#1f1f1f" : "#f1f5f9",
-                                    width: j === 1 ? "80%" : "60%",
-                                    animation:
-                                      "pulse 1.5s ease-in-out infinite",
-                                    "@keyframes pulse": {
-                                      "0%, 100%": { opacity: 1 },
-                                      "50%": { opacity: 0.4 }
-                                    }
-                                  }}
-                                />
-                              </td>
-                            ))}
-                          </tr>
-                        ))
-                      ) : paginated.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={9}
-                            style={{
-                              padding: "48px 16px",
-                              textAlign: "center"
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: 14,
-                                color: p.textMuted,
-                                fontFamily: "'Nunito', sans-serif"
-                              }}
+                    ))
+                  ) : paginated.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-12 text-center">
+                        <p
+                          className={cn(
+                            "m-0 font-nunito text-sm",
+                            tw.textMuted
+                          )}
+                        >
+                          {search ||
+                          filterStatus !== "all" ||
+                          filterType !== "all"
+                            ? "Tidak ada toko yang sesuai filter"
+                            : "Belum ada toko terdaftar"}
+                        </p>
+                        {!search &&
+                          filterStatus === "all" &&
+                          filterType === "all" && (
+                            <button
+                              onClick={() => router.push("/registration")}
+                              className="mt-3 cursor-pointer rounded-md border-none bg-[linear-gradient(135deg,#1e3a8a_0%,#3b82f6_100%)] px-5 py-2 font-nunito text-[13px] font-bold text-white"
                             >
-                              {search ||
-                              filterStatus !== "all" ||
-                              filterType !== "all"
-                                ? "Tidak ada toko yang sesuai filter"
-                                : "Belum ada toko terdaftar"}
-                            </p>
-                            {!search &&
-                              filterStatus === "all" &&
-                              filterType === "all" && (
-                                <button
-                                  onClick={() => router.push("/registration")}
-                                  style={{
-                                    marginTop: 12,
-                                    padding: "8px 20px",
-                                    border: "none",
-                                    borderRadius: 6,
-                                    background:
-                                      "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-                                    color: "#fff",
-                                    fontSize: 13,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    cursor: "pointer"
-                                  }}
-                                >
-                                  + Daftarkan Toko Pertama
-                                </button>
+                              + Daftarkan Toko Pertama
+                            </button>
+                          )}
+                      </td>
+                    </tr>
+                  ) : (
+                    paginated.map((store) => {
+                      const sc = statusColor(store.status, isDark)
+                      return (
+                        <tr
+                          key={store.id}
+                          className={cn(
+                            "border-b transition-colors",
+                            tw.borderRow,
+                            tw.rowOdd,
+                            tw.rowHover
+                          )}
+                        >
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "font-nunito text-[11px] font-bold",
+                                tw.infoText
                               )}
+                            >
+                              {store.storeId}
+                            </span>
+                          </td>
+                          <td className="min-w-45 px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-sm",
+                                  tw.panelBg,
+                                  tw.panelBorder
+                                )}
+                              >
+                                🏪
+                              </div>
+                              <div>
+                                <p
+                                  className={cn(
+                                    "m-0 font-nunito text-[13px] font-bold",
+                                    tw.text
+                                  )}
+                                >
+                                  {store.storeName}
+                                </p>
+                                {store.storeEmail && (
+                                  <p
+                                    className={cn(
+                                      "m-0 font-nunito text-[11px]",
+                                      tw.textMuted
+                                    )}
+                                  >
+                                    {store.storeEmail}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn("font-nunito text-xs", tw.textSec)}
+                            >
+                              {store.storeType}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p
+                              className={cn(
+                                "m-0 font-nunito text-[13px] font-semibold",
+                                tw.text
+                              )}
+                            >
+                              {store.owner.fullName}
+                            </p>
+                            <p
+                              className={cn(
+                                "m-0 font-nunito text-[10px]",
+                                tw.textMuted
+                              )}
+                            >
+                              NIK: {store.owner.nik.slice(0, 6)}••••••••••
+                            </p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p
+                              className={cn("m-0 font-nunito text-xs", tw.text)}
+                            >
+                              {store.storeCity}
+                            </p>
+                            <p
+                              className={cn(
+                                "m-0 font-nunito text-[10px]",
+                                tw.textMuted
+                              )}
+                            >
+                              {store.storeProvince}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn("font-nunito text-xs", tw.textSec)}
+                            >
+                              {store.storePhone}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "inline-block whitespace-nowrap rounded-full border px-2.5 py-0.5 font-nunito text-[11px] font-bold",
+                                sc.bg,
+                                sc.text,
+                                sc.border
+                              )}
+                            >
+                              {sc.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "font-nunito text-[11px]",
+                                tw.textMuted
+                              )}
+                            >
+                              {new Date(store.createdAt).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric"
+                                }
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-1">
+                              <button
+                                title="Lihat detail"
+                                onClick={() => openDetail(store)}
+                                className={cn(
+                                  "cursor-pointer rounded p-1.5 transition-colors",
+                                  tw.textMuted,
+                                  isDark
+                                    ? "hover:bg-[#0d1f3c] hover:text-text-brand-400"
+                                    : "hover:bg-[#e6f1fb] hover:text-brand-700"
+                                )}
+                              >
+                                <Icon
+                                  d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+                                  size={15}
+                                />
+                              </button>
+                              <button
+                                title="Hapus toko"
+                                onClick={() => openDeleteConfirm(store)}
+                                className={cn(
+                                  "cursor-pointer rounded p-1.5 transition-colors",
+                                  tw.textMuted,
+                                  isDark
+                                    ? "hover:bg-[#2e1010] hover:text-[#ef4444]"
+                                    : "hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                                )}
+                              >
+                                <Icon
+                                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+                                  size={15}
+                                />
+                              </button>
+                            </div>
                           </td>
                         </tr>
-                      ) : (
-                        paginated.map((store, idx) => {
-                          const sc = statusColor(store.status, isDark)
-                          const isEven = idx % 2 === 0
-                          return (
-                            <tr
-                              key={store.id}
-                              style={{
-                                background: isEven
-                                  ? "transparent"
-                                  : isDark
-                                    ? "rgba(255,255,255,0.01)"
-                                    : "rgba(0,0,0,0.01)",
-                                borderBottom: `1px solid ${isDark ? "#111" : "#f8fafc"}`,
-                                transition: "background 0.15s"
-                              }}
-                              onMouseEnter={(e) => {
-                                ;(
-                                  e.currentTarget as HTMLTableRowElement
-                                ).style.background = isDark
-                                  ? "#161616"
-                                  : "#f8fafc"
-                              }}
-                              onMouseLeave={(e) => {
-                                ;(
-                                  e.currentTarget as HTMLTableRowElement
-                                ).style.background = isEven
-                                  ? "transparent"
-                                  : isDark
-                                    ? "rgba(255,255,255,0.01)"
-                                    : "rgba(0,0,0,0.01)"
-                              }}
-                            >
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    color: isDark ? "#60a5fa" : "#1e3a8a",
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {store.storeId}
-                                </span>
-                              </td>
-                              <td
-                                style={{ padding: "12px 16px", minWidth: 180 }}
-                              >
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1.5
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: "6px",
-                                      bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                                      border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: 14,
-                                      flexShrink: 0
-                                    }}
-                                  >
-                                    🏪
-                                  </Box>
-                                  <Box>
-                                    <p
-                                      style={{
-                                        margin: 0,
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        color: p.textPrimary,
-                                        fontFamily: "'Nunito', sans-serif"
-                                      }}
-                                    >
-                                      {store.storeName}
-                                    </p>
-                                    {store.storeEmail && (
-                                      <p
-                                        style={{
-                                          margin: 0,
-                                          fontSize: 11,
-                                          color: p.textMuted,
-                                          fontFamily: "'Nunito', sans-serif"
-                                        }}
-                                      >
-                                        {store.storeEmail}
-                                      </p>
-                                    )}
-                                  </Box>
-                                </Box>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    fontSize: 12,
-                                    color: p.textSecondary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {store.storeType}
-                                </span>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    color: p.textPrimary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {store.owner.fullName}
-                                </p>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 10,
-                                    color: p.textMuted,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  NIK: {store.owner.nik.slice(0, 6)}••••••••••
-                                </p>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 12,
-                                    color: p.textPrimary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {store.storeCity}
-                                </p>
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 10,
-                                    color: p.textMuted,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {store.storeProvince}
-                                </p>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    fontSize: 12,
-                                    color: p.textSecondary,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {store.storePhone}
-                                </span>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    display: "inline-block",
-                                    padding: "3px 10px",
-                                    borderRadius: 100,
-                                    background: sc.bg,
-                                    color: sc.text,
-                                    border: `1px solid ${sc.border}`,
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {sc.label}
-                                </span>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    color: p.textMuted,
-                                    fontFamily: "'Nunito', sans-serif"
-                                  }}
-                                >
-                                  {new Date(store.createdAt).toLocaleDateString(
-                                    "id-ID",
-                                    {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric"
-                                    }
-                                  )}
-                                </span>
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <Box sx={{ display: "flex", gap: 0.5 }}>
-                                  <Tooltip title="Lihat detail">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => openDetail(store)}
-                                      sx={{
-                                        color: p.textMuted,
-                                        "&:hover": {
-                                          color: isDark ? "#60a5fa" : "#1e3a8a",
-                                          bgcolor: isDark
-                                            ? "#0d1f3c"
-                                            : "#e6f1fb"
-                                        }
-                                      }}
-                                    >
-                                      <Icon
-                                        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
-                                        size={15}
-                                      />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Hapus toko">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => openDeleteConfirm(store)}
-                                      sx={{
-                                        color: p.textMuted,
-                                        "&:hover": {
-                                          color: "#ef4444",
-                                          bgcolor: isDark
-                                            ? "#2e1010"
-                                            : "#fef2f2"
-                                        }
-                                      }}
-                                    >
-                                      <Icon
-                                        d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
-                                        size={15}
-                                      />
-                                    </IconButton>
-                                  </Tooltip>
-                                </Box>
-                              </td>
-                            </tr>
-                          )
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </Box>
-              )}
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              {/* Pagination */}
-              {!loading && filtered.length > 0 && (
-                <Box
-                  sx={{
-                    px: { xs: 2, sm: 3 },
-                    py: 2,
-                    borderTop: `1px solid ${p.border}`,
-                    bgcolor: p.tableHeadBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flexWrap: "wrap",
-                    gap: 1
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    <strong style={{ color: p.textSecondary }}>
-                      {(page - 1) * PAGE_SIZE + 1}–
-                      {Math.min(page * PAGE_SIZE, filtered.length)}
-                    </strong>{" "}
-                    dari{" "}
-                    <strong style={{ color: p.textSecondary }}>
-                      {filtered.length}
-                    </strong>{" "}
-                    toko
-                  </span>
-                  <Box sx={{ display: "flex", gap: 0.5 }}>
-                    {[
-                      {
-                        label: "‹",
-                        action: () => setPage((v) => Math.max(1, v - 1)),
-                        disabled: page === 1,
-                        active: false
-                      },
-                      ...Array.from(
-                        { length: Math.min(5, totalPages) },
-                        (_, i) => ({
-                          label: String(i + 1),
-                          action: () => setPage(i + 1),
-                          disabled: false,
-                          active: page === i + 1
-                        })
-                      ),
-                      {
-                        label: "›",
-                        action: () =>
-                          setPage((v) => Math.min(totalPages, v + 1)),
-                        disabled: page === totalPages,
-                        active: false
-                      }
-                    ].map((btn, i) => (
-                      <button
-                        key={i}
-                        onClick={btn.action}
-                        disabled={btn.disabled}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          border: `1px solid ${btn.active ? "#1e3a8a" : p.border}`,
-                          borderRadius: 6,
-                          background: btn.active
-                            ? isDark
-                              ? "#0d1f3c"
-                              : "#e6f1fb"
-                            : "transparent",
-                          color: btn.disabled
-                            ? p.textMuted
-                            : btn.active
-                              ? isDark
-                                ? "#60a5fa"
-                                : "#1e3a8a"
-                              : p.textSecondary,
-                          cursor: btn.disabled ? "not-allowed" : "pointer",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          fontFamily: "'Nunito', sans-serif",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center"
-                        }}
-                      >
-                        {btn.label}
-                      </button>
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+            {/* Pagination */}
+            {!loading && filtered.length > 0 && (
+              <div
+                className={cn(
+                  "flex flex-wrap items-center justify-between gap-2 border-t px-4 py-4 sm:px-6",
+                  tw.border,
+                  tw.tableHeadBg
+                )}
+              >
+                <span className={cn("font-nunito text-xs", tw.textMuted)}>
+                  <strong className={tw.textSec}>
+                    {(page - 1) * PAGE_SIZE + 1}–
+                    {Math.min(page * PAGE_SIZE, filtered.length)}
+                  </strong>{" "}
+                  dari <strong className={tw.textSec}>{filtered.length}</strong>{" "}
+                  toko
+                </span>
+                <div className="flex gap-1">
+                  {[
+                    {
+                      label: "‹",
+                      action: () => setPage((v) => Math.max(1, v - 1)),
+                      disabled: page === 1,
+                      active: false
+                    },
+                    ...Array.from(
+                      { length: Math.min(5, totalPages) },
+                      (_, i) => ({
+                        label: String(i + 1),
+                        action: () => setPage(i + 1),
+                        disabled: false,
+                        active: page === i + 1
+                      })
+                    ),
+                    {
+                      label: "›",
+                      action: () => setPage((v) => Math.min(totalPages, v + 1)),
+                      disabled: page === totalPages,
+                      active: false
+                    }
+                  ].map((btn, i) => (
+                    <button
+                      key={i}
+                      onClick={btn.action}
+                      disabled={btn.disabled}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-md border font-nunito text-[13px] font-bold",
+                        btn.active ? tw.panelBorder : tw.border,
+                        btn.active ? tw.panelBg : "bg-transparent",
+                        btn.disabled
+                          ? cn(tw.textMuted, "cursor-not-allowed")
+                          : btn.active
+                            ? cn(tw.infoText, "cursor-pointer")
+                            : cn(tw.textSec, "cursor-pointer")
+                      )}
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <StoreDetailModal
         store={selectedStore}
@@ -1690,7 +1264,7 @@ export default function ListTokoPage() {
           setSelectedStore(null)
         }}
         isDark={isDark}
-        p={p}
+        tw={tw}
       />
       <DeleteModal
         store={deleteStore}
@@ -1700,25 +1274,16 @@ export default function ListTokoPage() {
           setDeleteStore(null)
         }}
         onConfirm={handleDelete}
-        isDark={isDark}
-        p={p}
+        tw={tw}
         isDeleting={isDeleting}
       />
 
-      <Snackbar
+      <Toast
         open={snackbar.open}
-        autoHideDuration={2500}
+        msg={snackbar.msg}
+        severity={snackbar.severity}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          sx={{ fontFamily: "'Nunito', sans-serif", fontSize: 13 }}
-        >
-          {snackbar.msg}
-        </Alert>
-      </Snackbar>
-    </ThemeProvider>
+      />
+    </div>
   )
 }

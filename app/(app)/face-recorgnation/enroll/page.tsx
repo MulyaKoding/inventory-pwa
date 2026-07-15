@@ -300,7 +300,7 @@ export default function EnrollFacePage() {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="h-5 w-5 flex-shrink-0 mt-0.5"
+              className="h-5 w-5 shrink-0 mt-0.5"
             >
               <path
                 fillRule="evenodd"
@@ -313,7 +313,7 @@ export default function EnrollFacePage() {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="h-5 w-5 flex-shrink-0 mt-0.5"
+              className="h-5 w-5 shrink-0 mt-0.5"
             >
               <path
                 fillRule="evenodd"
@@ -325,7 +325,7 @@ export default function EnrollFacePage() {
           <p className="text-sm font-medium flex-1">{toast.message}</p>
           <button
             onClick={() => setToast(null)}
-            className="flex-shrink-0 text-white/80 hover:text-white"
+            className="shrink-0 text-white/80 hover:text-white"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -343,7 +343,7 @@ export default function EnrollFacePage() {
         <div className="relative w-full flex flex-col items-center py-4">
           {/* Wrapper oval berisi video + ring progress mengelilinginya */}
           <div
-            className="relative w-full max-w-[400px]"
+            className="relative w-full max-w-100"
             style={{ aspectRatio: "260 / 300" }}
           >
             {/* SVG ring progress, melingkar DI LUAR bentuk oval video */}
@@ -378,7 +378,7 @@ export default function EnrollFacePage() {
 
             {/* Video dipotong jadi bentuk oval, seperti cermin */}
             <div
-              className={`absolute inset-0 m-[18px] overflow-hidden bg-slate-900 shadow-lg ring-4 transition-colors ${
+              className={`absolute inset-0 m-4.5 overflow-hidden bg-slate-900 shadow-lg ring-4 transition-colors ${
                 isReady ? "ring-emerald-500" : "ring-slate-700"
               }`}
               style={{ borderRadius: "50%" }}

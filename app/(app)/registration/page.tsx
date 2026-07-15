@@ -2,22 +2,12 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Box,
-  Drawer,
-  ThemeProvider,
-  createTheme,
-  Snackbar,
-  Alert,
-  Modal
-} from "@mui/material"
 import Header from "../components/header/page"
 import Sidebar from "../components/sidebar"
 import { useTheme } from "../hooks/useTheme"
 import MapLibreMap from "./MapLibreMap"
 import LocationSelector, { LocationValue } from "./LocationSelector"
-
-const DRAWER_WIDTH = 220
+import { cn } from "../../lib/utils"
 
 interface OwnerData {
   nik: string
@@ -39,13 +29,12 @@ interface StoreData {
   storeLat: string
   storeLng: string
   storeLocationLabel: string
-  storeImageUrl: string // ← BARU
+  storeImageUrl: string
 }
 
 type OCRStatus = "idle" | "scanning" | "success" | "error"
 type ScanMode = "upload" | "webcam"
 type GeoStatus = "idle" | "requesting" | "granted" | "denied" | "unsupported"
-// ← BARU: status upload gambar toko
 type StoreImgStatus = "idle" | "uploading" | "success" | "error"
 type StoreImgMode = "upload" | "camera"
 
@@ -74,6 +63,57 @@ const EMPTY_LOCATION: LocationValue = {
   kodePos: ""
 }
 
+// ── Theme tokens (Tailwind class strings, computed from isDark) ──────────
+type Tw = ReturnType<typeof getTw>
+function getTw(isDark: boolean) {
+  return {
+    bg: isDark ? "bg-[#0D0D0D]" : "bg-[#f8fafc]",
+    bgPaper: isDark ? "bg-[#111111]" : "bg-white",
+    border: isDark ? "border-[#1f1f1f]" : "border-[#e2e8f0]",
+    text: isDark ? "text-[#F5F5F0]" : "text-[#0f172a]",
+    textSec: isDark ? "text-[#888888]" : "text-[#64748b]",
+    textMuted: isDark ? "text-[#555555]" : "text-[#94a3b8]",
+    panelBg: isDark ? "bg-[#0d1f3c]" : "bg-[#e6f1fb]",
+    panelBg2: isDark ? "bg-[#0d1f3c]" : "bg-[#eff6ff]",
+    panelBorder: isDark ? "border-brand-700" : "border-[#b5d4f4]",
+    successBg: isDark ? "bg-[#0a2e1c]" : "bg-[#f0fdf4]",
+    successBorder: isDark ? "border-[#1a5c38]" : "border-[#bbf7d0]",
+    successText: isDark ? "text-[#4ade80]" : "text-[#16a34a]",
+    errorBg: isDark ? "bg-[#2e1010]" : "bg-[#fef2f2]",
+    errorBorder: isDark ? "border-[#5a1a1a]" : "border-[#fecaca]",
+    warnBg: isDark ? "bg-[#2e1a10]" : "bg-[#fff7ed]",
+    warnBorder: isDark ? "border-[#7c3a10]" : "border-[#fed7aa]",
+    warnText: isDark ? "text-[#fdba74]" : "text-[#c2410c]",
+    infoText: isDark ? "text-[#93c5fd]" : "text-brand-700"
+  }
+}
+
+// ── Shared style helpers ──────────────────────────────────────────────
+const inputCls = (isDark: boolean, hasError: boolean) =>
+  cn(
+    "box-border w-full rounded-md border px-3 py-2.5 font-nunito text-sm outline-none transition-colors",
+    isDark ? "bg-[#111111] text-[#F5F5F0]" : "bg-white text-[#0f172a]",
+    hasError
+      ? "border-[#ef4444]"
+      : isDark
+        ? "border-[#1f1f1f]"
+        : "border-[#e2e8f0]"
+  )
+const textareaCls = (isDark: boolean, hasError: boolean) =>
+  cn(inputCls(isDark, hasError), "resize-y")
+const btnPrimaryCls =
+  "flex w-full items-center justify-center gap-2 rounded-md bg-brand-700 px-7 py-2.5 font-nunito text-sm font-bold text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-80"
+const btnGhostCls = (isDark: boolean) =>
+  cn(
+    "w-full rounded-md border bg-transparent px-5 py-2.5 font-nunito text-sm font-semibold cursor-pointer",
+    isDark
+      ? "border-[#1f1f1f] text-[#888888]"
+      : "border-[#e2e8f0] text-[#64748b]"
+  )
+const spinCls =
+  "h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-brand-700 border-t-transparent"
+
+// ── Small shared components (top-level to avoid remount on parent render) ──
 function Field({
   label,
   error,
@@ -85,31 +125,242 @@ function Field({
 }) {
   return (
     <div>
-      <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          fontWeight: 700,
-          color: "#64748b",
-          marginBottom: 6,
-          fontFamily: "'Nunito', sans-serif"
-        }}
-      >
+      <label className="mb-1.5 block font-nunito text-[12px] font-bold text-[#64748b]">
         {label}
       </label>
       {children}
       {error && (
-        <p
-          style={{
-            fontSize: 11,
-            color: "#ef4444",
-            marginTop: 4,
-            fontFamily: "'Nunito', sans-serif"
-          }}
-        >
-          {error}
-        </p>
+        <p className="mt-1 font-nunito text-[11px] text-[#ef4444]">{error}</p>
       )}
+    </div>
+  )
+}
+
+function ModalShell({
+  open,
+  onClose,
+  widthClass,
+  tw,
+  children
+}: {
+  open: boolean
+  onClose: () => void
+  widthClass?: string
+  tw: Tw
+  children: React.ReactNode
+}) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className={cn(
+          "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-[10px] border sm:max-h-[85vh]",
+          tw.bgPaper,
+          tw.border,
+          widthClass || "sm:w-130"
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function ModalHeader({
+  icon,
+  title,
+  subtitle,
+  onClose,
+  tw
+}: {
+  icon: string
+  title: string
+  subtitle: string
+  onClose: () => void
+  tw: Tw
+}) {
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-between border-b px-6 py-4",
+        tw.border,
+        tw.bg
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-7.5 w-7.5 items-center justify-center rounded-md border text-sm",
+            tw.panelBg,
+            tw.panelBorder
+          )}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className={cn("m-0 font-nunito text-sm font-bold", tw.text)}>
+            {title}
+          </p>
+          <p className={cn("m-0 font-nunito text-[11px]", tw.textMuted)}>
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={onClose}
+        className={cn(
+          "cursor-pointer border-none bg-transparent p-1 text-lg leading-none",
+          tw.textMuted
+        )}
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
+
+function TabSwitch({
+  options,
+  value,
+  onChange,
+  tw
+}: {
+  options: { value: string; label: string }[]
+  value: string
+  onChange: (v: string) => void
+  tw: Tw
+}) {
+  return (
+    <div
+      className={cn(
+        "mb-6 flex gap-1 rounded-md border p-0.5",
+        tw.border,
+        tw.bg
+      )}
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          className={cn(
+            "flex-1 cursor-pointer rounded border px-2 py-1.5 font-nunito text-[12px] font-bold transition-all",
+            value === o.value
+              ? cn(tw.panelBorder, tw.panelBg, "text-brand-700")
+              : cn("border-transparent bg-transparent", tw.textSec)
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function StatusBanner({
+  status,
+  loadingText,
+  successText,
+  error,
+  onRetry,
+  tw
+}: {
+  status: string
+  loadingText: string
+  successText: string
+  error: string
+  onRetry: () => void
+  tw: Tw
+}) {
+  if (status === "uploading" || status === "scanning")
+    return (
+      <div
+        className={cn(
+          "mt-6 flex items-center gap-3 rounded-md border p-3",
+          tw.panelBg,
+          tw.panelBorder
+        )}
+      >
+        <span className={spinCls} />
+        <span className="font-nunito text-sm text-brand-700">
+          {loadingText}
+        </span>
+      </div>
+    )
+  if (status === "success")
+    return (
+      <div
+        className={cn(
+          "mt-6 flex items-center gap-3 rounded-md border p-3",
+          tw.successBg,
+          tw.successBorder
+        )}
+      >
+        <span className="text-base text-[#16a34a]">✓</span>
+        <span
+          className={cn("font-nunito text-sm font-semibold", tw.successText)}
+        >
+          {successText}
+        </span>
+      </div>
+    )
+  if (status === "error")
+    return (
+      <div
+        className={cn("mt-6 rounded-md border p-3", tw.errorBg, tw.errorBorder)}
+      >
+        <p className="m-0 mb-2 font-nunito text-sm text-[#ef4444]">{error}</p>
+        <button
+          onClick={onRetry}
+          className="cursor-pointer rounded border border-[#ef4444] bg-transparent px-3.5 py-1.5 font-nunito text-xs font-semibold text-[#ef4444]"
+        >
+          Coba Lagi
+        </button>
+      </div>
+    )
+  return null
+}
+
+function Toast({
+  open,
+  msg,
+  severity,
+  onClose
+}: {
+  open: boolean
+  msg: string
+  severity: "success" | "error"
+  onClose: () => void
+}) {
+  useEffect(() => {
+    if (!open) return
+    const t = setTimeout(onClose, 2500)
+    return () => clearTimeout(t)
+  }, [open, onClose])
+
+  if (!open) return null
+  return (
+    <div className="fixed bottom-5 right-5 z-60 animate-fade-up">
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-md border px-4 py-3 font-nunito text-[13px] font-semibold shadow-lg",
+          severity === "success"
+            ? "border-green-200 bg-green-50 text-green-700"
+            : "border-red-200 bg-red-50 text-red-700"
+        )}
+      >
+        <span>{severity === "success" ? "✓" : "⚠"}</span>
+        {msg}
+        <button
+          onClick={onClose}
+          className="ml-1 cursor-pointer border-none bg-transparent text-current"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   )
 }
@@ -121,7 +372,6 @@ export default function RegistrationPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
-  // ← BARU: refs untuk gambar toko
   const storeImgFileRef = useRef<HTMLInputElement>(null)
   const storeImgVideoRef = useRef<HTMLVideoElement>(null)
   const storeImgCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -139,7 +389,6 @@ export default function RegistrationPage() {
     severity: "success" | "error"
   }>({ open: false, msg: "", severity: "success" })
 
-  // KTP Modal
   const [ktpModalOpen, setKtpModalOpen] = useState(false)
   const [scanMode, setScanMode] = useState<ScanMode>("upload")
   const [ocrStatus, setOcrStatus] = useState<OCRStatus>("idle")
@@ -149,7 +398,6 @@ export default function RegistrationPage() {
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
   const [selectedCameraId, setSelectedCameraId] = useState<string>("")
 
-  // ← BARU: Store Image Modal state
   const [storeImgModalOpen, setStoreImgModalOpen] = useState(false)
   const [storeImgMode, setStoreImgMode] = useState<StoreImgMode>("upload")
   const [storeImgStatus, setStoreImgStatus] = useState<StoreImgStatus>("idle")
@@ -159,7 +407,6 @@ export default function RegistrationPage() {
   const [storeImgCameras, setStoreImgCameras] = useState<MediaDeviceInfo[]>([])
   const [storeImgSelectedCam, setStoreImgSelectedCam] = useState<string>("")
 
-  // MAP Modal
   const [mapModalOpen, setMapModalOpen] = useState(false)
   const [mapCenter, setMapCenter] = useState<[number, number]>([
     -6.2088, 106.8456
@@ -198,7 +445,7 @@ export default function RegistrationPage() {
     storeLat: "",
     storeLng: "",
     storeLocationLabel: "",
-    storeImageUrl: "" // ← BARU
+    storeImageUrl: ""
   })
 
   const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION)
@@ -227,32 +474,9 @@ export default function RegistrationPage() {
     document.head.appendChild(link)
   }, [])
 
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode: isDark ? "dark" : "light",
-          primary: { main: "#1e3a8a" },
-          background: {
-            default: isDark ? "#0D0D0D" : "#f8fafc",
-            paper: isDark ? "#141414" : "#ffffff"
-          },
-          text: {
-            primary: isDark ? "#F5F5F0" : "#0f172a",
-            secondary: isDark ? "#888" : "#64748b"
-          }
-        },
-        typography: { fontFamily: "'Nunito', sans-serif" },
-        shape: { borderRadius: 2 },
-        components: {
-          MuiButton: {
-            styleOverrides: { root: { textTransform: "none", fontWeight: 600 } }
-          }
-        }
-      }),
-    [isDark]
-  )
+  const tw = useMemo(() => getTw(isDark), [isDark])
 
+  // p kept for the Header/Sidebar prop contract (unchanged external components)
   const p = useMemo(
     () => ({
       bg: isDark ? "#0D0D0D" : "#f8fafc",
@@ -269,27 +493,6 @@ export default function RegistrationPage() {
   )
 
   const T = "0.3s ease"
-  const drawerPaperSx = () => ({
-    width: DRAWER_WIDTH,
-    boxSizing: "border-box" as const,
-    bgcolor: "transparent",
-    border: "none",
-    overflow: "hidden"
-  })
-
-  const inputStyle = (hasError: boolean): React.CSSProperties => ({
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 6,
-    border: `1px solid ${hasError ? "#ef4444" : p.border}`,
-    background: isDark ? "#111" : "#fff",
-    color: p.textPrimary,
-    fontFamily: "'Nunito', sans-serif",
-    fontSize: 14,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s"
-  })
 
   const updateStore = (field: keyof StoreData, value: string) => {
     setStoreData((prev) => ({ ...prev, [field]: value }))
@@ -815,36 +1018,6 @@ export default function RegistrationPage() {
     }
   }
 
-  const renderTypedSignatureToCanvas = (): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      // Buat SVG dengan font embed via Google Fonts URL
-      const fontUrl = `https://fonts.googleapis.com/css2?family=${signFontFamily.replace(/ /g, "+")}:wght@400&display=swap`
-
-      const svgContent = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="800" height="200">
-        <defs>
-          <style>
-            @import url('${fontUrl}');
-          </style>
-        </defs>
-        <rect width="800" height="200" fill="white"/>
-        <text
-          x="400"
-          y="120"
-          font-family="'${signFontFamily}', cursive"
-          font-size="${signFontSize * 2}"
-          fill="#111111"
-          text-anchor="middle"
-          dominant-baseline="middle"
-        >${signTypedText}</text>
-      </svg>
-    `
-
-      const blob = new Blob([svgContent], { type: "image/svg+xml" })
-      resolve(blob)
-    })
-  }
-
   const saveSignature = () => {
     const canvas = signatureCanvasRef.current
     if (!canvas || !hasSignature) return
@@ -947,3352 +1120,1705 @@ export default function RegistrationPage() {
     }
   }
 
-  const spinnerSx = {
-    width: 14,
-    height: 14,
-    border: "2px solid rgba(255,255,255,0.4)",
-    borderTopColor: "#fff",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-    "@keyframes spin": {
-      from: { transform: "rotate(0deg)" },
-      to: { transform: "rotate(360deg)" }
-    }
-  }
-
   return (
-    <ThemeProvider theme={theme}>
-      <Box
-        sx={{
-          display: "flex",
-          minHeight: "100vh",
-          bgcolor: p.bg,
-          fontFamily: "'Nunito', sans-serif",
-          transition: `background-color ${T}`
-        }}
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": drawerPaperSx()
-          }}
-        >
-          <Sidebar isDark={isDark} T={T} />
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
-            width: DRAWER_WIDTH,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": drawerPaperSx()
-          }}
-        >
-          <Sidebar isDark={isDark} T={T} />
-        </Drawer>
-
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minWidth: 0
-          }}
-        >
-          <Header
-            isDark={isDark}
-            onToggleTheme={toggleTheme}
-            onMenuClick={() => setMobileOpen(true)}
-            title="Registrasi Toko"
-            showAddButton={false}
-            notificationCount={0}
-            p={p}
+    <div
+      className={cn("flex min-h-screen font-nunito transition-colors", tw.bg)}
+      style={{ transitionDuration: T }}
+    >
+      {/* Mobile sidebar (off-canvas) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileOpen(false)}
           />
+          <div className="relative h-full w-55 overflow-hidden">
+            <Sidebar isDark={isDark} T={T} />
+          </div>
+        </div>
+      )}
 
-          <Box sx={{ flex: 1, overflow: "auto", p: "16px" }}>
-            <Box sx={{ width: "100%" }}>
-              {submitSuccess ? (
-                <Box
-                  sx={{
-                    border: `1px solid ${p.border}`,
-                    bgcolor: p.bgPaper,
-                    borderRadius: "8px",
-                    p: 6,
-                    textAlign: "center"
-                  }}
+      {/* Desktop sidebar (permanent) */}
+      <div className="hidden w-55 shrink-0 overflow-hidden md:block">
+        <Sidebar isDark={isDark} T={T} />
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Header
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+          onMenuClick={() => setMobileOpen(true)}
+          title="Registrasi Toko"
+          showAddButton={false}
+          notificationCount={0}
+          p={p}
+        />
+
+        <div className="flex-1 overflow-auto p-4">
+          <div className="w-full">
+            {submitSuccess ? (
+              <div
+                className={cn(
+                  "rounded-lg border p-12 text-center",
+                  tw.border,
+                  tw.bgPaper
+                )}
+              >
+                <div
+                  className={cn(
+                    "mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-lg border text-2xl",
+                    tw.successBg,
+                    tw.successBorder
+                  )}
                 >
-                  <Box
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                      border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                      borderRadius: "8px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      mx: "auto",
-                      mb: 3,
-                      fontSize: 24
-                    }}
-                  >
-                    ✓
-                  </Box>
-                  <p
-                    style={{
-                      color: p.textPrimary,
-                      fontWeight: 700,
-                      fontSize: 16,
-                      margin: "0 0 6px",
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    Toko Berhasil Didaftarkan!
-                  </p>
-                  <p
-                    style={{
-                      color: p.textMuted,
-                      fontSize: 13,
-                      margin: 0,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    Mengalihkan ke dashboard...
-                  </p>
-                </Box>
-              ) : (
-                <>
-                  {/* Stepper */}
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      mb: 3,
-                      border: `1px solid ${p.border}`,
-                      borderRadius: "8px",
-                      overflow: "hidden"
-                    }}
-                  >
-                    {([1, 2] as const).map((s) => (
-                      <Box
-                        key={s}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 1.5,
-                          px: { xs: 2, sm: 3 },
-                          py: 1.5,
-                          borderRight:
-                            s === 1 ? `1px solid ${p.border}` : "none",
-                          bgcolor:
-                            step === s
-                              ? isDark
-                                ? "#0d1f3c"
-                                : "#e6f1fb"
-                              : step > s
-                                ? isDark
-                                  ? "#0a2e1c"
-                                  : "#f0fdf4"
-                                : p.bgPaper,
-                          transition: `background-color ${T}`,
-                          cursor: step > s ? "pointer" : "default"
-                        }}
-                        onClick={() => {
-                          if (step > s) setStep(s as 1 | 2)
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 26,
-                            height: 26,
-                            borderRadius: "50%",
-                            border: `1.5px solid ${step === s ? "#1e3a8a" : step > s ? "#16a34a" : p.border}`,
-                            bgcolor:
-                              step === s
-                                ? "#1e3a8a"
-                                : step > s
-                                  ? "#16a34a"
-                                  : "transparent",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              fontFamily: "'Nunito', sans-serif",
-                              color: step >= s ? "#fff" : p.textMuted
-                            }}
-                          >
-                            {step > s ? "✓" : `0${s}`}
-                          </span>
-                        </Box>
-                        <Box>
-                          <p
-                            style={{
-                              margin: 0,
-                              fontSize: 13,
-                              fontWeight: 700,
-                              fontFamily: "'Nunito', sans-serif",
-                              color:
-                                step === s
-                                  ? isDark
-                                    ? "#93c5fd"
-                                    : "#1e3a8a"
-                                  : step > s
-                                    ? "#16a34a"
-                                    : p.textMuted
-                            }}
-                          >
-                            {s === 1 ? "Data Toko" : "Data Pemilik"}
-                          </p>
-                          <p
-                            style={{
-                              margin: 0,
-                              fontSize: 11,
-                              fontFamily: "'Nunito', sans-serif",
-                              color: p.textMuted
-                            }}
-                          >
-                            {s === 1
-                              ? "Informasi toko Anda"
-                              : "Data pemilik sesuai KTP"}
-                          </p>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-
-                  {/* Form Card */}
-                  <Box
-                    sx={{
-                      border: `1px solid ${p.border}`,
-                      bgcolor: p.bgPaper,
-                      borderRadius: "8px",
-                      overflow: "hidden",
-                      transition: `background-color ${T}, border-color ${T}`
-                    }}
-                  >
-                    {/* Card Header */}
-                    <Box
-                      sx={{
-                        px: { xs: 2, sm: 3 },
-                        py: 2,
-                        borderBottom: `1px solid ${p.border}`,
-                        bgcolor: p.bg,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5
+                  ✓
+                </div>
+                <p
+                  className={cn(
+                    "m-0 mb-1.5 font-nunito text-base font-bold",
+                    tw.text
+                  )}
+                >
+                  Toko Berhasil Didaftarkan!
+                </p>
+                <p className={cn("m-0 font-nunito text-[13px]", tw.textMuted)}>
+                  Mengalihkan ke dashboard...
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Stepper */}
+                <div
+                  className={cn(
+                    "mb-6 grid grid-cols-2 overflow-hidden rounded-lg border",
+                    tw.border
+                  )}
+                >
+                  {([1, 2] as const).map((s) => (
+                    <div
+                      key={s}
+                      onClick={() => {
+                        if (step > s) setStep(s as 1 | 2)
                       }}
+                      className={cn(
+                        "flex items-center justify-center gap-3 px-4 py-3 transition-colors sm:px-6",
+                        s === 1 && cn("border-r", tw.border),
+                        step === s
+                          ? isDark
+                            ? "bg-[#0d1f3c]"
+                            : "bg-[#e6f1fb]"
+                          : step > s
+                            ? tw.successBg
+                            : tw.bgPaper,
+                        step > s ? "cursor-pointer" : "cursor-default"
+                      )}
                     >
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                          border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                          borderRadius: "6px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 15,
-                          flexShrink: 0
-                        }}
+                      <div
+                        className={cn(
+                          "flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border-[1.5px]",
+                          step === s
+                            ? "border-brand-700 bg-brand-700"
+                            : step > s
+                              ? "border-[#16a34a] bg-[#16a34a]"
+                              : cn(
+                                  "border-transparent bg-transparent",
+                                  tw.border
+                                )
+                        )}
                       >
-                        {step === 1 ? "🏪" : "👤"}
-                      </Box>
-                      <Box>
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: p.textPrimary,
-                            fontFamily: "'Nunito', sans-serif"
-                          }}
+                        <span
+                          className={cn(
+                            "font-nunito text-[11px] font-bold",
+                            step >= s ? "text-white" : tw.textMuted
+                          )}
                         >
-                          {step === 1 ? "Informasi Toko" : "Data Pemilik Toko"}
+                          {step > s ? "✓" : `0${s}`}
+                        </span>
+                      </div>
+                      <div>
+                        <p
+                          className={cn(
+                            "m-0 font-nunito text-[13px] font-bold",
+                            step === s
+                              ? tw.infoText
+                              : step > s
+                                ? "text-[#16a34a]"
+                                : tw.textMuted
+                          )}
+                        >
+                          {s === 1 ? "Data Toko" : "Data Pemilik"}
                         </p>
                         <p
-                          style={{
-                            margin: 0,
-                            fontSize: 11,
-                            color: p.textMuted,
-                            fontFamily: "'Nunito', sans-serif"
-                          }}
+                          className={cn(
+                            "m-0 font-nunito text-[11px]",
+                            tw.textMuted
+                          )}
                         >
-                          {step === 1
-                            ? "Lengkapi informasi toko Anda"
+                          {s === 1
+                            ? "Informasi toko Anda"
                             : "Data pemilik sesuai KTP"}
                         </p>
-                      </Box>
-                    </Box>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                    {/* ════ STEP 1 ════ */}
-                    {step === 1 && (
-                      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                        {/* ── FOTO TOKO ── */}
-                        <Box
-                          sx={{
-                            mb: 3,
-                            pb: 3,
-                            borderBottom: `1px solid ${p.border}`,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 3
-                          }}
-                        >
-                          {/* Avatar Lingkaran */}
-                          <Box sx={{ position: "relative", flexShrink: 0 }}>
-                            <Box
-                              onClick={() => setStoreImgModalOpen(true)}
-                              sx={{
-                                width: 90,
-                                height: 90,
-                                borderRadius: "50%",
-                                border: storeData.storeImageUrl
-                                  ? `3px solid #16a34a`
-                                  : `2.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                overflow: "hidden",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                bgcolor: isDark ? "#0d1f3c" : "#eff6ff",
-                                transition: "all 0.2s",
-                                "&:hover": {
-                                  borderColor: "#1e3a8a",
-                                  bgcolor: isDark ? "#0d1f3c" : "#dbeafe",
-                                  transform: "scale(1.04)"
-                                }
-                              }}
-                            >
-                              {storeData.storeImageUrl ? (
-                                <img
-                                  src={storeData.storeImageUrl}
-                                  alt="Foto Toko"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover"
-                                  }}
-                                />
-                              ) : (
-                                <Box sx={{ textAlign: "center" }}>
-                                  <p
-                                    style={{
-                                      margin: 0,
-                                      fontSize: 9,
-                                      color: isDark ? "#93c5fd" : "#1e3a8a",
-                                      fontFamily: "'Nunito', sans-serif",
-                                      fontWeight: 700
-                                    }}
-                                  >
-                                    FOTO
-                                  </p>
-                                </Box>
-                              )}
-                            </Box>
-                            {/* Tombol kamera kecil di pojok */}
-                            <Box
-                              onClick={() => setStoreImgModalOpen(true)}
-                              sx={{
-                                position: "absolute",
-                                bottom: 2,
-                                right: 2,
-                                width: 26,
-                                height: 26,
-                                borderRadius: "50%",
-                                bgcolor: "#1e3a8a",
-                                border: `2px solid ${p.bgPaper}`,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                                fontSize: 12,
-                                "&:hover": { bgcolor: "#2563eb" },
-                                transition: "all 0.2s"
-                              }}
-                            >
-                              📷
-                            </Box>
-                          </Box>
+                {/* Form Card */}
+                <div
+                  className={cn(
+                    "overflow-hidden rounded-lg border transition-colors",
+                    tw.border,
+                    tw.bgPaper
+                  )}
+                >
+                  {/* Card Header */}
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 border-b px-4 py-4 sm:px-6",
+                      tw.border,
+                      tw.bg
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-[15px]",
+                        tw.panelBg,
+                        tw.panelBorder
+                      )}
+                    >
+                      {step === 1 ? "🏪" : "👤"}
+                    </div>
+                    <div>
+                      <p
+                        className={cn(
+                          "m-0 font-nunito text-sm font-bold",
+                          tw.text
+                        )}
+                      >
+                        {step === 1 ? "Informasi Toko" : "Data Pemilik Toko"}
+                      </p>
+                      <p
+                        className={cn(
+                          "m-0 font-nunito text-[11px]",
+                          tw.textMuted
+                        )}
+                      >
+                        {step === 1
+                          ? "Lengkapi informasi toko Anda"
+                          : "Data pemilik sesuai KTP"}
+                      </p>
+                    </div>
+                  </div>
 
-                          {/* Teks di sebelah kanan avatar */}
-                          <Box sx={{ flex: 1 }}>
-                            <p
-                              style={{
-                                margin: "0 0 2px",
-                                fontSize: 13,
-                                fontWeight: 700,
-                                color: p.textPrimary,
-                                fontFamily: "'Nunito', sans-serif"
-                              }}
-                            >
-                              Foto Toko
-                              <span
-                                style={{
-                                  marginLeft: 6,
-                                  fontSize: 11,
-                                  fontWeight: 400,
-                                  color: p.textMuted
-                                }}
-                              >
-                                (opsional)
-                              </span>
-                            </p>
-
+                  {/* ════ STEP 1 ════ */}
+                  {step === 1 && (
+                    <div className="p-4 sm:p-6">
+                      {/* ── FOTO TOKO ── */}
+                      <div
+                        className={cn(
+                          "mb-6 flex items-center gap-6 border-b pb-6",
+                          tw.border
+                        )}
+                      >
+                        <div className="relative shrink-0">
+                          <div
+                            onClick={() => setStoreImgModalOpen(true)}
+                            className={cn(
+                              "flex h-22.5 w-22.5 cursor-pointer items-center justify-center overflow-hidden rounded-full transition-all hover:scale-[1.04]",
+                              storeData.storeImageUrl
+                                ? "border-[3px] border-[#16a34a]"
+                                : cn(
+                                    "border-[2.5px] border-dashed",
+                                    tw.panelBorder
+                                  ),
+                              isDark ? "bg-[#0d1f3c]" : "bg-[#eff6ff]"
+                            )}
+                          >
                             {storeData.storeImageUrl ? (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  mt: 0.5
-                                }}
-                              >
-                                <span
-                                  style={{ fontSize: 11, color: "#16a34a" }}
-                                >
-                                  ✓
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    color: "#16a34a",
-                                    fontFamily: "'Nunito', sans-serif",
-                                    fontWeight: 600
-                                  }}
-                                >
-                                  Foto berhasil diupload
-                                </span>
-                              </Box>
+                              <img
+                                src={storeData.storeImageUrl}
+                                alt="Foto Toko"
+                                className="h-full w-full object-cover"
+                              />
                             ) : (
-                              <p
-                                style={{
-                                  margin: "2px 0 0",
-                                  fontSize: 11,
-                                  color: p.textMuted,
-                                  fontFamily: "'Nunito', sans-serif"
-                                }}
-                              >
-                                JPG, PNG, WEBP · Maks 5MB
+                              <p className="m-0 font-nunito text-[9px] font-bold text-brand-700">
+                                FOTO
                               </p>
                             )}
-
-                            <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
-                              <button
-                                onClick={() => setStoreImgModalOpen(true)}
-                                style={{
-                                  padding: "5px 14px",
-                                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                  borderRadius: 6,
-                                  background: isDark ? "#0d1f3c" : "#eff6ff",
-                                  color: "#1e3a8a",
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  fontFamily: "'Nunito', sans-serif",
-                                  cursor: "pointer"
-                                }}
-                              >
-                                {storeData.storeImageUrl
-                                  ? "Ganti Foto"
-                                  : "Upload Foto"}
-                              </button>
-                              {storeData.storeImageUrl && (
-                                <button
-                                  onClick={async () => {
-                                    await deleteFromCloudinary(
-                                      storeData.storeImageUrl
-                                    )
-                                    updateStore("storeImageUrl", "")
-                                  }}
-                                  style={{
-                                    padding: "5px 12px",
-                                    border: "1px solid #fecaca",
-                                    borderRadius: 6,
-                                    background: "transparent",
-                                    color: "#ef4444",
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    cursor: "pointer"
-                                  }}
-                                >
-                                  Hapus
-                                </button>
-                              )}
-                            </Box>
-                          </Box>
-                        </Box>
-                        <Box
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: {
-                              xs: "1fr",
-                              sm: "1fr 1fr",
-                              md: "1fr 1fr 1fr"
-                            },
-                            gap: { xs: 2, sm: 2.5 }
-                          }}
-                        >
-                          {/* Nama Toko + Peta */}
-                          <Box
-                            sx={{
-                              gridColumn: {
-                                xs: "1",
-                                sm: "span 2",
-                                md: "span 3"
-                              }
-                            }}
-                          >
-                            <Field
-                              label="NAMA TOKO *"
-                              error={storeErrors.storeName}
-                            >
-                              <Box sx={{ display: "flex", gap: 1 }}>
-                                <input
-                                  type="text"
-                                  placeholder="Contoh: Toko Maju Jaya"
-                                  value={storeData.storeName}
-                                  onChange={(e) =>
-                                    updateStore("storeName", e.target.value)
-                                  }
-                                  style={{
-                                    ...inputStyle(!!storeErrors.storeName),
-                                    flex: 1
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={openMapModal}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    padding: "0 14px",
-                                    flexShrink: 0,
-                                    border: `1px solid ${storeData.storeLat ? "#16a34a" : isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                    borderRadius: 6,
-                                    background: storeData.storeLat
-                                      ? "linear-gradient(135deg,#15803d,#16a34a)"
-                                      : "linear-gradient(135deg,#1e3a8a,#2563eb)",
-                                    boxShadow: storeData.storeLat
-                                      ? "0 4px 12px rgba(22,163,74,.3)"
-                                      : "0 4px 12px rgba(59,130,246,.25)",
-                                    color: "#fff",
-                                    fontSize: 13,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    cursor: "pointer",
-                                    whiteSpace: "nowrap",
-                                    height: 42,
-                                    transition: "all 0.25s"
-                                  }}
-                                >
-                                  {storeData.storeLat ? "✓ Lokasi" : "Peta"}
-                                </button>
-                              </Box>
-                            </Field>
-                            {storeData.storeLocationLabel && (
-                              <Box
-                                sx={{
-                                  mt: 1,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.75,
-                                  px: 1.5,
-                                  py: 0.75,
-                                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                                  borderRadius: "4px"
-                                }}
-                              >
-                                <span style={{ fontSize: 11 }}>📍</span>
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    color: isDark ? "#4ade80" : "#16a34a",
-                                    fontFamily: "'Nunito', sans-serif",
-                                    fontWeight: 600,
-                                    flex: 1,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap"
-                                  }}
-                                >
-                                  {storeData.storeLocationLabel}
-                                </span>
-                                <button
-                                  onClick={() => {
-                                    updateStore("storeLat", "")
-                                    updateStore("storeLng", "")
-                                    updateStore("storeLocationLabel", "")
-                                  }}
-                                  style={{
-                                    background: "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    color: isDark ? "#4ade80" : "#16a34a",
-                                    fontSize: 13,
-                                    padding: 0,
-                                    lineHeight: 1
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </Box>
+                          </div>
+                          <div
+                            onClick={() => setStoreImgModalOpen(true)}
+                            className={cn(
+                              "absolute bottom-0.5 right-0.5 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border-2 bg-brand-700 text-xs transition-colors hover:bg-[#2563eb]",
+                              tw.bgPaper
                             )}
-                          </Box>
-
-                          <Field
-                            label="JENIS TOKO *"
-                            error={storeErrors.storeType}
                           >
-                            <select
-                              value={storeData.storeType}
-                              onChange={(e) =>
-                                updateStore("storeType", e.target.value)
-                              }
-                              style={inputStyle(!!storeErrors.storeType)}
-                            >
-                              <option value="">Pilih jenis toko</option>
-                              {STORE_TYPES.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
+                            📷
+                          </div>
+                        </div>
 
-                          <Field
-                            label="NOMOR TELEPON *"
-                            error={storeErrors.storePhone}
+                        <div className="flex-1">
+                          <p
+                            className={cn(
+                              "m-0 mb-0.5 font-nunito text-[13px] font-bold",
+                              tw.text
+                            )}
                           >
-                            <input
-                              type="tel"
-                              placeholder="08xxxxxxxxxx"
-                              value={storeData.storePhone}
-                              onChange={(e) =>
-                                updateStore("storePhone", e.target.value)
-                              }
-                              style={inputStyle(!!storeErrors.storePhone)}
-                            />
-                          </Field>
-
-                          <Field label="EMAIL TOKO">
-                            <input
-                              type="email"
-                              placeholder="email@toko.com (opsional)"
-                              value={storeData.storeEmail}
-                              onChange={(e) =>
-                                updateStore("storeEmail", e.target.value)
-                              }
-                              style={inputStyle(false)}
-                            />
-                          </Field>
-
-                          <Box
-                            sx={{
-                              gridColumn: {
-                                xs: "1",
-                                sm: "span 2",
-                                md: "span 3"
-                              }
-                            }}
-                          >
-                            <Field
-                              label="ALAMAT TOKO *"
-                              error={storeErrors.storeAddress}
-                            >
-                              <textarea
-                                rows={2}
-                                placeholder="Jalan, No, RT/RW"
-                                value={storeData.storeAddress}
-                                onChange={(e) =>
-                                  updateStore("storeAddress", e.target.value)
-                                }
-                                style={{
-                                  ...inputStyle(!!storeErrors.storeAddress),
-                                  resize: "vertical"
-                                }}
-                              />
-                            </Field>
-                          </Box>
-                        </Box>
-
-                        {/* Location Cascade */}
-                        <Box
-                          sx={{
-                            mt: 2.5,
-                            pt: 2.5,
-                            borderTop: `1px solid ${p.border}`
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              mb: 2
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 4,
-                                height: 16,
-                                bgcolor: "#1e3a8a",
-                                borderRadius: 2
-                              }}
-                            />
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: p.textSecondary,
-                                fontFamily: "'Nunito', sans-serif",
-                                letterSpacing: "0.04em"
-                              }}
-                            >
-                              WILAYAH
-                            </p>
-                          </Box>
-                          <LocationSelector
-                            value={location}
-                            onChange={(val) => {
-                              setLocation(val)
-                              setLocationErrors({})
-                            }}
-                            errors={locationErrors}
-                            isDark={isDark}
-                            p={p}
-                          />
-                        </Box>
-
-                        <Box
-                          sx={{
-                            mt: 3,
-                            pt: 3,
-                            borderTop: `1px solid ${p.border}`,
-                            display: "flex",
-                            justifyContent: "flex-end"
-                          }}
-                        >
-                          <button
-                            onClick={() => {
-                              if (validateStep1()) setStep(2)
-                            }}
-                            style={{
-                              background: "#1e3a8a",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: 6,
-                              padding: "10px 28px",
-                              fontSize: 14,
-                              fontWeight: 700,
-                              fontFamily: "'Nunito', sans-serif",
-                              cursor: "pointer",
-                              width: "100%"
-                            }}
-                          >
-                            Lanjut ke Data Pemilik →
-                          </button>
-                        </Box>
-                      </Box>
-                    )}
-
-                    {/* ════ STEP 2 ════ */}
-                    {step === 2 && (
-                      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                        {ownerData.inputMethod === "ocr" && (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              px: 2,
-                              py: 1,
-                              mb: 2.5,
-                              bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                              border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                              borderRadius: "4px"
-                            }}
-                          >
-                            <span style={{ color: "#16a34a", fontSize: 13 }}>
-                              ✓
-                            </span>
+                            Foto Toko
                             <span
-                              style={{
-                                fontSize: 12,
-                                color: isDark ? "#4ade80" : "#16a34a",
-                                fontFamily: "'Nunito', sans-serif",
-                                fontWeight: 600
-                              }}
+                              className={cn(
+                                "ml-1.5 font-nunito text-[11px] font-normal",
+                                tw.textMuted
+                              )}
                             >
-                              Data terisi dari Scan KTP — harap verifikasi
-                              kembali
+                              (opsional)
                             </span>
-                          </Box>
-                        )}
+                          </p>
 
-                        <Box
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: {
-                              xs: "1fr",
-                              sm: "1fr 1fr",
-                              md: "1fr 1fr 1fr"
-                            },
-                            gap: { xs: 2, sm: 2.5 }
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              gridColumn: {
-                                xs: "1",
-                                sm: "span 2",
-                                md: "span 3"
-                              }
-                            }}
-                          >
-                            <Field label="NIK *" error={ownerErrors.nik}>
-                              <Box sx={{ display: "flex", gap: 1 }}>
-                                <input
-                                  type="text"
-                                  placeholder="16 digit NIK"
-                                  value={ownerData.nik}
-                                  onChange={(e) =>
-                                    updateOwner(
-                                      "nik",
-                                      e.target.value.replace(/\D/g, "")
-                                    )
-                                  }
-                                  maxLength={16}
-                                  style={{
-                                    ...inputStyle(!!ownerErrors.nik),
-                                    flex: 1
-                                  }}
-                                />
-                                <button
-                                  onClick={() => setKtpModalOpen(true)}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    padding: "0 16px",
-                                    border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                    borderRadius: 6,
-                                    background:
-                                      "linear-gradient(135deg,#1e3a8a,#1e3a8a)",
-                                    boxShadow:
-                                      "0 4px 12px rgba(59,130,246,.25)",
-                                    color: "#fff",
-                                    fontSize: 13,
-                                    fontWeight: 700,
-                                    fontFamily: "'Nunito', sans-serif",
-                                    cursor: "pointer",
-                                    whiteSpace: "nowrap",
-                                    flexShrink: 0
-                                  }}
-                                >
-                                  Scan KTP
-                                </button>
-                              </Box>
-                            </Field>
-                          </Box>
-
-                          <Box
-                            sx={{
-                              gridColumn: {
-                                xs: "1",
-                                sm: "span 2",
-                                md: "span 3"
-                              }
-                            }}
-                          >
-                            <Field
-                              label="NAMA LENGKAP *"
-                              error={ownerErrors.fullName}
+                          {storeData.storeImageUrl ? (
+                            <div className="mt-1 flex items-center gap-1">
+                              <span className="text-[11px] text-[#16a34a]">
+                                ✓
+                              </span>
+                              <span className="font-nunito text-[11px] font-semibold text-[#16a34a]">
+                                Foto berhasil diupload
+                              </span>
+                            </div>
+                          ) : (
+                            <p
+                              className={cn(
+                                "m-0 mt-0.5 font-nunito text-[11px]",
+                                tw.textMuted
+                              )}
                             >
+                              JPG, PNG, WEBP · Maks 5MB
+                            </p>
+                          )}
+
+                          <div className="mt-1.5 flex gap-2">
+                            <button
+                              onClick={() => setStoreImgModalOpen(true)}
+                              className={cn(
+                                "cursor-pointer rounded-md border px-3.5 py-1.5 font-nunito text-xs font-bold text-brand-700",
+                                tw.panelBorder,
+                                tw.panelBg2
+                              )}
+                            >
+                              {storeData.storeImageUrl
+                                ? "Ganti Foto"
+                                : "Upload Foto"}
+                            </button>
+                            {storeData.storeImageUrl && (
+                              <button
+                                onClick={async () => {
+                                  await deleteFromCloudinary(
+                                    storeData.storeImageUrl
+                                  )
+                                  updateStore("storeImageUrl", "")
+                                }}
+                                className="cursor-pointer rounded-md border border-[#fecaca] bg-transparent px-3 py-1.5 font-nunito text-xs font-bold text-[#ef4444]"
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
+                        {/* Nama Toko + Peta */}
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                          <Field
+                            label="NAMA TOKO *"
+                            error={storeErrors.storeName}
+                          >
+                            <div className="flex gap-2">
                               <input
                                 type="text"
-                                placeholder="Sesuai KTP"
-                                value={ownerData.fullName}
+                                placeholder="Contoh: Toko Maju Jaya"
+                                value={storeData.storeName}
                                 onChange={(e) =>
-                                  updateOwner("fullName", e.target.value)
+                                  updateStore("storeName", e.target.value)
                                 }
-                                style={inputStyle(!!ownerErrors.fullName)}
+                                className={cn(
+                                  inputCls(isDark, !!storeErrors.storeName),
+                                  "flex-1"
+                                )}
                               />
-                            </Field>
-                          </Box>
+                              <button
+                                type="button"
+                                onClick={openMapModal}
+                                className={cn(
+                                  "flex h-10.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-3.5 font-nunito text-[13px] font-bold text-white transition-all",
+                                  storeData.storeLat
+                                    ? cn(
+                                        "border-[#16a34a] bg-[linear-gradient(135deg,#15803d,#16a34a)] shadow-[0_4px_12px_rgba(22,163,74,.3)]"
+                                      )
+                                    : cn(
+                                        tw.panelBorder,
+                                        "bg-[linear-gradient(135deg,#1e3a8a,#2563eb)] shadow-[0_4px_12px_rgba(59,130,246,.25)]"
+                                      )
+                                )}
+                              >
+                                {storeData.storeLat ? "✓ Lokasi" : "Peta"}
+                              </button>
+                            </div>
+                          </Field>
+                          {storeData.storeLocationLabel && (
+                            <div
+                              className={cn(
+                                "mt-2 flex items-center gap-1.5 rounded px-2.5 py-1.5",
+                                tw.successBg,
+                                "border",
+                                tw.successBorder
+                              )}
+                            >
+                              <span className="text-[11px]">📍</span>
+                              <span
+                                className={cn(
+                                  "flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-nunito text-[11px] font-semibold",
+                                  tw.successText
+                                )}
+                              >
+                                {storeData.storeLocationLabel}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  updateStore("storeLat", "")
+                                  updateStore("storeLng", "")
+                                  updateStore("storeLocationLabel", "")
+                                }}
+                                className={cn(
+                                  "cursor-pointer border-none bg-transparent p-0 text-[13px] leading-none",
+                                  tw.successText
+                                )}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
 
+                        <Field
+                          label="JENIS TOKO *"
+                          error={storeErrors.storeType}
+                        >
+                          <select
+                            value={storeData.storeType}
+                            onChange={(e) =>
+                              updateStore("storeType", e.target.value)
+                            }
+                            className={inputCls(
+                              isDark,
+                              !!storeErrors.storeType
+                            )}
+                          >
+                            <option value="">Pilih jenis toko</option>
+                            {STORE_TYPES.map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+
+                        <Field
+                          label="NOMOR TELEPON *"
+                          error={storeErrors.storePhone}
+                        >
+                          <input
+                            type="tel"
+                            placeholder="08xxxxxxxxxx"
+                            value={storeData.storePhone}
+                            onChange={(e) =>
+                              updateStore("storePhone", e.target.value)
+                            }
+                            className={inputCls(
+                              isDark,
+                              !!storeErrors.storePhone
+                            )}
+                          />
+                        </Field>
+
+                        <Field label="EMAIL TOKO">
+                          <input
+                            type="email"
+                            placeholder="email@toko.com (opsional)"
+                            value={storeData.storeEmail}
+                            onChange={(e) =>
+                              updateStore("storeEmail", e.target.value)
+                            }
+                            className={inputCls(isDark, false)}
+                          />
+                        </Field>
+
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3">
                           <Field
-                            label="TANGGAL LAHIR *"
-                            error={ownerErrors.birthDate}
+                            label="ALAMAT TOKO *"
+                            error={storeErrors.storeAddress}
+                          >
+                            <textarea
+                              rows={2}
+                              placeholder="Jalan, No, RT/RW"
+                              value={storeData.storeAddress}
+                              onChange={(e) =>
+                                updateStore("storeAddress", e.target.value)
+                              }
+                              className={textareaCls(
+                                isDark,
+                                !!storeErrors.storeAddress
+                              )}
+                            />
+                          </Field>
+                        </div>
+                      </div>
+
+                      {/* Location Cascade */}
+                      <div className={cn("mt-5 border-t pt-5", tw.border)}>
+                        <div className="mb-4 flex items-center gap-2">
+                          <div className="h-4 w-1 rounded bg-brand-700" />
+                          <p
+                            className={cn(
+                              "m-0 font-nunito text-xs font-bold tracking-[0.04em]",
+                              tw.textSec
+                            )}
+                          >
+                            WILAYAH
+                          </p>
+                        </div>
+                        <LocationSelector
+                          value={location}
+                          onChange={(val) => {
+                            setLocation(val)
+                            setLocationErrors({})
+                          }}
+                          errors={locationErrors}
+                          isDark={isDark}
+                          p={p}
+                        />
+                      </div>
+
+                      <div
+                        className={cn(
+                          "mt-6 flex justify-end border-t pt-6",
+                          tw.border
+                        )}
+                      >
+                        <button
+                          onClick={() => {
+                            if (validateStep1()) setStep(2)
+                          }}
+                          className={btnPrimaryCls}
+                        >
+                          Lanjut ke Data Pemilik →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ════ STEP 2 ════ */}
+                  {step === 2 && (
+                    <div className="p-4 sm:p-6">
+                      {ownerData.inputMethod === "ocr" && (
+                        <div
+                          className={cn(
+                            "mb-5 flex items-center gap-2 rounded px-4 py-2",
+                            tw.successBg,
+                            "border",
+                            tw.successBorder
+                          )}
+                        >
+                          <span className="text-[13px] text-[#16a34a]">✓</span>
+                          <span
+                            className={cn(
+                              "font-nunito text-xs font-semibold",
+                              tw.successText
+                            )}
+                          >
+                            Data terisi dari Scan KTP — harap verifikasi kembali
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                          <Field label="NIK *" error={ownerErrors.nik}>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="16 digit NIK"
+                                value={ownerData.nik}
+                                onChange={(e) =>
+                                  updateOwner(
+                                    "nik",
+                                    e.target.value.replace(/\D/g, "")
+                                  )
+                                }
+                                maxLength={16}
+                                className={cn(
+                                  inputCls(isDark, !!ownerErrors.nik),
+                                  "flex-1"
+                                )}
+                              />
+                              <button
+                                onClick={() => setKtpModalOpen(true)}
+                                className={cn(
+                                  "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-4 font-nunito text-[13px] font-bold text-white",
+                                  tw.panelBorder,
+                                  "bg-brand-700 shadow-[0_4px_12px_rgba(59,130,246,.25)]"
+                                )}
+                              >
+                                Scan KTP
+                              </button>
+                            </div>
+                          </Field>
+                        </div>
+
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                          <Field
+                            label="NAMA LENGKAP *"
+                            error={ownerErrors.fullName}
                           >
                             <input
                               type="text"
-                              placeholder="DD-MM-YYYY"
-                              value={ownerData.birthDate}
+                              placeholder="Sesuai KTP"
+                              value={ownerData.fullName}
                               onChange={(e) =>
-                                updateOwner("birthDate", e.target.value)
+                                updateOwner("fullName", e.target.value)
                               }
-                              style={inputStyle(!!ownerErrors.birthDate)}
+                              className={inputCls(
+                                isDark,
+                                !!ownerErrors.fullName
+                              )}
                             />
                           </Field>
+                        </div>
 
-                          <Field
-                            label="JENIS KELAMIN *"
-                            error={ownerErrors.gender}
-                          >
-                            <select
-                              value={ownerData.gender}
-                              onChange={(e) =>
-                                updateOwner("gender", e.target.value)
-                              }
-                              style={inputStyle(!!ownerErrors.gender)}
-                            >
-                              <option value="">Pilih</option>
-                              <option value="Laki-laki">Laki-laki</option>
-                              <option value="Perempuan">Perempuan</option>
-                            </select>
-                          </Field>
-
-                          <Box
-                            sx={{
-                              gridColumn: {
-                                xs: "1",
-                                sm: "span 2",
-                                md: "span 3"
-                              }
-                            }}
-                          >
-                            <Field
-                              label="ALAMAT SESUAI KTP *"
-                              error={ownerErrors.address}
-                            >
-                              <textarea
-                                rows={2}
-                                placeholder="Alamat lengkap sesuai KTP"
-                                value={ownerData.address}
-                                onChange={(e) =>
-                                  updateOwner("address", e.target.value)
-                                }
-                                style={{
-                                  ...inputStyle(!!ownerErrors.address),
-                                  resize: "vertical"
-                                }}
-                              />
-                            </Field>
-                          </Box>
-                        </Box>
-
-                        {/* ── TANDA TANGAN DIGITAL ── */}
-                        <Box
-                          sx={{
-                            gridColumn: { xs: "1", sm: "span 2", md: "span 3" },
-                            mt: 1
-                          }}
+                        <Field
+                          label="TANGGAL LAHIR *"
+                          error={ownerErrors.birthDate}
                         >
-                          <Field label="TANDA TANGAN DIGITAL">
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 2,
-                                p: 2,
-                                border: `1px solid ${ownerData.signatureUrl ? "#16a34a" : p.border}`,
-                                borderRadius: "8px",
-                                bgcolor: isDark ? "#111" : "#fafafa",
-                                flexWrap: "wrap"
-                              }}
-                            >
-                              {ownerData.signatureUrl ? (
-                                <>
-                                  <Box
-                                    sx={{
-                                      flex: 1,
-                                      minWidth: 160,
-                                      bgcolor: "#fff",
-                                      border: `1px solid ${p.border}`,
-                                      borderRadius: "6px",
-                                      overflow: "hidden",
-                                      height: 64
-                                    }}
-                                  >
-                                    <img
-                                      src={ownerData.signatureUrl}
-                                      alt="Tanda Tangan"
-                                      style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "contain"
-                                      }}
-                                    />
-                                  </Box>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      gap: 1,
-                                      flexWrap: "wrap"
-                                    }}
-                                  >
-                                    <button
-                                      onClick={() => setSignModalOpen(true)}
-                                      style={{
-                                        padding: "6px 14px",
-                                        border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                        borderRadius: 6,
-                                        background: isDark
-                                          ? "#0d1f3c"
-                                          : "#eff6ff",
-                                        color: "#1e3a8a",
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                        fontFamily: "'Nunito', sans-serif",
-                                        cursor: "pointer"
-                                      }}
-                                    >
-                                      Ubah
-                                    </button>
-                                    <button
-                                      onClick={async () => {
-                                        await deleteFromCloudinary(
-                                          ownerData.signatureUrl
-                                        )
-                                        updateOwner("signatureUrl", "")
-                                      }}
-                                      style={{
-                                        padding: "6px 12px",
-                                        border: "1px solid #fecaca",
-                                        borderRadius: 6,
-                                        background: "transparent",
-                                        color: "#ef4444",
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                        fontFamily: "'Nunito', sans-serif",
-                                        cursor: "pointer"
-                                      }}
-                                    >
-                                      Hapus
-                                    </button>
-                                  </Box>
-                                </>
-                              ) : (
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 2,
-                                    width: "100%"
-                                  }}
+                          <input
+                            type="text"
+                            placeholder="DD-MM-YYYY"
+                            value={ownerData.birthDate}
+                            onChange={(e) =>
+                              updateOwner("birthDate", e.target.value)
+                            }
+                            className={inputCls(
+                              isDark,
+                              !!ownerErrors.birthDate
+                            )}
+                          />
+                        </Field>
+
+                        <Field
+                          label="JENIS KELAMIN *"
+                          error={ownerErrors.gender}
+                        >
+                          <select
+                            value={ownerData.gender}
+                            onChange={(e) =>
+                              updateOwner("gender", e.target.value)
+                            }
+                            className={inputCls(isDark, !!ownerErrors.gender)}
+                          >
+                            <option value="">Pilih</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                          </select>
+                        </Field>
+
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                          <Field
+                            label="ALAMAT SESUAI KTP *"
+                            error={ownerErrors.address}
+                          >
+                            <textarea
+                              rows={2}
+                              placeholder="Alamat lengkap sesuai KTP"
+                              value={ownerData.address}
+                              onChange={(e) =>
+                                updateOwner("address", e.target.value)
+                              }
+                              className={textareaCls(
+                                isDark,
+                                !!ownerErrors.address
+                              )}
+                            />
+                          </Field>
+                        </div>
+                      </div>
+
+                      {/* ── TANDA TANGAN DIGITAL ── */}
+                      <div className="col-span-1 mt-1 sm:col-span-2 md:col-span-3">
+                        <Field label="TANDA TANGAN DIGITAL">
+                          <div
+                            className={cn(
+                              "flex flex-wrap items-center gap-4 rounded-lg border p-4",
+                              ownerData.signatureUrl
+                                ? "border-[#16a34a]"
+                                : tw.border,
+                              isDark ? "bg-[#111111]" : "bg-[#fafafa]"
+                            )}
+                          >
+                            {ownerData.signatureUrl ? (
+                              <>
+                                <div
+                                  className={cn(
+                                    "h-16 min-w-40 flex-1 overflow-hidden rounded-md border bg-white",
+                                    tw.border
+                                  )}
                                 >
-                                  <Box sx={{ flex: 1 }}>
-                                    <p
-                                      style={{
-                                        margin: "0 0 2px",
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        color: p.textPrimary,
-                                        fontFamily: "'Nunito', sans-serif"
-                                      }}
-                                    >
-                                      Belum ada tanda tangan
-                                      <span
-                                        style={{
-                                          marginLeft: 6,
-                                          fontSize: 11,
-                                          fontWeight: 400,
-                                          color: p.textMuted
-                                        }}
-                                      >
-                                        (opsional)
-                                      </span>
-                                    </p>
-                                    <p
-                                      style={{
-                                        margin: 0,
-                                        fontSize: 11,
-                                        color: p.textMuted,
-                                        fontFamily: "'Nunito', sans-serif"
-                                      }}
-                                    >
-                                      Gambar langsung atau upload foto tanda
-                                      tangan
-                                    </p>
-                                  </Box>
+                                  <img
+                                    src={ownerData.signatureUrl}
+                                    alt="Tanda Tangan"
+                                    className="h-full w-full object-contain"
+                                  />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
                                   <button
                                     onClick={() => setSignModalOpen(true)}
-                                    style={{
-                                      padding: "7px 18px",
-                                      border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                                      borderRadius: 6,
-                                      background: isDark
-                                        ? "#0d1f3c"
-                                        : "#eff6ff",
-                                      color: "#1e3a8a",
-                                      fontSize: 13,
-                                      fontWeight: 700,
-                                      fontFamily: "'Nunito', sans-serif",
-                                      cursor: "pointer",
-                                      whiteSpace: "nowrap"
-                                    }}
+                                    className={cn(
+                                      "cursor-pointer rounded-md border px-3.5 py-1.5 font-nunito text-xs font-bold text-brand-700",
+                                      tw.panelBorder,
+                                      tw.panelBg2
+                                    )}
                                   >
-                                    ✍️ Tanda Tangan
+                                    Ubah
                                   </button>
-                                </Box>
-                              )}
-                            </Box>
-                          </Field>
-                        </Box>
+                                  <button
+                                    onClick={async () => {
+                                      await deleteFromCloudinary(
+                                        ownerData.signatureUrl
+                                      )
+                                      updateOwner("signatureUrl", "")
+                                    }}
+                                    className="cursor-pointer rounded-md border border-[#fecaca] bg-transparent px-3 py-1.5 font-nunito text-xs font-bold text-[#ef4444]"
+                                  >
+                                    Hapus
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex w-full items-center gap-4">
+                                <div className="flex-1">
+                                  <p
+                                    className={cn(
+                                      "m-0 mb-0.5 font-nunito text-[13px] font-bold",
+                                      tw.text
+                                    )}
+                                  >
+                                    Belum ada tanda tangan
+                                    <span
+                                      className={cn(
+                                        "ml-1.5 font-nunito text-[11px] font-normal",
+                                        tw.textMuted
+                                      )}
+                                    >
+                                      (opsional)
+                                    </span>
+                                  </p>
+                                  <p
+                                    className={cn(
+                                      "m-0 font-nunito text-[11px]",
+                                      tw.textMuted
+                                    )}
+                                  >
+                                    Gambar langsung atau upload foto tanda
+                                    tangan
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => setSignModalOpen(true)}
+                                  className={cn(
+                                    "shrink-0 cursor-pointer whitespace-nowrap rounded-md border px-4.5 py-1.5 font-nunito text-[13px] font-bold text-brand-700",
+                                    tw.panelBorder,
+                                    tw.panelBg2
+                                  )}
+                                >
+                                  ✍️ Tanda Tangan
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </Field>
+                      </div>
 
-                        {submitError && (
-                          <Box
-                            sx={{
-                              mt: 2.5,
-                              p: 1.5,
-                              bgcolor: isDark ? "#2e1010" : "#fef2f2",
-                              border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-                              borderRadius: "4px"
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: 13,
-                                color: "#ef4444",
-                                fontFamily: "'Nunito', sans-serif"
-                              }}
-                            >
-                              {submitError}
-                            </p>
-                          </Box>
-                        )}
-
-                        <Box
-                          sx={{
-                            mt: 3,
-                            pt: 3,
-                            borderTop: `1px solid ${p.border}`,
-                            display: "flex",
-                            flexDirection: { xs: "column-reverse", sm: "row" },
-                            gap: 1.5,
-                            justifyContent: "flex-end"
-                          }}
+                      {submitError && (
+                        <div
+                          className={cn(
+                            "mt-5 rounded p-3",
+                            tw.errorBg,
+                            "border",
+                            tw.errorBorder
+                          )}
                         >
-                          <button
-                            onClick={() => setStep(1)}
-                            style={{
-                              padding: "10px 20px",
-                              border: `1px solid ${p.border}`,
-                              borderRadius: 6,
-                              background: "transparent",
-                              color: p.textSecondary,
-                              fontSize: 14,
-                              fontFamily: "'Nunito', sans-serif",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              width: "100%"
-                            }}
-                          >
-                            ← Kembali
-                          </button>
-                          <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            style={{
-                              padding: "10px 28px",
-                              border: "none",
-                              borderRadius: 6,
-                              background: isSubmitting ? "#065a4d" : "#1e3a8a",
-                              color: "#fff",
-                              fontSize: 14,
-                              fontWeight: 700,
-                              fontFamily: "'Nunito', sans-serif",
-                              cursor: isSubmitting ? "not-allowed" : "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 8,
-                              opacity: isSubmitting ? 0.8 : 1,
-                              width: "100%"
-                            }}
-                          >
-                            {isSubmitting && <Box sx={spinnerSx} />}
-                            {isSubmitting
-                              ? "Mendaftarkan..."
-                              : "Daftarkan Toko"}
-                          </button>
-                        </Box>
-                      </Box>
-                    )}
-                  </Box>
-                </>
-              )}
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+                          <p className="m-0 font-nunito text-sm text-[#ef4444]">
+                            {submitError}
+                          </p>
+                        </div>
+                      )}
+
+                      <div
+                        className={cn(
+                          "mt-6 flex flex-col-reverse justify-end gap-3 border-t pt-6 sm:flex-row",
+                          tw.border
+                        )}
+                      >
+                        <button
+                          onClick={() => setStep(1)}
+                          className={cn(
+                            "w-full rounded-md border bg-transparent px-5 py-2.5 font-nunito text-sm font-semibold sm:w-auto",
+                            tw.border,
+                            tw.textSec
+                          )}
+                        >
+                          ← Kembali
+                        </button>
+                        <button
+                          onClick={handleSubmit}
+                          disabled={isSubmitting}
+                          className={cn(
+                            "flex w-full items-center justify-center gap-2 rounded-md px-7 py-2.5 font-nunito text-sm font-bold text-white sm:w-auto",
+                            isSubmitting
+                              ? "cursor-not-allowed opacity-80"
+                              : "cursor-pointer",
+                            isSubmitting ? "bg-[#065a4d]" : "bg-brand-700"
+                          )}
+                        >
+                          {isSubmitting && <span className={spinCls} />}
+                          {isSubmitting ? "Mendaftarkan..." : "Daftarkan Toko"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* ════════════════════════════════════════
           STORE IMAGE MODAL
       ════════════════════════════════════════ */}
-      <Modal open={storeImgModalOpen} onClose={closeStoreImgModal}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%,-50%)",
-            width: { xs: "95vw", sm: 520 },
-            maxHeight: { xs: "90vh", sm: "85vh" },
-            bgcolor: p.bgPaper,
-            border: `1px solid ${p.border}`,
-            borderRadius: "10px",
-            boxShadow: p.menuShadow,
-            outline: "none",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderBottom: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0
+      <ModalShell open={storeImgModalOpen} onClose={closeStoreImgModal} tw={tw}>
+        <ModalHeader
+          icon="🏪"
+          title="Foto Toko"
+          subtitle="Upload atau gunakan kamera"
+          onClose={closeStoreImgModal}
+          tw={tw}
+        />
+        <div className="flex-1 overflow-y-auto p-6">
+          <TabSwitch
+            options={[
+              { value: "upload", label: "Upload File" },
+              { value: "camera", label: "Kamera" }
+            ]}
+            value={storeImgMode}
+            onChange={(m) => {
+              setStoreImgMode(m as StoreImgMode)
+              if (m === "upload") stopStoreImgCam()
             }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14
-                }}
-              >
-                🏪
-              </Box>
-              <Box>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: p.textPrimary,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Foto Toko
-                </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    color: p.textMuted,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Upload atau gunakan kamera
-                </p>
-              </Box>
-            </Box>
-            <button
-              onClick={closeStoreImgModal}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: p.textMuted,
-                fontSize: 18,
-                lineHeight: 1,
-                padding: 4
-              }}
-            >
-              ✕
-            </button>
-          </Box>
+            tw={tw}
+          />
 
-          <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            {/* Tab */}
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1,
-                p: 0.5,
-                bgcolor: p.bg,
-                border: `1px solid ${p.border}`,
-                borderRadius: "6px",
-                mb: 3
-              }}
-            >
-              {(["upload", "camera"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => {
-                    setStoreImgMode(m)
-                    if (m === "upload") stopStoreImgCam()
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "7px 12px",
-                    border: `1px solid ${storeImgMode === m ? (isDark ? "#1e3a8a" : "#b5d4f4") : "transparent"}`,
-                    borderRadius: "4px",
-                    background:
-                      storeImgMode === m
-                        ? isDark
-                          ? "#0d1f3c"
-                          : "#e6f1fb"
-                        : "transparent",
-                    color: storeImgMode === m ? "#1e3a8a" : p.textSecondary,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: "'Nunito', sans-serif",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {m === "upload" ? "Upload File" : "Kamera"}
-                </button>
-              ))}
-            </Box>
-
-            {/* Upload Mode */}
-            {storeImgMode === "upload" && (
-              <>
-                <input
-                  ref={storeImgFileRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleStoreImgFile}
-                  style={{ display: "none" }}
-                />
-                {!storeImgPreview ? (
-                  <Box
-                    onClick={() =>
-                      storeImgStatus !== "uploading" &&
-                      storeImgFileRef.current?.click()
-                    }
-                    sx={{
-                      border: `1.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                      borderRadius: "8px",
-                      py: 5,
-                      textAlign: "center",
-                      cursor:
-                        storeImgStatus === "uploading"
-                          ? "not-allowed"
-                          : "pointer",
-                      opacity: storeImgStatus === "uploading" ? 0.5 : 1,
-                      "&:hover": {
-                        borderColor: "#1e3a8a",
-                        bgcolor: isDark ? "#0d1f3c" : "#eff6ff"
-                      },
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <p style={{ margin: "0 0 6px", fontSize: 28 }}>📎</p>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        color: "#1e3a8a",
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700
-                      }}
-                    >
-                      Klik untuk pilih foto toko
-                    </p>
-                    <p
-                      style={{
-                        margin: "4px 0 0",
-                        fontSize: 11,
-                        color: p.textMuted,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      JPG, PNG, WEBP · Maks 5MB
-                    </p>
-                  </Box>
-                ) : (
-                  <Box sx={{ position: "relative" }}>
-                    <img
-                      src={storeImgPreview}
-                      alt="Preview"
-                      style={{
-                        width: "100%",
-                        borderRadius: 8,
-                        border: `1px solid ${p.border}`,
-                        maxHeight: 220,
-                        objectFit: "cover"
-                      }}
-                    />
-                    {storeImgStatus !== "uploading" &&
-                      storeImgStatus !== "success" && (
-                        <button
-                          onClick={() => {
-                            setStoreImgPreview("")
-                            setStoreImgStatus("idle")
-                            setStoreImgError("")
-                          }}
-                          style={{
-                            position: "absolute",
-                            top: 8,
-                            right: 8,
-                            background: "rgba(0,0,0,0.5)",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: 28,
-                            height: 28,
-                            color: "#fff",
-                            cursor: "pointer",
-                            fontSize: 12
-                          }}
-                        >
-                          ✕
-                        </button>
-                      )}
-                  </Box>
-                )}
-              </>
-            )}
-
-            {/* Camera Mode */}
-            {storeImgMode === "camera" && (
-              <Box>
-                <Box
-                  sx={{
-                    position: "relative",
-                    bgcolor: "#000",
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    aspectRatio: { xs: "4/3", sm: "16/9" },
-                    minHeight: { xs: 220, sm: "auto" },
-                    mb: 1.5
-                  }}
-                >
-                  <video
-                    ref={storeImgVideoRef}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block"
-                    }}
-                    playsInline
-                    muted
-                  />
-                  <canvas ref={storeImgCanvasRef} style={{ display: "none" }} />
-                  {!storeImgCamActive && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 1
-                      }}
-                    >
-                      <p
-                        style={{
-                          color: "#888",
-                          fontSize: 12,
-                          fontFamily: "'Nunito', sans-serif",
-                          margin: 0
-                        }}
-                      >
-                        Kamera belum aktif
-                      </p>
-                      <button
-                        onClick={() => startStoreImgCam()}
-                        style={{
-                          background: "#1e3a8a",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "8px 20px",
-                          fontSize: 13,
-                          fontFamily: "'Nunito', sans-serif",
-                          fontWeight: 700,
-                          cursor: "pointer"
-                        }}
-                      >
-                        Aktifkan Kamera
-                      </button>
-                    </Box>
-                  )}
-                  {storeImgCamActive && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 16,
-                        border: "2px solid rgba(59,130,246,0.6)",
-                        borderRadius: "4px",
-                        pointerEvents: "none"
-                      }}
-                    />
-                  )}
-                </Box>
-
-                {storeImgCamActive && storeImgCameras.length > 1 && (
-                  <Box sx={{ mb: 1.5 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: p.textMuted,
-                        marginBottom: 5,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      Pilih Kamera
-                    </label>
-                    <select
-                      value={storeImgSelectedCam}
-                      onChange={(e) => {
-                        setStoreImgSelectedCam(e.target.value)
-                        startStoreImgCam(e.target.value)
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "8px 12px",
-                        borderRadius: 6,
-                        border: `1px solid ${p.border}`,
-                        background: isDark ? "#111" : "#fff",
-                        color: p.textPrimary,
-                        fontFamily: "'Nunito', sans-serif",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        outline: "none",
-                        cursor: "pointer"
-                      }}
-                    >
-                      {storeImgCameras.map((cam, idx) => (
-                        <option key={cam.deviceId} value={cam.deviceId}>
-                          {cam.label ||
-                            (idx === 0
-                              ? "Kamera Belakang"
-                              : idx === 1
-                                ? "Kamera Depan"
-                                : `Kamera ${idx + 1}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </Box>
-                )}
-
-                {storeImgCamActive && (
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <button
-                      onClick={captureStoreImgCam}
-                      disabled={storeImgStatus === "uploading"}
-                      style={{
-                        flex: 1,
-                        background: "#1e3a8a",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 6,
-                        padding: "9px",
-                        fontSize: 13,
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        opacity: storeImgStatus === "uploading" ? 0.6 : 1
-                      }}
-                    >
-                      📸 Ambil Foto
-                    </button>
-                    <button
-                      onClick={stopStoreImgCam}
-                      style={{
-                        padding: "9px 16px",
-                        border: `1px solid ${p.border}`,
-                        borderRadius: 6,
-                        background: "transparent",
-                        color: p.textSecondary,
-                        fontSize: 13,
-                        fontFamily: "'Nunito', sans-serif",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Batal
-                    </button>
-                  </Box>
-                )}
-              </Box>
-            )}
-
-            {/* Status banners */}
-            {storeImgStatus === "uploading" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 14,
-                    height: 14,
-                    border: "2px solid #1e3a8a",
-                    borderTopColor: "transparent",
-                    borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": {
-                      from: { transform: "rotate(0deg)" },
-                      to: { transform: "rotate(360deg)" }
-                    },
-                    flexShrink: 0
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#1e3a8a",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Mengupload foto toko...
-                </span>
-              </Box>
-            )}
-            {storeImgStatus === "success" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: isDark ? "#4ade80" : "#16a34a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
-                >
-                  Foto toko berhasil diupload! Menutup...
-                </span>
-              </Box>
-            )}
-            {storeImgStatus === "error" && (
-              <Box
-                sx={{
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#2e1010" : "#fef2f2",
-                  border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    fontSize: 13,
-                    color: "#ef4444",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  {storeImgError}
-                </p>
-                <button
-                  onClick={() => {
-                    setStoreImgStatus("idle")
-                    setStoreImgError("")
-                    setStoreImgPreview("")
-                  }}
-                  style={{
-                    padding: "6px 14px",
-                    border: "1px solid #ef4444",
-                    borderRadius: 4,
-                    background: "transparent",
-                    color: "#ef4444",
-                    fontSize: 12,
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600,
-                    cursor: "pointer"
-                  }}
-                >
-                  Coba Lagi
-                </button>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* MAP MODAL — tidak berubah */}
-      <Modal open={mapModalOpen} onClose={closeMapModal}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%,-50%)",
-            width: { xs: "96vw", sm: 580 },
-            height: { xs: "92vh", sm: "88vh" },
-            maxHeight: { xs: "92vh", sm: "88vh" },
-            bgcolor: p.bgPaper,
-            border: `1px solid ${p.border}`,
-            borderRadius: "12px",
-            boxShadow: p.menuShadow,
-            outline: "none",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-          }}
-        >
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderBottom: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0
-            }}
-          >
-            <Box>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: p.textPrimary,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Lokasi Toko
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Pin lokasi toko Anda di peta
-              </p>
-            </Box>
-            <button
-              onClick={closeMapModal}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: p.textMuted,
-                fontSize: 18,
-                lineHeight: 1,
-                padding: 4
-              }}
-            >
-              ✕
-            </button>
-          </Box>
-          <Box
-            sx={{
-              flex: "1 1 0",
-              height: 0,
-              minHeight: 0,
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column"
-            }}
-          >
-            {geoStatus === "idle" || geoStatus === "requesting" ? (
-              <Box
-                sx={{
-                  mx: 3,
-                  mt: 2.5,
-                  p: 2,
-                  bgcolor: isDark ? "#0d1f3c" : "#eff6ff",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#bfdbfe"}`,
-                  borderRadius: "8px"
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 4px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: isDark ? "#93c5fd" : "#1e3a8a",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  {geoStatus === "requesting"
-                    ? "Meminta akses lokasi..."
-                    : "Gunakan Lokasi Saat Ini"}
-                </p>
-                <p
-                  style={{
-                    margin: "0 0 10px",
-                    fontSize: 12,
-                    color: p.textSecondary,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  {geoStatus === "requesting"
-                    ? "Izinkan akses lokasi di browser Anda."
-                    : "Klik tombol untuk mendeteksi lokasi otomatis."}
-                </p>
-                {geoStatus === "idle" && (
-                  <button
-                    onClick={requestGeolocation}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "7px 16px",
-                      border: "none",
-                      borderRadius: 6,
-                      background: "#1e3a8a",
-                      color: "#fff",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      fontFamily: "'Nunito', sans-serif",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Deteksi Lokasi Saya
-                  </button>
-                )}
-                {geoStatus === "requesting" && (
-                  <Box
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 1
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        ...spinnerSx,
-                        border: "2px solid rgba(30,58,138,0.3)",
-                        borderTopColor: "#1e3a8a"
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: "#1e3a8a",
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      Menunggu izin...
-                    </span>
-                  </Box>
-                )}
-              </Box>
-            ) : geoStatus === "granted" ? (
-              <Box
-                sx={{
-                  mx: 3,
-                  mt: 2.5,
-                  px: 2,
-                  py: 1.25,
-                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1
-                }}
-              >
-                <span style={{ fontSize: 13, color: "#16a34a" }}>✓</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: isDark ? "#4ade80" : "#16a34a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
-                >
-                  Lokasi terdeteksi — pin sudah diletakkan di posisi Anda
-                </span>
-                <button
-                  onClick={requestGeolocation}
-                  style={{
-                    marginLeft: "auto",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 11,
-                    color: isDark ? "#4ade80" : "#16a34a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 700,
-                    textDecoration: "underline",
-                    padding: 0
-                  }}
-                >
-                  Refresh
-                </button>
-              </Box>
-            ) : geoStatus === "denied" ? (
-              <Box
-                sx={{
-                  mx: 3,
-                  mt: 2.5,
-                  px: 2,
-                  py: 1.25,
-                  bgcolor: isDark ? "#2e1a10" : "#fff7ed",
-                  border: `1px solid ${isDark ? "#7c3a10" : "#fed7aa"}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1
-                }}
-              >
-                <span style={{ fontSize: 13 }}>⚠️</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: isDark ? "#fdba74" : "#c2410c",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Akses lokasi ditolak. Gunakan search atau klik peta secara
-                  manual.
-                </span>
-              </Box>
-            ) : null}
-
-            <Box sx={{ px: 3, pt: 2.5, pb: 1.5 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: p.textMuted,
-                  marginBottom: 6,
-                  fontFamily: "'Nunito', sans-serif",
-                  letterSpacing: "0.04em"
-                }}
-              >
-                CARI LOKASI
-              </label>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <input
-                  type="text"
-                  placeholder="Nama toko, alamat, atau area..."
-                  value={mapQuery}
-                  onChange={(e) => setMapQuery(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && !mapSearchLoading && searchLocation()
-                  }
-                  style={{ ...inputStyle(false), flex: 1 }}
-                />
-                <button
-                  onClick={searchLocation}
-                  disabled={mapSearchLoading || mapQuery.trim().length < 3}
-                  style={{
-                    padding: "0 16px",
-                    border: "none",
-                    borderRadius: 6,
-                    background:
-                      mapSearchLoading || mapQuery.trim().length < 3
-                        ? "#64748b"
-                        : "#1e3a8a",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: "'Nunito', sans-serif",
-                    cursor:
-                      mapSearchLoading || mapQuery.trim().length < 3
-                        ? "not-allowed"
-                        : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    flexShrink: 0,
-                    height: 42
-                  }}
-                >
-                  {mapSearchLoading ? <Box sx={{ ...spinnerSx }} /> : <></>}
-                  {mapSearchLoading ? "Mencari..." : "Cari"}
-                </button>
-              </Box>
-              {mapSearchError && (
-                <p
-                  style={{
-                    margin: "6px 0 0",
-                    fontSize: 12,
-                    color: "#ef4444",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  {mapSearchError}
-                </p>
-              )}
-              {mapLabel && !mapSearchError && (
-                <p
-                  style={{
-                    margin: "6px 0 0",
-                    fontSize: 12,
-                    color: isDark ? "#4ade80" : "#16a34a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
-                >
-                  📍 {mapLabel}
-                </p>
-              )}
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  fontSize: 11,
-                  color: p.textMuted,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                Klik langsung pada peta untuk memindahkan pin lokasi.
-              </p>
-            </Box>
-
-            <Box
-              sx={{
-                mx: 3,
-                mb: 0,
-                height: { xs: 300, sm: 360 },
-                flexShrink: 0,
-                border: `1px solid ${p.border}`,
-                borderRadius: "8px",
-                overflow: "hidden",
-                position: "relative"
-              }}
-            >
-              <MapLibreMap
-                center={mapCenter}
-                marker={mapMarker}
-                markerLabel={mapLabel}
-                isDark={isDark}
-                onMapClick={handleMapClick}
-                onRequestGeo={requestGeolocation}
-                isGeoLoading={geoLoading}
-                markerSource={markerSource}
+          {storeImgMode === "upload" && (
+            <>
+              <input
+                ref={storeImgFileRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleStoreImgFile}
+                className="hidden"
               />
-            </Box>
-
-            {mapMarker && (
-              <Box
-                sx={{
-                  mx: 3,
-                  mt: 1.5,
-                  mb: 2,
-                  px: 2,
-                  py: 1,
-                  bgcolor: p.bg,
-                  border: `1px solid ${p.border}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between"
-                }}
-              >
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
+              {!storeImgPreview ? (
+                <div
+                  onClick={() =>
+                    storeImgStatus !== "uploading" &&
+                    storeImgFileRef.current?.click()
+                  }
+                  className={cn(
+                    "rounded-lg border-[1.5px] border-dashed py-10 text-center transition-all hover:border-brand-700",
+                    tw.panelBorder,
+                    storeImgStatus === "uploading"
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer"
+                  )}
+                >
+                  <p className="m-0 mb-1.5 text-[28px]">📎</p>
+                  <p className="m-0 font-nunito text-sm font-bold text-brand-700">
+                    Klik untuk pilih foto toko
+                  </p>
+                  <p
+                    className={cn(
+                      "m-0 mt-1 font-nunito text-[11px]",
+                      tw.textMuted
+                    )}
                   >
-                    <strong style={{ color: p.textSecondary }}>Lat:</strong>{" "}
-                    {mapMarker[0].toFixed(6)}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    <strong style={{ color: p.textSecondary }}>Lng:</strong>{" "}
-                    {mapMarker[1].toFixed(6)}
-                  </span>
-                </Box>
-                <a
-                  href={`https://www.google.com/maps?q=${mapMarker[0]},${mapMarker[1]}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: 11,
-                    color: "#1e3a8a",
-                    fontFamily: "'Nunito', sans-serif",
-                    textDecoration: "none",
-                    fontWeight: 700
-                  }}
-                >
-                  Buka Google Maps ↗
-                </a>
-              </Box>
-            )}
-          </Box>
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderTop: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              gap: 1.5,
-              justifyContent: "flex-end",
-              flexShrink: 0
-            }}
-          >
-            <button
-              onClick={closeMapModal}
-              style={{
-                padding: "9px 20px",
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
-                background: "transparent",
-                color: p.textSecondary,
-                fontSize: 13,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer"
-              }}
-            >
-              Batal
-            </button>
-            <button
-              onClick={confirmLocation}
-              disabled={!mapMarker}
-              style={{
-                padding: "9px 22px",
-                border: "none",
-                borderRadius: 6,
-                background: mapMarker ? "#1e3a8a" : "#64748b",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "'Nunito', sans-serif",
-                cursor: mapMarker ? "pointer" : "not-allowed"
-              }}
-            >
-              {mapMarker ? "Simpan Lokasi" : "Pilih Lokasi di Peta"}
-            </button>
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* KTP SCAN MODAL — tidak berubah */}
-      <Modal open={ktpModalOpen} onClose={closeKtpModal}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%,-50%)",
-            width: { xs: "95vw", sm: 520 },
-            maxHeight: { xs: "90vh", sm: "85vh" },
-            bgcolor: p.bgPaper,
-            border: `1px solid ${p.border}`,
-            borderRadius: "10px",
-            boxShadow: p.menuShadow,
-            outline: "none",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-          }}
-        >
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderBottom: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14
-                }}
-              >
-                🪪
-              </Box>
-              <Box>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: p.textPrimary,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Scan KTP
-                </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    color: p.textMuted,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Upload atau gunakan kamera
-                </p>
-              </Box>
-            </Box>
-            <button
-              onClick={closeKtpModal}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: p.textMuted,
-                fontSize: 18,
-                lineHeight: 1,
-                padding: 4
-              }}
-            >
-              ✕
-            </button>
-          </Box>
-          <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1,
-                p: 0.5,
-                bgcolor: p.bg,
-                border: `1px solid ${p.border}`,
-                borderRadius: "6px",
-                mb: 3
-              }}
-            >
-              {(["upload", "webcam"] as const).map((sm) => (
-                <button
-                  key={sm}
-                  onClick={() => {
-                    setScanMode(sm)
-                    if (sm === "upload") stopWebcam()
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "7px 12px",
-                    border: `1px solid ${scanMode === sm ? (isDark ? "#1e3a8a" : "#b5d4f4") : "transparent"}`,
-                    borderRadius: "4px",
-                    background:
-                      scanMode === sm
-                        ? isDark
-                          ? "#0d1f3c"
-                          : "#e6f1fb"
-                        : "transparent",
-                    color: scanMode === sm ? "#1e3a8a" : p.textSecondary,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: "'Nunito', sans-serif",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {sm === "upload" ? "Upload File" : "Kamera"}
-                </button>
-              ))}
-            </Box>
-            {scanMode === "upload" && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleFileUpload}
-                  style={{ display: "none" }}
-                />
-                {!ktpPreview ? (
-                  <Box
-                    onClick={() =>
-                      ocrStatus !== "scanning" && fileInputRef.current?.click()
-                    }
-                    sx={{
-                      border: `1.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                      borderRadius: "8px",
-                      py: 5,
-                      textAlign: "center",
-                      cursor:
-                        ocrStatus === "scanning" ? "not-allowed" : "pointer",
-                      opacity: ocrStatus === "scanning" ? 0.5 : 1,
-                      "&:hover": {
-                        borderColor: "#1e3a8a",
-                        bgcolor: isDark ? "#0d1f3c" : "#f0fdf9"
-                      },
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <p style={{ margin: "0 0 6px", fontSize: 28 }}>📎</p>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        color: "#1e3a8a",
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700
-                      }}
-                    >
-                      Klik untuk pilih foto KTP
-                    </p>
-                    <p
-                      style={{
-                        margin: "4px 0 0",
-                        fontSize: 11,
-                        color: p.textMuted,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      JPG, PNG, WEBP · Maks 5MB
-                    </p>
-                  </Box>
-                ) : (
-                  <Box sx={{ position: "relative" }}>
-                    <img
-                      src={ktpPreview}
-                      alt="KTP Preview"
-                      style={{
-                        width: "100%",
-                        borderRadius: 8,
-                        border: `1px solid ${p.border}`,
-                        maxHeight: 200,
-                        objectFit: "cover"
-                      }}
-                    />
-                    {ocrStatus !== "scanning" && ocrStatus !== "success" && (
+                    JPG, PNG, WEBP · Maks 5MB
+                  </p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={storeImgPreview}
+                    alt="Preview"
+                    className={cn(
+                      "max-h-55 w-full rounded-lg border object-cover",
+                      tw.border
+                    )}
+                  />
+                  {storeImgStatus !== "uploading" &&
+                    storeImgStatus !== "success" && (
                       <button
                         onClick={() => {
-                          setKtpPreview("")
-                          setOcrStatus("idle")
-                          setOcrError("")
+                          setStoreImgPreview("")
+                          setStoreImgStatus("idle")
+                          setStoreImgError("")
                         }}
-                        style={{
-                          position: "absolute",
-                          top: 8,
-                          right: 8,
-                          background: "rgba(0,0,0,0.5)",
-                          border: "none",
-                          borderRadius: "50%",
-                          width: 28,
-                          height: 28,
-                          color: "#fff",
-                          cursor: "pointer",
-                          fontSize: 12
-                        }}
+                        className="absolute right-2 top-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/50 text-xs text-white"
                       >
                         ✕
                       </button>
                     )}
-                  </Box>
-                )}
-              </>
-            )}
-            {scanMode === "webcam" && (
-              <Box>
-                <Box
-                  sx={{
-                    position: "relative",
-                    bgcolor: "#000",
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    aspectRatio: { xs: "4/3", sm: "16/9" },
-                    minHeight: { xs: 220, sm: "auto" },
-                    mb: 1.5
-                  }}
-                >
-                  <video
-                    ref={videoRef}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block"
-                    }}
-                    playsInline
-                    muted
-                  />
-                  <canvas ref={canvasRef} style={{ display: "none" }} />
-                  {!webcamActive && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 1
-                      }}
-                    >
-                      <p
-                        style={{
-                          color: "#888",
-                          fontSize: 12,
-                          fontFamily: "'Nunito', sans-serif",
-                          margin: 0
-                        }}
-                      >
-                        Kamera belum aktif
-                      </p>
-                      <button
-                        onClick={() => startWebcam()}
-                        style={{
-                          background: "#1e3a8a",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "8px 20px",
-                          fontSize: 13,
-                          fontFamily: "'Nunito', sans-serif",
-                          fontWeight: 700,
-                          cursor: "pointer"
-                        }}
-                      >
-                        Aktifkan Kamera
-                      </button>
-                    </Box>
-                  )}
-                  {webcamActive && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 16,
-                        border: "2px solid rgba(8,116,99,0.6)",
-                        borderRadius: "4px",
-                        pointerEvents: "none"
-                      }}
-                    />
-                  )}
-                </Box>
-                {webcamActive && cameras.length > 1 && (
-                  <Box sx={{ mb: 1.5 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: p.textMuted,
-                        marginBottom: 5,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      Pilih Kamera
-                    </label>
-                    <select
-                      value={selectedCameraId}
-                      onChange={(e) => handleCameraChange(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "8px 12px",
-                        borderRadius: 6,
-                        border: `1px solid ${p.border}`,
-                        background: isDark ? "#111" : "#fff",
-                        color: p.textPrimary,
-                        fontFamily: "'Nunito', sans-serif",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        outline: "none",
-                        cursor: "pointer"
-                      }}
-                    >
-                      {cameras.map((cam, idx) => (
-                        <option key={cam.deviceId} value={cam.deviceId}>
-                          {cam.label ||
-                            (idx === 0
-                              ? "Kamera Belakang"
-                              : idx === 1
-                                ? "Kamera Depan"
-                                : `Kamera ${idx + 1}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </Box>
-                )}
-                {webcamActive && (
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <button
-                      onClick={captureWebcam}
-                      disabled={ocrStatus === "scanning"}
-                      style={{
-                        flex: 1,
-                        background: "#1e3a8a",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 6,
-                        padding: "9px",
-                        fontSize: 13,
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        opacity: ocrStatus === "scanning" ? 0.6 : 1
-                      }}
-                    >
-                      📸 Ambil Foto
-                    </button>
-                    <button
-                      onClick={stopWebcam}
-                      style={{
-                        padding: "9px 16px",
-                        border: `1px solid ${p.border}`,
-                        borderRadius: 6,
-                        background: "transparent",
-                        color: p.textSecondary,
-                        fontSize: 13,
-                        fontFamily: "'Nunito', sans-serif",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Batal
-                    </button>
-                  </Box>
-                )}
-              </Box>
-            )}
-            {ocrStatus === "scanning" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 14,
-                    height: 14,
-                    border: "2px solid #1e3a8a",
-                    borderTopColor: "transparent",
-                    borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": {
-                      from: { transform: "rotate(0deg)" },
-                      to: { transform: "rotate(360deg)" }
-                    },
-                    flexShrink: 0
-                  }}
+                </div>
+              )}
+            </>
+          )}
+
+          {storeImgMode === "camera" && (
+            <div>
+              <div className="relative mb-3 aspect-4/3 min-h-55 overflow-hidden rounded-lg bg-black sm:aspect-video sm:min-h-0">
+                <video
+                  ref={storeImgVideoRef}
+                  className="block h-full w-full object-cover"
+                  playsInline
+                  muted
                 />
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#1e3a8a",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Sedang membaca KTP...
-                </span>
-              </Box>
-            )}
-            {ocrStatus === "success" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: isDark ? "#4ade80" : "#16a34a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
-                >
-                  Data KTP berhasil dibaca! Menutup...
-                </span>
-              </Box>
-            )}
-            {ocrStatus === "error" && (
-              <Box
-                sx={{
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#2e1010" : "#fef2f2",
-                  border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    fontSize: 13,
-                    color: "#ef4444",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  {ocrError}
-                </p>
-                <button
-                  onClick={() => {
-                    setOcrStatus("idle")
-                    setOcrError("")
-                    setKtpPreview("")
-                  }}
-                  style={{
-                    padding: "6px 14px",
-                    border: "1px solid #ef4444",
-                    borderRadius: 4,
-                    background: "transparent",
-                    color: "#ef4444",
-                    fontSize: 12,
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600,
-                    cursor: "pointer"
-                  }}
-                >
-                  Coba Lagi
-                </button>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Modal>
+                <canvas ref={storeImgCanvasRef} className="hidden" />
+                {!storeImgCamActive && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <p className="m-0 font-nunito text-xs text-[#888888]">
+                      Kamera belum aktif
+                    </p>
+                    <button
+                      onClick={() => startStoreImgCam()}
+                      className="cursor-pointer rounded-md border-none bg-brand-700 px-5 py-2 font-nunito text-[13px] font-bold text-white"
+                    >
+                      Aktifkan Kamera
+                    </button>
+                  </div>
+                )}
+                {storeImgCamActive && (
+                  <div className="pointer-events-none absolute inset-4 rounded border-2 border-blue-400/60" />
+                )}
+              </div>
+
+              {storeImgCamActive && storeImgCameras.length > 1 && (
+                <div className="mb-3">
+                  <label
+                    className={cn(
+                      "mb-1 block font-nunito text-[11px] font-bold",
+                      tw.textMuted
+                    )}
+                  >
+                    Pilih Kamera
+                  </label>
+                  <select
+                    value={storeImgSelectedCam}
+                    onChange={(e) => {
+                      setStoreImgSelectedCam(e.target.value)
+                      startStoreImgCam(e.target.value)
+                    }}
+                    className={inputCls(isDark, false)}
+                  >
+                    {storeImgCameras.map((cam, idx) => (
+                      <option key={cam.deviceId} value={cam.deviceId}>
+                        {cam.label ||
+                          (idx === 0
+                            ? "Kamera Belakang"
+                            : idx === 1
+                              ? "Kamera Depan"
+                              : `Kamera ${idx + 1}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {storeImgCamActive && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={captureStoreImgCam}
+                    disabled={storeImgStatus === "uploading"}
+                    className={cn(
+                      "flex-1 cursor-pointer rounded-md border-none bg-brand-700 py-2.5 font-nunito text-[13px] font-bold text-white",
+                      storeImgStatus === "uploading" && "opacity-60"
+                    )}
+                  >
+                    📸 Ambil Foto
+                  </button>
+                  <button
+                    onClick={stopStoreImgCam}
+                    className={cn(
+                      "cursor-pointer rounded-md border bg-transparent px-4 py-2.5 font-nunito text-[13px]",
+                      tw.border,
+                      tw.textSec
+                    )}
+                  >
+                    Batal
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <StatusBanner
+            status={storeImgStatus}
+            loadingText="Mengupload foto toko..."
+            successText="Foto toko berhasil diupload! Menutup..."
+            error={storeImgError}
+            onRetry={() => {
+              setStoreImgStatus("idle")
+              setStoreImgError("")
+              setStoreImgPreview("")
+            }}
+            tw={tw}
+          />
+        </div>
+      </ModalShell>
 
       {/* ════════════════════════════════════════
-    SIGNATURE MODAL
-════════════════════════════════════════ */}
-      <Modal open={signModalOpen} onClose={closeSignModal}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%,-50%)",
-            width: { xs: "95vw", sm: 520 },
-            maxHeight: { xs: "90vh", sm: "85vh" },
-            bgcolor: p.bgPaper,
-            border: `1px solid ${p.border}`,
-            borderRadius: "10px",
-            boxShadow: p.menuShadow,
-            outline: "none",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderBottom: `1px solid ${p.border}`,
-              bgcolor: p.bg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14
-                }}
+          MAP MODAL
+      ════════════════════════════════════════ */}
+      <ModalShell
+        open={mapModalOpen}
+        onClose={closeMapModal}
+        widthClass="h-[92vh] max-h-[92vh] sm:h-[88vh] sm:max-h-[88vh] sm:w-[580px]"
+        tw={tw}
+      >
+        <ModalHeader
+          icon="📍"
+          title="Lokasi Toko"
+          subtitle="Pin lokasi toko Anda di peta"
+          onClose={closeMapModal}
+          tw={tw}
+        />
+        <div className="flex h-0 flex-1 flex-col overflow-y-auto">
+          {(geoStatus === "idle" || geoStatus === "requesting") && (
+            <div
+              className={cn(
+                "mx-6 mt-5 rounded-lg border p-4",
+                tw.panelBg2,
+                tw.panelBorder
+              )}
+            >
+              <p
+                className={cn(
+                  "m-0 mb-1 font-nunito text-[13px] font-bold",
+                  tw.infoText
+                )}
               >
-                ✍️
-              </Box>
-              <Box>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: p.textPrimary,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
+                {geoStatus === "requesting"
+                  ? "Meminta akses lokasi..."
+                  : "Gunakan Lokasi Saat Ini"}
+              </p>
+              <p className={cn("m-0 mb-2.5 font-nunito text-xs", tw.textSec)}>
+                {geoStatus === "requesting"
+                  ? "Izinkan akses lokasi di browser Anda."
+                  : "Klik tombol untuk mendeteksi lokasi otomatis."}
+              </p>
+              {geoStatus === "idle" && (
+                <button
+                  onClick={requestGeolocation}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border-none bg-brand-700 px-4 py-1.5 font-nunito text-xs font-bold text-white"
                 >
-                  Tanda Tangan Digital
-                </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    color: p.textMuted,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
+                  Deteksi Lokasi Saya
+                </button>
+              )}
+              {geoStatus === "requesting" && (
+                <div className="inline-flex items-center gap-2">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-700/30 border-t-brand-700" />
+                  <span className="font-nunito text-xs text-brand-700">
+                    Menunggu izin...
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          {geoStatus === "granted" && (
+            <div
+              className={cn(
+                "mx-6 mt-5 flex items-center gap-2 rounded-md px-4 py-2.5",
+                tw.successBg,
+                "border",
+                tw.successBorder
+              )}
+            >
+              <span className="text-[13px] text-[#16a34a]">✓</span>
+              <span
+                className={cn(
+                  "font-nunito text-xs font-semibold",
+                  tw.successText
+                )}
+              >
+                Lokasi terdeteksi — pin sudah diletakkan di posisi Anda
+              </span>
+              <button
+                onClick={requestGeolocation}
+                className={cn(
+                  "ml-auto cursor-pointer border-none bg-transparent p-0 font-nunito text-[11px] font-bold underline",
+                  tw.successText
+                )}
+              >
+                Refresh
+              </button>
+            </div>
+          )}
+          {geoStatus === "denied" && (
+            <div
+              className={cn(
+                "mx-6 mt-5 flex items-center gap-2 rounded-md px-4 py-2.5",
+                tw.warnBg,
+                "border",
+                tw.warnBorder
+              )}
+            >
+              <span className="text-[13px]">⚠️</span>
+              <span className={cn("font-nunito text-xs", tw.warnText)}>
+                Akses lokasi ditolak. Gunakan search atau klik peta secara
+                manual.
+              </span>
+            </div>
+          )}
+
+          <div className="px-6 pb-3 pt-5">
+            <label
+              className={cn(
+                "mb-1.5 block font-nunito text-[11px] font-bold tracking-[0.04em]",
+                tw.textMuted
+              )}
+            >
+              CARI LOKASI
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nama toko, alamat, atau area..."
+                value={mapQuery}
+                onChange={(e) => setMapQuery(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && !mapSearchLoading && searchLocation()
+                }
+                className={cn(inputCls(isDark, false), "flex-1")}
+              />
+              <button
+                onClick={searchLocation}
+                disabled={mapSearchLoading || mapQuery.trim().length < 3}
+                className={cn(
+                  "flex h-10.5 shrink-0 items-center gap-1.5 rounded-md border-none px-4 font-nunito text-[13px] font-bold text-white",
+                  mapSearchLoading || mapQuery.trim().length < 3
+                    ? "cursor-not-allowed bg-[#64748b]"
+                    : "cursor-pointer bg-brand-700"
+                )}
+              >
+                {mapSearchLoading && (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                )}
+                {mapSearchLoading ? "Mencari..." : "Cari"}
+              </button>
+            </div>
+            {mapSearchError && (
+              <p className="m-0 mt-1.5 font-nunito text-xs text-[#ef4444]">
+                {mapSearchError}
+              </p>
+            )}
+            {mapLabel && !mapSearchError && (
+              <p
+                className={cn(
+                  "m-0 mt-1.5 font-nunito text-xs font-semibold",
+                  tw.successText
+                )}
+              >
+                📍 {mapLabel}
+              </p>
+            )}
+            <p className={cn("m-0 mt-1 font-nunito text-[11px]", tw.textMuted)}>
+              Klik langsung pada peta untuk memindahkan pin lokasi.
+            </p>
+          </div>
+
+          <div
+            className={cn(
+              "relative mx-6 h-75 shrink-0 overflow-hidden rounded-lg border sm:h-90",
+              tw.border
+            )}
+          >
+            <MapLibreMap
+              center={mapCenter}
+              marker={mapMarker}
+              markerLabel={mapLabel}
+              isDark={isDark}
+              onMapClick={handleMapClick}
+              onRequestGeo={requestGeolocation}
+              isGeoLoading={geoLoading}
+              markerSource={markerSource}
+            />
+          </div>
+
+          {mapMarker && (
+            <div
+              className={cn(
+                "mx-6 mb-4 mt-3 flex items-center justify-between rounded-md border px-4 py-2",
+                tw.border,
+                tw.bg
+              )}
+            >
+              <div className="flex gap-4">
+                <span className={cn("font-nunito text-[11px]", tw.textMuted)}>
+                  <strong className={tw.textSec}>Lat:</strong>{" "}
+                  {mapMarker[0].toFixed(6)}
+                </span>
+                <span className={cn("font-nunito text-[11px]", tw.textMuted)}>
+                  <strong className={tw.textSec}>Lng:</strong>{" "}
+                  {mapMarker[1].toFixed(6)}
+                </span>
+              </div>
+              <a
+                href={`https://www.google.com/maps?q=${mapMarker[0]},${mapMarker[1]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-nunito text-[11px] font-bold text-brand-700 no-underline"
+              >
+                Buka Google Maps ↗
+              </a>
+            </div>
+          )}
+        </div>
+        <div
+          className={cn(
+            "flex shrink-0 justify-end gap-3 border-t px-6 py-4",
+            tw.border,
+            tw.bg
+          )}
+        >
+          <button
+            onClick={closeMapModal}
+            className={cn(
+              "cursor-pointer rounded-md border bg-transparent px-5 py-2.5 font-nunito text-[13px]",
+              tw.border,
+              tw.textSec
+            )}
+          >
+            Batal
+          </button>
+          <button
+            onClick={confirmLocation}
+            disabled={!mapMarker}
+            className={cn(
+              "rounded-md border-none px-5.5 py-2.5 font-nunito text-[13px] font-bold text-white",
+              mapMarker
+                ? "cursor-pointer bg-brand-700"
+                : "cursor-not-allowed bg-[#64748b]"
+            )}
+          >
+            {mapMarker ? "Simpan Lokasi" : "Pilih Lokasi di Peta"}
+          </button>
+        </div>
+      </ModalShell>
+
+      {/* ════════════════════════════════════════
+          KTP SCAN MODAL
+      ════════════════════════════════════════ */}
+      <ModalShell open={ktpModalOpen} onClose={closeKtpModal} tw={tw}>
+        <ModalHeader
+          icon="🪪"
+          title="Scan KTP"
+          subtitle="Upload atau gunakan kamera"
+          onClose={closeKtpModal}
+          tw={tw}
+        />
+        <div className="flex-1 overflow-y-auto p-6">
+          <TabSwitch
+            options={[
+              { value: "upload", label: "Upload File" },
+              { value: "webcam", label: "Kamera" }
+            ]}
+            value={scanMode}
+            onChange={(m) => {
+              setScanMode(m as ScanMode)
+              if (m === "upload") stopWebcam()
+            }}
+            tw={tw}
+          />
+
+          {scanMode === "upload" && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              {!ktpPreview ? (
+                <div
+                  onClick={() =>
+                    ocrStatus !== "scanning" && fileInputRef.current?.click()
+                  }
+                  className={cn(
+                    "rounded-lg border-[1.5px] border-dashed py-10 text-center transition-all hover:border-brand-700",
+                    tw.panelBorder,
+                    ocrStatus === "scanning"
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer"
+                  )}
                 >
-                  Gambar atau upload tanda tangan Anda
+                  <p className="m-0 mb-1.5 text-[28px]">📎</p>
+                  <p className="m-0 font-nunito text-sm font-bold text-brand-700">
+                    Klik untuk pilih foto KTP
+                  </p>
+                  <p
+                    className={cn(
+                      "m-0 mt-1 font-nunito text-[11px]",
+                      tw.textMuted
+                    )}
+                  >
+                    JPG, PNG, WEBP · Maks 5MB
+                  </p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={ktpPreview}
+                    alt="KTP Preview"
+                    className={cn(
+                      "max-h-50 w-full rounded-lg border object-cover",
+                      tw.border
+                    )}
+                  />
+                  {ocrStatus !== "scanning" && ocrStatus !== "success" && (
+                    <button
+                      onClick={() => {
+                        setKtpPreview("")
+                        setOcrStatus("idle")
+                        setOcrError("")
+                      }}
+                      className="absolute right-2 top-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/50 text-xs text-white"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {scanMode === "webcam" && (
+            <div>
+              <div className="relative mb-3 aspect-4/3 min-h-55 overflow-hidden rounded-lg bg-black sm:aspect-video sm:min-h-0">
+                <video
+                  ref={videoRef}
+                  className="block h-full w-full object-cover"
+                  playsInline
+                  muted
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                {!webcamActive && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <p className="m-0 font-nunito text-xs text-[#888888]">
+                      Kamera belum aktif
+                    </p>
+                    <button
+                      onClick={() => startWebcam()}
+                      className="cursor-pointer rounded-md border-none bg-brand-700 px-5 py-2 font-nunito text-[13px] font-bold text-white"
+                    >
+                      Aktifkan Kamera
+                    </button>
+                  </div>
+                )}
+                {webcamActive && (
+                  <div className="pointer-events-none absolute inset-4 rounded border-2 border-[#087463]/60" />
+                )}
+              </div>
+              {webcamActive && cameras.length > 1 && (
+                <div className="mb-3">
+                  <label
+                    className={cn(
+                      "mb-1 block font-nunito text-[11px] font-bold",
+                      tw.textMuted
+                    )}
+                  >
+                    Pilih Kamera
+                  </label>
+                  <select
+                    value={selectedCameraId}
+                    onChange={(e) => handleCameraChange(e.target.value)}
+                    className={inputCls(isDark, false)}
+                  >
+                    {cameras.map((cam, idx) => (
+                      <option key={cam.deviceId} value={cam.deviceId}>
+                        {cam.label ||
+                          (idx === 0
+                            ? "Kamera Belakang"
+                            : idx === 1
+                              ? "Kamera Depan"
+                              : `Kamera ${idx + 1}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {webcamActive && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={captureWebcam}
+                    disabled={ocrStatus === "scanning"}
+                    className={cn(
+                      "flex-1 cursor-pointer rounded-md border-none bg-brand-700 py-2.5 font-nunito text-[13px] font-bold text-white",
+                      ocrStatus === "scanning" && "opacity-60"
+                    )}
+                  >
+                    📸 Ambil Foto
+                  </button>
+                  <button
+                    onClick={stopWebcam}
+                    className={cn(
+                      "cursor-pointer rounded-md border bg-transparent px-4 py-2.5 font-nunito text-[13px]",
+                      tw.border,
+                      tw.textSec
+                    )}
+                  >
+                    Batal
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <StatusBanner
+            status={ocrStatus}
+            loadingText="Sedang membaca KTP..."
+            successText="Data KTP berhasil dibaca! Menutup..."
+            error={ocrError}
+            onRetry={() => {
+              setOcrStatus("idle")
+              setOcrError("")
+              setKtpPreview("")
+            }}
+            tw={tw}
+          />
+        </div>
+      </ModalShell>
+
+      {/* ════════════════════════════════════════
+          SIGNATURE MODAL
+      ════════════════════════════════════════ */}
+      <ModalShell open={signModalOpen} onClose={closeSignModal} tw={tw}>
+        <ModalHeader
+          icon="✍️"
+          title="Tanda Tangan Digital"
+          subtitle="Gambar atau upload tanda tangan Anda"
+          onClose={closeSignModal}
+          tw={tw}
+        />
+        <div className="flex-1 overflow-y-auto p-6">
+          <TabSwitch
+            options={[
+              { value: "draw", label: "Gambar" },
+              { value: "type", label: "Ketik" },
+              { value: "upload", label: "Upload" }
+            ]}
+            value={signMode}
+            onChange={(m) => {
+              setSignMode(m as "draw" | "upload" | "type")
+              setSignPreview("")
+              setSignTypedText("")
+            }}
+            tw={tw}
+          />
+
+          {signMode === "draw" && (
+            <div>
+              <p className={cn("m-0 mb-2 font-nunito text-xs", tw.textMuted)}>
+                Gambar tanda tangan Anda di area bawah ini:
+              </p>
+              <div
+                className={cn(
+                  "touch-none overflow-hidden rounded-lg border-[1.5px] bg-white",
+                  tw.panelBorder,
+                  isDark && "bg-[#1a1a2e]"
+                )}
+                style={{ cursor: "crosshair" }}
+              >
+                <canvas
+                  ref={signatureCanvasRef}
+                  width={460}
+                  height={180}
+                  className="block h-45 w-full"
+                  onMouseDown={startSign}
+                  onMouseMove={drawSign}
+                  onMouseUp={stopSign}
+                  onMouseLeave={stopSign}
+                  onTouchStart={startSignTouch}
+                  onTouchMove={drawSignTouch}
+                  onTouchEnd={stopSign}
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <p className={cn("m-0 font-nunito text-[11px]", tw.textMuted)}>
+                  {hasSignature
+                    ? "Klik Simpan untuk menyimpan tanda tangan"
+                    : "Belum ada tanda tangan"}
                 </p>
-              </Box>
-            </Box>
+                <button
+                  onClick={clearSignature}
+                  className={cn(
+                    "cursor-pointer rounded border bg-transparent px-3.5 py-1 font-nunito text-xs",
+                    tw.border,
+                    tw.textSec
+                  )}
+                >
+                  Bersihkan
+                </button>
+              </div>
+            </div>
+          )}
+
+          {signMode === "type" && (
+            <div>
+              <div className="mb-4">
+                <label
+                  className={cn(
+                    "mb-1.5 block font-nunito text-[11px] font-bold tracking-[0.04em]",
+                    tw.textMuted
+                  )}
+                >
+                  PILIH GAYA FONT
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { font: "Great Vibes", label: "Great Vibes" },
+                    { font: "Dancing Script", label: "Dancing Script" },
+                    { font: "Pinyon Script", label: "Pinyon Script" },
+                    { font: "Parisienne", label: "Parisienne" }
+                  ].map(({ font, label }) => (
+                    <div
+                      key={font}
+                      onClick={() => setSignFontFamily(font)}
+                      className={cn(
+                        "cursor-pointer rounded-md border px-3 py-2 text-center transition-all",
+                        signFontFamily === font
+                          ? cn(tw.panelBorder, tw.panelBg)
+                          : cn(tw.border, tw.bgPaper)
+                      )}
+                    >
+                      <p
+                        className={cn("m-0 text-xl leading-tight", tw.text)}
+                        style={{ fontFamily: `'${font}', cursive` }}
+                      >
+                        Tanda Tangan
+                      </p>
+                      <p
+                        className={cn(
+                          "m-0 mt-0.5 font-nunito text-[10px]",
+                          tw.textMuted
+                        )}
+                      >
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4 flex items-center gap-3">
+                <label
+                  className={cn(
+                    "whitespace-nowrap font-nunito text-[11px] font-bold",
+                    tw.textMuted
+                  )}
+                >
+                  UKURAN
+                </label>
+                <input
+                  type="range"
+                  min={24}
+                  max={72}
+                  value={signFontSize}
+                  onChange={(e) => setSignFontSize(Number(e.target.value))}
+                  className="flex-1"
+                />
+                <span
+                  className={cn("min-w-8 font-nunito text-xs", tw.textMuted)}
+                >
+                  {signFontSize}px
+                </span>
+              </div>
+
+              <p className={cn("m-0 mb-2 font-nunito text-xs", tw.textMuted)}>
+                Ketik nama atau tanda tangan Anda:
+              </p>
+              <input
+                type="text"
+                placeholder="Nama Anda..."
+                value={signTypedText}
+                onChange={(e) => setSignTypedText(e.target.value)}
+                maxLength={40}
+                className={cn(inputCls(isDark, false), "mb-3")}
+              />
+
+              <div className="flex min-h-25 items-center justify-center overflow-hidden rounded-lg border-[0.5px] border-gray-200 bg-white p-4">
+                {signTypedText.trim() ? (
+                  <p
+                    className="m-0 max-w-full wrap-break-word text-center text-[#111111]"
+                    style={{
+                      fontFamily: `'${signFontFamily}', cursive`,
+                      fontSize: signFontSize
+                    }}
+                  >
+                    {signTypedText}
+                  </p>
+                ) : (
+                  <p
+                    className={cn("m-0 font-nunito text-[13px]", tw.textMuted)}
+                  >
+                    Preview tanda tangan akan muncul di sini
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {signMode === "upload" && (
+            <>
+              <input
+                ref={signFileRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleSignFileUpload}
+                className="hidden"
+              />
+              {!signPreview ? (
+                <div
+                  onClick={() =>
+                    signUploadStatus !== "uploading" &&
+                    signFileRef.current?.click()
+                  }
+                  className={cn(
+                    "rounded-lg border-[1.5px] border-dashed py-10 text-center transition-all hover:border-brand-700",
+                    tw.panelBorder,
+                    signUploadStatus === "uploading"
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer"
+                  )}
+                >
+                  <p className="m-0 mb-1.5 text-[28px]">✍️</p>
+                  <p className="m-0 font-nunito text-sm font-bold text-brand-700">
+                    Upload foto tanda tangan
+                  </p>
+                  <p
+                    className={cn(
+                      "m-0 mt-1 font-nunito text-[11px]",
+                      tw.textMuted
+                    )}
+                  >
+                    JPG, PNG, WEBP · Maks 5MB · Latar putih lebih baik
+                  </p>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={signPreview}
+                    alt="Preview Tanda Tangan"
+                    className={cn(
+                      "max-h-45 w-full rounded-lg border bg-white object-contain",
+                      tw.border
+                    )}
+                  />
+                  {signUploadStatus !== "uploading" &&
+                    signUploadStatus !== "success" && (
+                      <button
+                        onClick={() => {
+                          setSignPreview("")
+                          setSignUploadStatus("idle")
+                          setSignError("")
+                        }}
+                        className="absolute right-2 top-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/50 text-xs text-white"
+                      >
+                        ✕
+                      </button>
+                    )}
+                </div>
+              )}
+            </>
+          )}
+
+          <StatusBanner
+            status={signUploadStatus}
+            loadingText="Menyimpan tanda tangan..."
+            successText="Tanda tangan berhasil disimpan! Menutup..."
+            error={signError}
+            onRetry={() => {
+              setSignUploadStatus("idle")
+              setSignError("")
+              setSignPreview("")
+            }}
+            tw={tw}
+          />
+        </div>
+
+        {(signMode === "draw" || signMode === "type") && (
+          <div
+            className={cn(
+              "flex shrink-0 justify-end gap-3 border-t px-6 py-4",
+              tw.border,
+              tw.bg
+            )}
+          >
             <button
               onClick={closeSignModal}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: p.textMuted,
-                fontSize: 18,
-                lineHeight: 1,
-                padding: 4
-              }}
+              className={cn(
+                "cursor-pointer rounded-md border bg-transparent px-5 py-2.5 font-nunito text-[13px]",
+                tw.border,
+                tw.textSec
+              )}
             >
-              ✕
+              Batal
             </button>
-          </Box>
-
-          <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            {/* Tab */}
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1,
-                p: 0.5,
-                bgcolor: p.bg,
-                border: `1px solid ${p.border}`,
-                borderRadius: "6px",
-                mb: 3
-              }}
-            >
-              {(["draw", "type", "upload"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => {
-                    setSignMode(m)
-                    setSignPreview("")
-                    setSignTypedText("")
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "7px 8px",
-                    border: `1px solid ${signMode === m ? (isDark ? "#1e3a8a" : "#b5d4f4") : "transparent"}`,
-                    borderRadius: "4px",
-                    background:
-                      signMode === m
-                        ? isDark
-                          ? "#0d1f3c"
-                          : "#e6f1fb"
-                        : "transparent",
-                    color: signMode === m ? "#1e3a8a" : p.textSecondary,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    fontFamily: "'Nunito', sans-serif",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {m === "draw" ? "Gambar" : m === "type" ? "Ketik" : "Upload"}
-                </button>
-              ))}
-            </Box>
-
-            {/* Draw Mode */}
-            {signMode === "draw" && (
-              <Box>
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    fontSize: 12,
-                    color: p.textMuted,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Gambar tanda tangan Anda di area bawah ini:
-                </p>
-                <Box
-                  sx={{
-                    border: `1.5px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    bgcolor: isDark ? "#1a1a2e" : "#ffffff",
-                    cursor: "crosshair",
-                    touchAction: "none"
-                  }}
-                >
-                  <canvas
-                    ref={signatureCanvasRef}
-                    width={460}
-                    height={180}
-                    style={{ display: "block", width: "100%", height: 180 }}
-                    onMouseDown={startSign}
-                    onMouseMove={drawSign}
-                    onMouseUp={stopSign}
-                    onMouseLeave={stopSign}
-                    onTouchStart={startSignTouch}
-                    onTouchMove={drawSignTouch}
-                    onTouchEnd={stopSign}
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mt: 1.5,
-                    alignItems: "center"
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 11,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif"
-                    }}
-                  >
-                    {hasSignature
-                      ? "Klik Simpan untuk menyimpan tanda tangan"
-                      : "Belum ada tanda tangan"}
-                  </p>
-                  <button
-                    onClick={clearSignature}
-                    style={{
-                      padding: "5px 14px",
-                      border: `1px solid ${p.border}`,
-                      borderRadius: 5,
-                      background: "transparent",
-                      color: p.textSecondary,
-                      fontSize: 12,
-                      fontFamily: "'Nunito', sans-serif",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Bersihkan
-                  </button>
-                </Box>
-              </Box>
-            )}
-
-            {/* Type Mode */}
-            {signMode === "type" && (
-              <Box>
-                {/* Font Selector */}
-                <Box sx={{ mb: 2 }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: p.textMuted,
-                      marginBottom: 6,
-                      fontFamily: "'Nunito', sans-serif",
-                      letterSpacing: "0.04em"
-                    }}
-                  >
-                    PILIH GAYA FONT
-                  </label>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 1
-                    }}
-                  >
-                    {[
-                      { font: "Great Vibes", label: "Great Vibes" },
-                      { font: "Dancing Script", label: "Dancing Script" },
-                      { font: "Pinyon Script", label: "Pinyon Script" },
-                      { font: "Parisienne", label: "Parisienne" }
-                    ].map(({ font, label }) => (
-                      <Box
-                        key={font}
-                        onClick={() => setSignFontFamily(font)}
-                        sx={{
-                          p: "8px 12px",
-                          border: `1px solid ${signFontFamily === font ? (isDark ? "#1e3a8a" : "#b5d4f4") : p.border}`,
-                          borderRadius: "6px",
-                          bgcolor:
-                            signFontFamily === font
-                              ? isDark
-                                ? "#0d1f3c"
-                                : "#e6f1fb"
-                              : p.bgPaper,
-                          cursor: "pointer",
-                          textAlign: "center",
-                          transition: "all 0.2s"
-                        }}
-                      >
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: 20,
-                            fontFamily: `'${font}', cursive`,
-                            color: p.textPrimary,
-                            lineHeight: 1.3
-                          }}
-                        >
-                          Tanda Tangan
-                        </p>
-                        <p
-                          style={{
-                            margin: "2px 0 0",
-                            fontSize: 10,
-                            color: p.textMuted,
-                            fontFamily: "'Nunito', sans-serif"
-                          }}
-                        >
-                          {label}
-                        </p>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-
-                {/* Font Size */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    mb: 2
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif",
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    UKURAN
-                  </label>
-                  <input
-                    type="range"
-                    min={24}
-                    max={72}
-                    value={signFontSize}
-                    onChange={(e) => setSignFontSize(Number(e.target.value))}
-                    style={{ flex: 1 }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: p.textMuted,
-                      fontFamily: "'Nunito', sans-serif",
-                      minWidth: 32
-                    }}
-                  >
-                    {signFontSize}px
-                  </span>
-                </Box>
-
-                {/* Text Input */}
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    fontSize: 12,
-                    color: p.textMuted,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Ketik nama atau tanda tangan Anda:
-                </p>
-                <input
-                  type="text"
-                  placeholder="Nama Anda..."
-                  value={signTypedText}
-                  onChange={(e) => setSignTypedText(e.target.value)}
-                  maxLength={40}
-                  style={{ ...inputStyle(false), marginBottom: 12 }}
-                />
-
-                {/* Preview */}
-                <Box
-                  sx={{
-                    minHeight: 100,
-                    border: `0.5px solid ${p.border}`,
-                    borderRadius: "8px",
-                    bgcolor: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    p: 2,
-                    overflow: "hidden"
-                  }}
-                >
-                  {signTypedText.trim() ? (
-                    <p
-                      style={{
-                        margin: 0,
-                        fontFamily: `'${signFontFamily}', cursive`,
-                        fontSize: signFontSize,
-                        color: "#111111",
-                        textAlign: "center",
-                        wordBreak: "break-word",
-                        maxWidth: "100%"
-                      }}
-                    >
-                      {signTypedText}
-                    </p>
-                  ) : (
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 13,
-                        color: p.textMuted,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      Preview tanda tangan akan muncul di sini
-                    </p>
-                  )}
-                </Box>
-              </Box>
-            )}
-
-            {/* Upload Mode */}
-            {signMode === "upload" && (
-              <>
-                <input
-                  ref={signFileRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleSignFileUpload}
-                  style={{ display: "none" }}
-                />
-                {!signPreview ? (
-                  <Box
-                    onClick={() =>
-                      signUploadStatus !== "uploading" &&
-                      signFileRef.current?.click()
-                    }
-                    sx={{
-                      border: `1.5px dashed ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                      borderRadius: "8px",
-                      py: 5,
-                      textAlign: "center",
-                      cursor:
-                        signUploadStatus === "uploading"
-                          ? "not-allowed"
-                          : "pointer",
-                      opacity: signUploadStatus === "uploading" ? 0.5 : 1,
-                      "&:hover": {
-                        borderColor: "#1e3a8a",
-                        bgcolor: isDark ? "#0d1f3c" : "#eff6ff"
-                      },
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <p style={{ margin: "0 0 6px", fontSize: 28 }}>✍️</p>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        color: "#1e3a8a",
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700
-                      }}
-                    >
-                      Upload foto tanda tangan
-                    </p>
-                    <p
-                      style={{
-                        margin: "4px 0 0",
-                        fontSize: 11,
-                        color: p.textMuted,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}
-                    >
-                      JPG, PNG, WEBP · Maks 5MB · Latar putih lebih baik
-                    </p>
-                  </Box>
-                ) : (
-                  <Box sx={{ position: "relative" }}>
-                    <img
-                      src={signPreview}
-                      alt="Preview Tanda Tangan"
-                      style={{
-                        width: "100%",
-                        borderRadius: 8,
-                        border: `1px solid ${p.border}`,
-                        maxHeight: 180,
-                        objectFit: "contain",
-                        background: "#fff"
-                      }}
-                    />
-                    {signUploadStatus !== "uploading" &&
-                      signUploadStatus !== "success" && (
-                        <button
-                          onClick={() => {
-                            setSignPreview("")
-                            setSignUploadStatus("idle")
-                            setSignError("")
-                          }}
-                          style={{
-                            position: "absolute",
-                            top: 8,
-                            right: 8,
-                            background: "rgba(0,0,0,0.5)",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: 28,
-                            height: 28,
-                            color: "#fff",
-                            cursor: "pointer",
-                            fontSize: 12
-                          }}
-                        >
-                          ✕
-                        </button>
-                      )}
-                  </Box>
-                )}
-              </>
-            )}
-
-            {/* Status banners */}
-            {signUploadStatus === "uploading" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#0d1f3c" : "#e6f1fb",
-                  border: `1px solid ${isDark ? "#1e3a8a" : "#b5d4f4"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 14,
-                    height: 14,
-                    border: "2px solid #1e3a8a",
-                    borderTopColor: "transparent",
-                    borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": {
-                      from: { transform: "rotate(0deg)" },
-                      to: { transform: "rotate(360deg)" }
-                    },
-                    flexShrink: 0
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#1e3a8a",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  Menyimpan tanda tangan...
-                </span>
-              </Box>
-            )}
-            {signUploadStatus === "success" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#0a2e1c" : "#f0fdf4",
-                  border: `1px solid ${isDark ? "#1a5c38" : "#bbf7d0"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: isDark ? "#4ade80" : "#16a34a",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600
-                  }}
-                >
-                  Tanda tangan berhasil disimpan! Menutup...
-                </span>
-              </Box>
-            )}
-            {signUploadStatus === "error" && (
-              <Box
-                sx={{
-                  mt: 2.5,
-                  p: 1.5,
-                  bgcolor: isDark ? "#2e1010" : "#fef2f2",
-                  border: `1px solid ${isDark ? "#5a1a1a" : "#fecaca"}`,
-                  borderRadius: "6px"
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    fontSize: 13,
-                    color: "#ef4444",
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                >
-                  {signError}
-                </p>
-                <button
-                  onClick={() => {
-                    setSignUploadStatus("idle")
-                    setSignError("")
-                    setSignPreview("")
-                  }}
-                  style={{
-                    padding: "6px 14px",
-                    border: "1px solid #ef4444",
-                    borderRadius: 4,
-                    background: "transparent",
-                    color: "#ef4444",
-                    fontSize: 12,
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 600,
-                    cursor: "pointer"
-                  }}
-                >
-                  Coba Lagi
-                </button>
-              </Box>
-            )}
-          </Box>
-
-          {/* Footer */}
-          {(signMode === "draw" || signMode === "type") && (
-            <Box
-              sx={{
-                px: 3,
-                py: 2,
-                borderTop: `1px solid ${p.border}`,
-                bgcolor: p.bg,
-                display: "flex",
-                gap: 1.5,
-                justifyContent: "flex-end",
-                flexShrink: 0
-              }}
-            >
-              <button
-                onClick={closeSignModal}
-                style={{
-                  padding: "9px 20px",
-                  border: `1px solid ${p.border}`,
-                  borderRadius: 6,
-                  background: "transparent",
-                  color: p.textSecondary,
-                  fontSize: 13,
-                  fontFamily: "'Nunito', sans-serif",
-                  cursor: "pointer"
-                }}
-              >
-                Batal
-              </button>
-              <button
-                onClick={
-                  signMode === "draw" ? saveSignature : saveTypedSignature
-                }
-                disabled={
+            <button
+              onClick={signMode === "draw" ? saveSignature : saveTypedSignature}
+              disabled={
+                signMode === "draw"
+                  ? !hasSignature || signUploadStatus === "uploading"
+                  : !signTypedText.trim() || signUploadStatus === "uploading"
+              }
+              className={cn(
+                "rounded-md border-none px-5.5 py-2.5 font-nunito text-[13px] font-bold text-white",
+                (
                   signMode === "draw"
-                    ? !hasSignature || signUploadStatus === "uploading"
-                    : !signTypedText.trim() || signUploadStatus === "uploading"
-                }
-                style={{
-                  padding: "9px 22px",
-                  border: "none",
-                  borderRadius: 6,
-                  background: (
-                    signMode === "draw"
-                      ? hasSignature && signUploadStatus !== "uploading"
-                      : signTypedText.trim() && signUploadStatus !== "uploading"
-                  )
-                    ? "#1e3a8a"
-                    : "#64748b",
-                  color: "#fff",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  fontFamily: "'Nunito', sans-serif",
-                  cursor: (
-                    signMode === "draw"
-                      ? hasSignature && signUploadStatus !== "uploading"
-                      : signTypedText.trim() && signUploadStatus !== "uploading"
-                  )
-                    ? "pointer"
-                    : "not-allowed"
-                }}
-              >
-                Simpan Tanda Tangan
-              </button>
-            </Box>
-          )}
-        </Box>
-      </Modal>
+                    ? hasSignature && signUploadStatus !== "uploading"
+                    : signTypedText.trim() && signUploadStatus !== "uploading"
+                )
+                  ? "cursor-pointer bg-brand-700"
+                  : "cursor-not-allowed bg-[#64748b]"
+              )}
+            >
+              Simpan Tanda Tangan
+            </button>
+          </div>
+        )}
+      </ModalShell>
 
-      <Snackbar
+      <Toast
         open={snackbar.open}
-        autoHideDuration={2500}
+        msg={snackbar.msg}
+        severity={snackbar.severity}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          sx={{ fontFamily: "'Nunito', sans-serif", fontSize: 13 }}
-        >
-          {snackbar.msg}
-        </Alert>
-      </Snackbar>
-    </ThemeProvider>
+      />
+    </div>
   )
 }
