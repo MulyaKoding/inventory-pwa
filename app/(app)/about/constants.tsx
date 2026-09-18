@@ -11,56 +11,56 @@ export const TEAM = [
     name: "Rahmat Mulya Simanjuntak",
     role: "Founder & CEO",
     initials: "RM",
-    color: "#1e3a8a",
+    color: "#475569",
     desc: "Berpengalaman 8 tahun di bidang supply chain dan pengembangan sistem ERP untuk UKM Indonesia."
   },
   {
     name: "Siti Rahayu",
     role: "Lead Developer",
     initials: "SR",
-    color: "#1d4ed8",
+    color: "#64748b",
     desc: "Full-stack engineer dengan spesialisasi di sistem inventori real-time dan integrasi marketplace."
   },
   {
     name: "Budi Santoso",
     role: "Product Designer",
     initials: "BS",
-    color: "#2563eb",
+    color: "#64748b",
     desc: "UX/UI designer yang fokus pada kemudahan penggunaan sistem manajemen untuk bisnis lokal."
   },
   {
     name: "Dewi Lestari",
     role: "Customer Success",
     initials: "DL",
-    color: "#0c1a3a",
+    color: "#1e293b",
     desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
   },
   {
     name: "Sinta Dwi",
     role: "UI UX Designer",
     initials: "SD",
-    color: "#1d4ed8",
+    color: "#64748b",
     desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
   },
   {
     name: "Budi Setiawan",
     role: "Frontend Engineer",
     initials: "BS",
-    color: "#1d4ed8",
+    color: "#64748b",
     desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
   },
   {
     name: "Setiawan Bimo",
     role: "Backend Engineer",
     initials: "SB",
-    color: "#2563eb",
+    color: "#64748b",
     desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
   },
   {
     name: "Nanda Pratiwi",
     role: "Business Analyst",
     initials: "NP",
-    color: "#0c1a3a",
+    color: "#1e293b",
     desc: "Membantu ratusan bisnis beralih dari pencatatan manual ke sistem digital dengan lancar."
   }
 ]
@@ -157,7 +157,7 @@ export const VALUES = [
           cx="36"
           cy="14"
           r="6"
-          fill="#3b82f6"
+          fill="#64748b"
           stroke="white"
           strokeWidth="2"
         />

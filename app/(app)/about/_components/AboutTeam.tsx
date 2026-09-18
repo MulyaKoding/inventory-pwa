@@ -28,7 +28,7 @@ export default function AboutTeam() {
               <div
                 className="w-18 h-18 rounded-2xl mx-auto mb-4 flex items-center justify-center font-extrabold text-lg text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)]"
                 style={{
-                  background: `linear-gradient(135deg, ${m.color}, #3b82f6)`
+                  background: `linear-gradient(135deg, ${m.color}, #64748b)`
                 }}
               >
                 {m.initials}

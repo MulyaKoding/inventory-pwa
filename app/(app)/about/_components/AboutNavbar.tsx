@@ -20,7 +20,7 @@ export default function AboutNavbar() {
       className={cn(
         "fixed inset-x-0 top-0 z-100 transition-[background,box-shadow] duration-300 animate-nav-slide",
         scrolled &&
-          "bg-[rgba(8,12,24,0.96)] backdrop-blur-[18px] shadow-[0_1px_0_rgba(255,255,255,0.06),0_4px_20px_rgba(0,0,0,0.4)]"
+          "bg-[rgba(255,255,255,0.96)] backdrop-blur-[18px] shadow-[0_1px_0_rgba(0,0,0,0.06),0_4px_20px_rgba(0,0,0,0.08)]"
       )}
     >
       <div className="max-w-300 mx-auto flex items-center justify-between px-8 max-[768px]:px-5 h-17.5">
@@ -30,7 +30,7 @@ export default function AboutNavbar() {
               INV
             </span>
           </div>
-          <span className="font-extrabold text-xl tracking-[0.07em] text-white">
+          <span className="font-extrabold text-xl tracking-[0.07em] text-slate-900">
             STOCK<em className="not-italic text-brand-500">R</em>
           </span>
         </Link>
@@ -41,10 +41,10 @@ export default function AboutNavbar() {
               key={n.label}
               href={n.href}
               className={cn(
-                "px-5 py-2.25 rounded-lg text-[15px] no-underline transition-all duration-200 hover:text-white hover:bg-white/10",
-                scrolled ? "text-white/75" : "text-white/83",
+                "px-5 py-2.25 rounded-lg text-[15px] no-underline transition-all duration-200 hover:text-slate-900 hover:bg-black/5",
+                scrolled ? "text-slate-600" : "text-slate-700",
                 n.label === "About Us"
-                  ? cn("font-bold", scrolled ? "text-brand-400" : "text-white")
+                  ? cn("font-bold", scrolled ? "text-brand-400" : "text-slate-900")
                   : "font-semibold"
               )}
             >
