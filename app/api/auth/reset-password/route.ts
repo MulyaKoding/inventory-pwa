@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     // Update password
     await prisma.user.update({
-      where: { phone: cleanPhone },
+      where: { id: user.id },
       data: { password: hashedPassword }
     })
 
