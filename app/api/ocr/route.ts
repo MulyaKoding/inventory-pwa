@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const mimeType = file.type
 
     const response = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "qwen/qwen3.8-27b",
       messages: [
         {
           role: "user",
@@ -49,10 +49,10 @@ export async function POST(req: NextRequest) {
             {
               type: "text",
               text: `Ekstrak data dari KTP (Kartu Tanda Penduduk) Indonesia ini.
-Kembalikan HANYA JSON dengan format berikut (tanpa markdown, tanpa penjelasan):
-{"nik":"string 16 digit","fullName":"nama lengkap","birthDate":"DD-MM-YYYY","address":"alamat lengkap RT/RW Kel/Desa Kecamatan","gender":"Laki-laki atau Perempuan"}
-Jika field tidak dapat dibaca, isi dengan string kosong "".
-Pastikan NIK hanya berisi 16 angka, tanpa spasi atau karakter lain.`
+                Kembalikan HANYA JSON dengan format berikut (tanpa markdown, tanpa penjelasan):
+                {"nik":"string 16 digit","fullName":"nama lengkap","birthDate":"DD-MM-YYYY","address":"alamat lengkap RT/RW Kel/Desa Kecamatan","gender":"Laki-laki atau Perempuan"}
+                Jika field tidak dapat dibaca, isi dengan string kosong "".
+                Pastikan NIK hanya berisi 16 angka, tanpa spasi atau karakter lain.`
             }
           ]
         }
