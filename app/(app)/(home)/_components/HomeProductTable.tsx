@@ -4,42 +4,42 @@ import { PRODUCTS, STATUS_STYLES, STOCK_COLOR } from "../constants"
 
 export default function HomeProductTable() {
   return (
-    <div className="px-8 pb-25">
+    <div className="px-8 pb-25 bg-[#070d19] text-white">
       <div className="max-w-300 mx-auto">
         <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/10">
-              <span className="text-brand-700 text-xs font-extrabold tracking-wide uppercase">
+            <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.25 mb-4 bg-brand-500/15 border border-white/10">
+              <span className="text-brand-400 text-xs font-extrabold tracking-wide uppercase">
                 Produk
               </span>
             </div>
-            <h2 className="font-black text-[clamp(28px,4vw,42px)] text-slate-900 tracking-tight leading-tight">
+            <h2 className="font-black text-[clamp(28px,4vw,42px)] text-white tracking-tight leading-tight">
               Contoh Data{" "}
-              <em className="not-italic text-brand-700">Inventori</em>
+              <em className="not-italic text-brand-400">Inventori</em>
             </h2>
           </div>
           <Link
             href="/login"
-            className="inline-flex items-center h-11 px-6 rounded-[10px] text-sm font-extrabold no-underline bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.35)]"
+            className="inline-flex items-center h-11 px-6 rounded-[10px] text-sm font-extrabold no-underline bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.4)] hover:bg-[#2563eb]"
           >
             Kelola Sekarang →
           </Link>
         </div>
 
-        <div className="bg-white border-[1.5px] border-slate-200 rounded-[18px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,.04)] animate-slide-in-up">
+        <div className="bg-[#0f172a] border border-white/10 rounded-[18px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,.5)] animate-slide-in-up">
           <table className="w-full border-collapse">
-            <thead className="bg-linear-to-br from-brand-900 to-brand-700">
+            <thead className="bg-[#0b1329] border-b border-white/10">
               <tr>
-                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-slate-600 tracking-widest uppercase">
+                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/50 tracking-widest uppercase">
                   Nama Produk
                 </th>
-                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-slate-600 tracking-widest uppercase">
+                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/50 tracking-widest uppercase">
                   Kategori
                 </th>
-                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-slate-600 tracking-widest uppercase">
+                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/50 tracking-widest uppercase">
                   Stok
                 </th>
-                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-slate-600 tracking-widest uppercase">
+                <th className="text-left px-5 py-4 text-[11px] font-extrabold text-white/50 tracking-widest uppercase">
                   Status
                 </th>
               </tr>
@@ -48,17 +48,15 @@ export default function HomeProductTable() {
               {PRODUCTS.map((p, i) => (
                 <tr
                   key={i}
-                  className="border-b border-slate-100 last:border-none transition-colors hover:bg-[#f8faff]"
+                  className="border-b border-white/5 last:border-none transition-colors hover:bg-white/5"
                 >
                   <td className="px-5 py-4 text-sm">
-                    <div className="font-extrabold text-slate-900">
-                      {p.name}
-                    </div>
-                    <div className="text-xs text-slate-400 font-semibold mt-0.5">
+                    <div className="font-extrabold text-white">{p.name}</div>
+                    <div className="text-xs text-white/40 font-semibold mt-0.5">
                       {p.sku}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-[13px] text-slate-500 font-medium">
+                  <td className="px-5 py-4 text-[13px] text-white/60 font-medium">
                     {p.cat}
                   </td>
                   <td className="px-5 py-4 text-sm">

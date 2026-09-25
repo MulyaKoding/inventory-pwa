@@ -5,46 +5,44 @@ export default function HomeHero() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden min-h-screen flex items-center px-8 pt-25 pb-15 bg-[linear-gradient(160deg,#f8fafc_0%,#f1f5f9_30%,#e2e8f0_60%,#cbd5e1_100%)]"
+      className="relative overflow-hidden min-h-screen flex items-center px-8 pt-25 pb-15 bg-[linear-gradient(160deg,#060b1a_0%,#0c1733_25%,#0f2050_50%,#0c1a3a_75%,#080d1f_100%)] text-white"
     >
       <div
         className="absolute inset-0 pointer-events-none animate-grid-pan"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,0,0,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.025) 1px, transparent 1px)",
+            "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
           backgroundSize: "48px 48px"
         }}
       />
-      <div className="absolute -top-30 -right-30 w-125 h-125 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.25)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute -bottom-20 -left-20 w-95 h-95 rounded-full bg-[radial-gradient(circle,rgba(30,58,138,.2)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute -top-30 -right-30 w-125 h-125 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,.2)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-95 h-95 rounded-full bg-[radial-gradient(circle,rgba(30,58,138,.15)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="relative z-1 max-w-300 w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <div className="animate-slide-in-left">
-          <div className="relative isolate inline-flex items-center gap-2 rounded-full px-4 py-1.75 mb-6 overflow-hidden bg-black/5 backdrop-blur-sm">
-            <div className="absolute -inset-11.25 rounded-[80px] -z-20 animate-border-rotate bg-[conic-gradient(from_0deg,transparent_0%,transparent_80%,#94a3b8_88%,#cbd5e1_92%,#94a3b8_96%,transparent_100%)]" />
-            <div className="absolute inset-[1.5px] rounded-full -z-10 bg-[rgba(255,255,255,.85)] backdrop-blur-sm" />
+          <div className="relative isolate inline-flex items-center gap-2 rounded-full px-4 py-1.75 mb-6 overflow-hidden bg-white/8 border border-white/15 backdrop-blur-sm">
             <div className="relative w-1.5 h-1.5 rounded-full bg-brand-400">
               <div className="absolute -inset-0.75 rounded-full bg-brand-400/40 animate-pulse-ring" />
             </div>
-            <span className="text-slate-700 text-xs font-bold tracking-wide">
+            <span className="text-white/85 text-xs font-bold tracking-wide">
               Sistem Manajemen Inventori
             </span>
           </div>
 
-          <h1 className="font-black text-[clamp(36px,5vw,58px)] leading-[1.1] text-slate-900 tracking-tight mb-5">
+          <h1 className="font-black text-[clamp(36px,5vw,58px)] leading-[1.1] text-white tracking-tight mb-5">
             Kelola Stok Lebih
             <br />
             <em className="not-italic text-brand-400">Cerdas &amp; Efisien</em>
           </h1>
-          <p className="text-slate-600 text-[17px] leading-[1.7] font-medium mb-9 max-w-110">
+          <p className="text-white/65 text-[17px] leading-[1.7] font-medium mb-9 max-w-110">
             STOCKR membantu bisnis kamu memantau stok, mengelola produk, dan
             melacak transaksi — semua dari satu platform yang mudah digunakan.
           </p>
 
           <div className="flex gap-3.5 flex-wrap">
             <Link
-              href="/login"
-              className="inline-flex items-center gap-2 h-13 px-7 rounded-xl bg-brand-500 text-white text-[15px] font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.5)] hover:bg-brand-600"
+              href="/register"
+              className="inline-flex items-center gap-2 h-13 px-7 rounded-xl bg-brand-500 text-white text-[15px] font-extrabold no-underline shadow-[0_8px_24px_rgba(59,130,246,.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(59,130,246,.5)] hover:bg-[#2563eb]"
             >
               <svg
                 width="16"
@@ -61,7 +59,7 @@ export default function HomeHero() {
             </Link>
             <a
               href="#product"
-              className="inline-flex items-center h-13 px-7 rounded-xl bg-black/5 text-slate-900 text-[15px] font-extrabold no-underline border-[1.5px] border-slate-300 backdrop-blur-sm transition-colors hover:bg-white/16 hover:border-white/40"
+              className="inline-flex items-center h-13 px-7 rounded-xl border-[1.5px] border-white/20 bg-white/8 text-white text-[15px] font-extrabold no-underline backdrop-blur-sm transition-colors hover:bg-white/16 hover:border-white/40"
             >
               Lihat Fitur
             </a>
@@ -71,13 +69,13 @@ export default function HomeHero() {
             {STATS.map((s, i) => (
               <div
                 key={i}
-                className="bg-white/40 backdrop-blur-md border border-slate-200 rounded-xl px-5 py-3.5 animate-fade-in"
+                className="bg-black/35 backdrop-blur-md border border-white/8 rounded-xl px-5 py-3.5 animate-fade-in"
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
-                <div className="text-slate-900 font-black text-[22px] tracking-tight">
+                <div className="text-white font-black text-[22px] tracking-tight">
                   {s.value}
                 </div>
-                <div className="text-slate-500 text-[11px] font-semibold tracking-wide uppercase mt-0.75">
+                <div className="text-white/45 text-[11px] font-semibold tracking-wide uppercase mt-0.75">
                   {s.label}
                 </div>
               </div>
@@ -88,38 +86,22 @@ export default function HomeHero() {
         {/* ── IMAGE COLLAGE ── */}
         <div className="animate-slide-in-right">
           <div className="relative w-full h-120">
-            <div className="absolute top-0 right-0 w-[78%] h-80 rounded-[20px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.4)] animate-img-reveal group">
+            <div className="absolute top-0 right-0 w-[78%] h-80 rounded-[20px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,.6)] border border-white/10 animate-img-reveal group">
               <img
                 src={IMG1}
                 alt="Manajemen inventori"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               />
-              <div className="absolute inset-0 rounded-[20px] bg-[linear-gradient(135deg,rgba(30,58,138,.25)_0%,transparent_60%)]" />
+              <div className="absolute inset-0 rounded-[20px] bg-[linear-gradient(135deg,rgba(30,58,138,.3)_0%,transparent_60%)]" />
             </div>
 
-            <div className="absolute bottom-0 left-0 w-[58%] h-60 rounded-2xl overflow-hidden border-[3px] border-slate-300 shadow-[0_16px_48px_rgba(0,0,0,.35)] animate-img-reveal group">
+            <div className="absolute bottom-0 left-0 w-[58%] h-60 rounded-2xl overflow-hidden border-[3px] border-white/20 shadow-[0_16px_48px_rgba(0,0,0,.5)] animate-img-reveal group">
               <img
                 src={IMG2}
-                alt="Tim bisnis kolaborasi"
+                alt="Analisis stok"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(8,14,60,.3)_0%,transparent_60%)]" />
-              <div className="absolute top-5 left-5 z-10 bg-white/95 backdrop-blur-md rounded-xl px-3.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,.18)] animate-float-y">
-                <div className="font-black text-lg text-brand-700">+48%</div>
-                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-0.5">
-                  Efisiensi
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="absolute bottom-14 -right-4 z-10 rounded-xl px-4 py-2.5 shadow-[0_8px_24px_rgba(59,130,246,.45)] bg-linear-to-br from-brand-700 to-brand-500 animate-float-y"
-              style={{ animationDelay: "0.8s" }}
-            >
-              <div className="font-black text-base text-slate-900">500+</div>
-              <div className="text-[10px] text-slate-600 font-bold uppercase tracking-wide mt-0.5">
-                Bisnis Aktif
-              </div>
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,.3)_0%,transparent_60%)]" />
             </div>
           </div>
         </div>

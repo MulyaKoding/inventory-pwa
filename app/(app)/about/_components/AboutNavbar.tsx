@@ -18,9 +18,10 @@ export default function AboutNavbar() {
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 top-0 z-100 transition-[background,box-shadow] duration-300 animate-nav-slide",
-        scrolled &&
-          "bg-[rgba(255,255,255,0.96)] backdrop-blur-[18px] shadow-[0_1px_0_rgba(0,0,0,0.06),0_4px_20px_rgba(0,0,0,0.08)]"
+        "fixed inset-x-0 top-0 z-100 transition-all duration-300 animate-nav-slide",
+        scrolled
+          ? "bg-[rgba(8,12,24,.96)] shadow-[0_1px_0_rgba(255,255,255,.06),0_4px_20px_rgba(0,0,0,.4)] backdrop-blur-[18px]"
+          : "bg-transparent"
       )}
     >
       <div className="max-w-300 mx-auto flex items-center justify-between px-8 max-[768px]:px-5 h-17.5">
@@ -30,8 +31,8 @@ export default function AboutNavbar() {
               INV
             </span>
           </div>
-          <span className="font-extrabold text-xl tracking-[0.07em] text-slate-900">
-            STOCK<em className="not-italic text-brand-500">R</em>
+          <span className="font-extrabold text-xl tracking-[0.07em] text-white">
+            STOCK<em className="not-italic text-brand-400">R</em>
           </span>
         </Link>
 
@@ -41,11 +42,8 @@ export default function AboutNavbar() {
               key={n.label}
               href={n.href}
               className={cn(
-                "px-5 py-2.25 rounded-lg text-[15px] no-underline transition-all duration-200 hover:text-slate-900 hover:bg-black/5",
-                scrolled ? "text-slate-600" : "text-slate-700",
-                n.label === "About Us"
-                  ? cn("font-bold", scrolled ? "text-brand-400" : "text-slate-900")
-                  : "font-semibold"
+                "px-5 py-2.25 rounded-lg text-[15px] no-underline transition-all duration-200 text-white/75 hover:text-white hover:bg-white/10",
+                n.label === "About Us" && "font-black text-brand-400"
               )}
             >
               {n.label}
@@ -57,10 +55,8 @@ export default function AboutNavbar() {
           <Link
             href="/login"
             className={cn(
-              "h-10.5 px-5.5 rounded-[10px] text-[15px] font-bold no-underline flex items-center shadow-[0_4px_12px_rgba(0,0,0,0.13)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_18px_rgba(0,0,0,0.18)] max-[768px]:hidden",
-              scrolled
-                ? "bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.4)] hover:bg-[#2563eb]"
-                : "bg-white text-brand-700"
+              "h-10.5 px-5.5 rounded-[10px] text-[15px] font-bold no-underline flex items-center transition-all duration-200 max-[768px]:hidden",
+              "bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.4)] hover:bg-[#2563eb]"
             )}
           >
             Login
@@ -94,7 +90,7 @@ export default function AboutNavbar() {
 
       <div
         className={cn(
-          "hidden absolute top-17.5 inset-x-0 bg-white/97 backdrop-blur-[20px] border-b border-[rgba(59,130,246,0.1)] px-5 pt-3 pb-5 shadow-[0_12px_32px_rgba(0,0,0,0.08)] animate-menu-in",
+          "hidden absolute top-17.5 inset-x-0 bg-[rgba(8,12,24,.97)] backdrop-blur-[20px] border-b border-white/10 px-5 pt-3 pb-5 shadow-[0_12px_32px_rgba(0,0,0,0.5)] animate-menu-in",
           menuOpen && "block"
         )}
       >
@@ -103,10 +99,8 @@ export default function AboutNavbar() {
             key={n.label}
             href={n.href}
             className={cn(
-              "block px-4 py-3.25 rounded-[10px] text-[15px] font-semibold no-underline mb-1 transition-all duration-200 hover:text-brand-700 hover:bg-[rgba(59,130,246,0.08)]",
-              n.label === "About Us"
-                ? "text-brand-700 bg-[rgba(59,130,246,0.08)]"
-                : "text-gray-700"
+              "block px-4 py-3.25 rounded-[10px] text-[15px] font-semibold no-underline mb-1 transition-all duration-200 text-white/80 hover:text-brand-400 hover:bg-white/10",
+              n.label === "About Us" && "text-brand-400 bg-brand-500/15"
             )}
             onClick={() => setMenuOpen(false)}
           >

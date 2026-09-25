@@ -17,17 +17,17 @@ function NavLinkDesktop({
   onClick: () => void
 }) {
   return (
-    <a
+    <Link
       href={href}
       onClick={onClick}
       className={cn(
-        "px-4.5 py-2 rounded-lg text-sm font-bold text-slate-600 transition-colors",
-        "hover:text-slate-900 hover:bg-black/5",
-        active && "text-slate-900"
+        "px-4.5 py-2 rounded-lg text-sm font-bold text-white/75 transition-colors no-underline",
+        "hover:text-white hover:bg-white/10",
+        active && "text-brand-400 font-extrabold"
       )}
     >
       {label}
-    </a>
+    </Link>
   )
 }
 
@@ -43,17 +43,17 @@ function NavLinkMobile({
   onClick: () => void
 }) {
   return (
-    <a
+    <Link
       href={href}
       onClick={onClick}
       className={cn(
-        "block w-full text-left px-4 py-3.25 mb-1 rounded-[10px] text-[15px] font-bold text-gray-700 transition-colors",
-        "hover:text-brand-700 hover:bg-brand-500/8",
-        active && "text-brand-700 bg-brand-500/8"
+        "block w-full text-left px-4 py-3.25 mb-1 rounded-[10px] text-[15px] font-bold text-white/80 transition-colors no-underline",
+        "hover:text-brand-400 hover:bg-white/10",
+        active && "text-brand-400 bg-brand-500/15"
       )}
     >
       {label}
-    </a>
+    </Link>
   )
 }
 
@@ -71,20 +71,21 @@ export default function HomeNavbar() {
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 top-0 z-100 transition-[background,box-shadow] duration-300 animate-nav-slide",
-        scrolled &&
-          "bg-[rgba(255,255,255,.96)] backdrop-blur-[18px] shadow-[0_1px_0_rgba(0,0,0,.06),0_4px_20px_rgba(0,0,0,.08)]"
+        "fixed inset-x-0 top-0 z-100 transition-all duration-300 animate-nav-slide",
+        scrolled
+          ? "bg-[rgba(8,12,24,.96)] shadow-[0_1px_0_rgba(255,255,255,.06),0_4px_20px_rgba(0,0,0,.4)] backdrop-blur-[18px]"
+          : "bg-transparent"
       )}
     >
-      <div className="max-w-300 mx-auto flex items-center justify-between px-8 h-17">
+      <div className="max-w-300 mx-auto flex items-center justify-between px-8 h-17.5">
         <Link href="/" className="flex items-center gap-3 no-underline">
-          <div className="w-9.5 h-9.5 rounded-[9px] bg-linear-to-br from-brand-700 to-brand-500 flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,.35)]">
+          <div className="w-9.5 h-9.5 rounded-[9px] bg-linear-to-br from-brand-700 to-brand-500 flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,.4)]">
             <span className="text-white font-black text-xs tracking-wide">
               INV
             </span>
           </div>
-          <span className="font-black text-lg tracking-wide text-slate-900">
-            STOCK<em className="not-italic text-brand-500">R</em>
+          <span className="font-black text-lg tracking-wide text-white">
+            STOCK<em className="not-italic text-brand-400">R</em>
           </span>
         </Link>
 
@@ -104,11 +105,8 @@ export default function HomeNavbar() {
           <Link
             href="/login"
             className={cn(
-              "hidden md:inline-flex items-center h-10 px-5.5 rounded-[9px] text-sm font-extrabold no-underline transition-all",
-              "shadow-[0_4px_12px_rgba(0,0,0,.15)]",
-              scrolled
-                ? "bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.4)] hover:bg-brand-600"
-                : "bg-white text-brand-700 hover:bg-blue-50 hover:-translate-y-px"
+              "hidden md:inline-flex items-center h-10.5 px-5.5 rounded-[10px] text-[15px] font-extrabold no-underline backdrop-blur-sm transition-all duration-200",
+              "bg-brand-500 text-white shadow-[0_4px_12px_rgba(59,130,246,.4)] hover:bg-[#2563eb]"
             )}
           >
             Login
@@ -141,7 +139,7 @@ export default function HomeNavbar() {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden absolute inset-x-0 top-17 bg-white/97 backdrop-blur-xl border-b border-brand-500/10 px-5 pt-3 pb-5 shadow-[0_12px_32px_rgba(0,0,0,.08)] animate-menu-in">
+        <div className="md:hidden absolute inset-x-0 top-17.5 bg-[rgba(8,12,24,.97)] backdrop-blur-xl border-b border-white/10 px-5 pt-3 pb-5 shadow-[0_12px_32px_rgba(0,0,0,.5)] animate-menu-in">
           {NAV_LINKS.map((n) => (
             <NavLinkMobile
               key={n.label}

@@ -10,7 +10,7 @@ import AboutFooter from "./_components/AboutFooter"
 
 export default function AboutPage() {
   return (
-    <div className="bg-bg-app text-[#0f172a] overflow-x-hidden">
+    <div className="bg-[#060b1a] text-white overflow-x-hidden min-h-screen">
       <AboutNavbar />
       <main>
         <AboutHero />
