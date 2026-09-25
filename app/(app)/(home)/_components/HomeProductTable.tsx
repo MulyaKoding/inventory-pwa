@@ -26,7 +26,7 @@ export default function HomeProductTable() {
           </Link>
         </div>
 
-        <div className="bg-[#0f172a] border border-white/10 rounded-[18px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,.5)] animate-slide-in-up">
+        <div className="bg-brand-900 border border-white/10 rounded-[18px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,.5)] animate-slide-in-up">
           <table className="w-full border-collapse">
             <thead className="bg-[#0b1329] border-b border-white/10">
               <tr>

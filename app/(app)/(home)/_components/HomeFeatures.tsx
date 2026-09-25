@@ -22,7 +22,7 @@ export default function HomeFeatures() {
           {FEATURES.map((f, i) => (
             <div
               key={i}
-              className="bg-[#0f172a] border border-white/10 rounded-[18px] p-8 cursor-default transition-all duration-250 animate-slide-in-up hover:border-brand-400 hover:shadow-[0_8px_32px_rgba(59,130,246,.25)] hover:-translate-y-1 group"
+              className="bg-brand-900 border border-white/10 rounded-[18px] p-8 cursor-default transition-all duration-250 animate-slide-in-up hover:border-brand-400 hover:shadow-[0_8px_32px_rgba(59,130,246,.25)] hover:-translate-y-1 group"
               style={{ animationDelay: `${i * 0.1}s` }}
             >
               <div className="w-16 h-16 rounded-[14px] flex items-center justify-center text-brand-400 mb-5 transition-colors bg-brand-500/15 group-hover:bg-brand-500/25">
