@@ -42,7 +42,7 @@ const FEATURES = [
 
 // Reusable class fragments, kept as tokens so Tailwind classes stay readable
 const inputBase =
-  "h-[50px] w-full rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 px-[44px] font-nunito text-sm font-semibold text-slate-900 outline-none transition-colors placeholder:font-medium placeholder:text-slate-300 focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
+  "h-[48px] sm:h-[50px] w-full rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 px-[44px] font-nunito text-base sm:text-sm font-semibold text-slate-900 outline-none transition-colors placeholder:font-medium placeholder:text-slate-300 focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -89,21 +89,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen font-nunito">
+    <div className="flex min-h-screen flex-col font-nunito md:flex-row bg-slate-50 md:bg-white">
       {/* Mobile topbar (only visible < md) */}
-      <div
-        className="flex cursor-pointer items-center gap-3 bg-[linear-gradient(135deg,#060b1a,#1e3a8a)] px-5 py-3.5 md:hidden"
-        onClick={() => router.push("/")}
-      >
-        <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#1e3a8a,#3b82f6)]">
-          <span className="text-[10px] font-black text-white">INV</span>
-        </div>
-        <div>
-          <div className="text-[15px] font-black text-white">STOCKR</div>
-          <div className="text-[10px] font-semibold text-white/40">
-            Inventory Management System
+      <div className="flex items-center justify-between border-b border-white/10 bg-[linear-gradient(135deg,#060b1a,#1e3a8a)] px-4 py-3.5 sm:px-6 md:hidden">
+        <Link href="/" className="flex items-center gap-2.5 no-underline">
+          <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#1e3a8a,#3b82f6)] shadow-[0_2px_8px_rgba(59,130,246,0.35)]">
+            <span className="text-[10px] font-black text-white">INV</span>
           </div>
-        </div>
+          <div>
+            <div className="text-[15px] font-black leading-tight text-white">STOCKR</div>
+            <div className="text-[10px] font-semibold text-white/50">
+              Inventory Management
+            </div>
+          </div>
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/90 no-underline transition-colors hover:bg-white/20 hover:text-white"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Beranda
+        </Link>
       </div>
 
       {/* LEFT — dark showcase panel */}
@@ -238,10 +255,10 @@ export default function LoginPage() {
       </div>
 
       {/* RIGHT — form */}
-      <div className="flex flex-1 items-center justify-center overflow-y-auto bg-white px-10 py-12 md:px-10">
+      <div className="flex flex-1 items-center justify-center overflow-y-auto bg-white px-5 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12">
         <div className="w-full max-w-100 animate-[fadeUp_0.5s_ease_forwards]">
-          <div className="mb-9">
-            <h1 className="mb-1.5 text-[30px] font-black tracking-tight text-slate-900">
+          <div className="mb-7 sm:mb-9">
+            <h1 className="mb-1.5 text-2xl font-black tracking-tight text-slate-900 sm:text-[30px]">
               Selamat Datang
             </h1>
             <p className="text-sm font-medium leading-relaxed text-slate-500">
@@ -250,7 +267,7 @@ export default function LoginPage() {
           </div>
 
           {/* Email */}
-          <div className="mb-4.5">
+          <div className="mb-4 sm:mb-4.5">
             <label className="mb-2 flex items-center justify-between text-[13px] font-bold text-slate-700">
               Email
             </label>
@@ -276,7 +293,7 @@ export default function LoginPage() {
           </div>
 
           {/* Password */}
-          <div className="mb-4.5">
+          <div className="mb-4 sm:mb-4.5">
             <label className="mb-2 flex items-center justify-between text-[13px] font-bold text-slate-700">
               Password
               <Link
@@ -347,7 +364,7 @@ export default function LoginPage() {
 
           <button
             className={cn(
-              "mt-2 flex h-13 w-full items-center justify-center gap-2 rounded-[10px]",
+              "mt-2 flex h-12 sm:h-13 w-full items-center justify-center gap-2 rounded-[10px]",
               "bg-[linear-gradient(135deg,#1e3a8a_0%,#3b82f6_100%)] text-[15px] font-extrabold tracking-wide text-white",
               "shadow-[0_8px_24px_rgba(59,130,246,.3)] transition-all",
               "hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.4)]",
@@ -366,6 +383,16 @@ export default function LoginPage() {
               "Masuk ke Dashboard"
             )}
           </button>
+
+          <p className="mt-6 text-center font-nunito text-sm font-semibold text-slate-500">
+            Belum punya akun?{" "}
+            <Link
+              href="/form-mitra"
+              className="font-extrabold text-blue-600 transition-colors hover:text-blue-700 no-underline"
+            >
+              Daftar Mitra sekarang
+            </Link>
+          </p>
         </div>
       </div>
     </div>

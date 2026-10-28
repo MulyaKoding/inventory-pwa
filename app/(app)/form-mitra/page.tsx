@@ -131,7 +131,7 @@ const inputCls = ({
   invalid = false
 }: { noIcon?: boolean; hasEye?: boolean; invalid?: boolean } = {}) =>
   cn(
-    "h-12 w-full rounded-[10px] border-[1.5px] bg-slate-50 pl-[42px] pr-3.5 font-nunito text-sm font-semibold text-slate-900 outline-none transition-[border-color,box-shadow] placeholder:font-medium placeholder:text-slate-300 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)]",
+    "h-12 w-full rounded-[10px] border-[1.5px] bg-slate-50 pl-[42px] pr-3.5 font-nunito text-base sm:text-sm font-semibold text-slate-900 outline-none transition-[border-color,box-shadow] placeholder:font-medium placeholder:text-slate-300 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)]",
     noIcon && "pl-3.5",
     hasEye && "pr-11",
     invalid ? "border-red-500" : "border-slate-200"
