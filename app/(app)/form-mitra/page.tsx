@@ -137,9 +137,9 @@ const inputCls = ({
     invalid ? "border-red-500" : "border-slate-200"
   )
 const selectCls =
-  "h-12 w-full appearance-none rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 bg-no-repeat px-3.5 font-nunito text-sm font-semibold text-slate-900 outline-none transition-colors focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)]"
+  "h-12 w-full appearance-none rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 bg-no-repeat px-3.5 font-nunito text-base sm:text-sm font-semibold text-slate-900 outline-none transition-colors focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)]"
 const textareaCls =
-  "min-h-[76px] w-full resize-y rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 px-3.5 py-3 font-nunito text-sm font-semibold text-slate-900 outline-none transition-colors placeholder:font-medium placeholder:text-slate-300 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)]"
+  "min-h-[76px] w-full resize-y rounded-[10px] border-[1.5px] border-slate-200 bg-slate-50 px-3.5 py-3 font-nunito text-base sm:text-sm font-semibold text-slate-900 outline-none transition-colors placeholder:font-medium placeholder:text-slate-300 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)]"
 const eyeBtnCls =
   "absolute right-3 flex cursor-pointer items-center border-none bg-transparent p-1 text-slate-400"
 const hintCls = "mt-1 font-nunito text-[11px] font-semibold text-slate-400"
@@ -160,19 +160,19 @@ const sectionSubCls =
   "mb-[22px] font-nunito text-sm font-medium leading-[1.5] text-slate-500"
 
 // Buttons
-const btnRowCls = "mt-1.5 flex gap-2.5"
+const btnRowCls = "mt-1.5 flex gap-2 sm:gap-2.5"
 const btnCls =
-  "flex h-12.5 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none font-nunito text-[15px] font-extrabold text-white shadow-[0_8px_24px_rgba(59,130,246,.28)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.4)] disabled:cursor-not-allowed disabled:opacity-65"
+  "flex h-12 sm:h-12.5 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none font-nunito text-xs sm:text-[15px] font-extrabold text-white shadow-[0_8px_24px_rgba(59,130,246,.28)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(59,130,246,.4)] disabled:cursor-not-allowed disabled:opacity-65"
 const btnGhostCls =
-  "h-12.5 flex-none cursor-pointer rounded-[10px] border-none bg-slate-100 px-5 font-nunito text-sm font-extrabold text-slate-600 transition-colors hover:bg-slate-200"
+  "h-12 sm:h-12.5 flex-none cursor-pointer rounded-[10px] border-none bg-slate-100 px-3.5 sm:px-5 font-nunito text-xs sm:text-sm font-extrabold text-slate-600 transition-colors hover:bg-slate-200"
 const dotsCls = "flex items-center gap-1.25"
 const dotCls = "h-1.5 w-1.5 animate-dot-bounce rounded-full bg-white"
 
 // OTP
-const otpWrapCls = "my-1 mb-2 flex justify-center gap-2.5 max-[480px]:gap-[7px]"
+const otpWrapCls = "my-1 mb-2 flex justify-center gap-1.5 sm:gap-2.5"
 const otpBoxCls = (filled: boolean) =>
   cn(
-    "h-15 w-[52px] rounded-xl border-2 bg-slate-50 text-center font-nunito text-[26px] font-black text-slate-900 caret-transparent outline-none transition-[border-color,box-shadow,transform] duration-150 focus:-translate-y-0.5 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,.15)] max-[480px]:h-13.5 max-[480px]:w-11 max-[480px]:rounded-[10px] max-[480px]:text-[22px]",
+    "h-13 w-10 sm:h-15 sm:w-[52px] max-[360px]:h-11.5 max-[360px]:w-9 rounded-lg sm:rounded-xl border-2 bg-slate-50 text-center font-nunito text-xl sm:text-[26px] font-black text-slate-900 caret-transparent outline-none transition-[border-color,box-shadow,transform] duration-150 focus:-translate-y-0.5 focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,.15)]",
     filled ? "border-brand-700 bg-blue-50" : "border-slate-200"
   )
 
@@ -201,7 +201,7 @@ const planRadioDotCls = (selected: boolean) =>
   )
 const planNameCls = "font-nunito text-sm font-black text-slate-900"
 const planPriceCls =
-  "ml-auto pr-[50px] font-nunito text-sm font-black text-brand-700"
+  "ml-auto font-nunito text-xs sm:text-sm font-black text-brand-700"
 const planDescCls =
   "mb-1.75 pl-7 font-nunito text-xs font-semibold text-slate-500"
 const planFeatsCls = "flex flex-wrap gap-1.5 pl-7"
@@ -748,29 +748,48 @@ export default function FormMitraPage() {
   const progressIndex = step === "otp" ? 0 : progressSteps.indexOf(step)
 
   return (
-    <div className="flex min-h-screen font-nunito">
+    <div className="flex min-h-screen flex-col font-nunito min-[901px]:flex-row bg-slate-50 min-[901px]:bg-white">
       {/* Mobile topbar */}
       <div
         style={GRADIENTS.topbar}
-        className="flex cursor-pointer items-center gap-3 px-5 py-3.5 min-[901px]:hidden"
-        onClick={() => router.push("/")}
+        className="flex items-center justify-between border-b border-white/10 px-4 py-3.5 sm:px-6 min-[901px]:hidden"
       >
-        <div
-          style={GRADIENTS.brand}
-          className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg"
+        <Link href="/" className="flex items-center gap-2.5 no-underline">
+          <div
+            style={GRADIENTS.brand}
+            className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+          >
+            <span className="font-nunito text-[10px] font-black text-white">
+              INV
+            </span>
+          </div>
+          <div>
+            <div className="font-nunito text-[15px] font-black leading-tight text-white">
+              STOCKR
+            </div>
+            <div className="font-nunito text-[10px] font-semibold text-white/50">
+              Pendaftaran Mitra
+            </div>
+          </div>
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 font-nunito text-xs font-bold text-white/90 no-underline transition-colors hover:bg-white/20 hover:text-white"
         >
-          <span className="font-nunito text-[10px] font-black text-white">
-            INV
-          </span>
-        </div>
-        <div>
-          <div className="font-nunito text-[15px] font-black text-white">
-            STOCKR
-          </div>
-          <div className="font-nunito text-[10px] font-semibold text-white/40">
-            Inventory Management System
-          </div>
-        </div>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Beranda
+        </Link>
       </div>
 
       {/* ── LEFT PANEL ── */}
@@ -965,8 +984,28 @@ export default function FormMitraPage() {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex min-h-screen flex-1 items-start justify-center overflow-y-auto bg-white px-10 pb-15 pt-11 max-[900px]:px-5 max-[900px]:pb-12 max-[900px]:pt-7 max-[480px]:px-4 max-[480px]:pb-10 max-[480px]:pt-5">
+      <div className="flex flex-1 items-start justify-center overflow-y-auto bg-white px-4 pb-12 pt-6 sm:px-6 sm:pb-14 sm:pt-8 min-[901px]:min-h-screen min-[901px]:px-10 min-[901px]:pb-15 min-[901px]:pt-11">
         <div className="w-full max-w-120 animate-fade-up">
+          {/* Mobile step info */}
+          {step !== "done" && (
+            <div className="mb-2.5 flex items-center justify-between font-nunito min-[901px]:hidden">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-700">
+                Langkah {progressIndex + 1} dari 5
+              </span>
+              <span className="text-xs font-semibold text-slate-400">
+                {step === "account" || step === "otp"
+                  ? "Akun & PIC"
+                  : step === "business"
+                    ? "Data Bisnis"
+                    : step === "plan"
+                      ? "Pilih Paket"
+                      : step === "agreement"
+                        ? "Perjanjian"
+                        : "Pembayaran"}
+              </span>
+            </div>
+          )}
+
           {/* Progress bar */}
           {step !== "done" && (
             <div className="mb-7 flex gap-1.25">
@@ -1500,7 +1539,7 @@ export default function FormMitraPage() {
                         />
                       </div>
                       <span className={planNameCls}>{p.name}</span>
-                      <span className={planPriceCls}>
+                      <span className={cn(planPriceCls, p.highlight && "pr-16 sm:pr-[52px]")}>
                         {formatRp(p.price)}
                         <span className="font-nunito text-[10px] font-semibold text-slate-400">
                           /bln
